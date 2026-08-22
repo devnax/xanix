@@ -1,1 +1,0 @@
-{"version":3,"file":"contact.js","sources":["../../app/Contact.tsx"],"sourcesContent":["import React from \"react\";\r\n\r\nconst Contact = () => {\r\n  return <div>Contact Page</div>;\r\n};\r\n\r\nexport default Contact;\r\n"],"names":["jsx"],"mappings":";;AAEA,MAAM,UAAU,MAAM;AACpB,EAAA,uBAAOA,qBAAA,CAAC,SAAI,QAAA,EAAA,cAAA,EAAY,CAAA;AAC1B;;;;"}

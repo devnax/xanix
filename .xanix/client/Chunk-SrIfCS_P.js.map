@@ -1,1 +1,0 @@
-{"version":3,"file":"Chunk-SrIfCS_P.js","sources":["../../app/about/Chunk.tsx"],"sourcesContent":["import React from \"react\";\r\n\r\nconst Chunk = () => {\r\n  return <div>Chunk Component</div>;\r\n};\r\n\r\nexport default Chunk;\r\n"],"names":["jsx"],"mappings":";;AAEA,MAAM,QAAQ,MAAM;AAClB,EAAA,uBAAOA,qBAAA,CAAC,SAAI,QAAA,EAAA,iBAAA,EAAe,CAAA;AAC7B;;;;"}
