@@ -29,6 +29,10 @@ export function detectReactRoutes({
       onChange(id, change);
     },
 
+    load(id) {
+      
+    },
+
     async transform(code, id) {
       if (!/\.(tsx|jsx|ts|js)$/.test(id) || id.includes("node_modules")) {
         return null;
@@ -142,7 +146,6 @@ export function detectReactRoutes({
         }
 
         const resolved = await this.resolve(source, id);
-
         if (!resolved || resolved.external) {
           continue;
         }

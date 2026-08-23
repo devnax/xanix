@@ -1,6 +1,5 @@
 import { watch, type InputOption, type RollupWatcher } from "rollup";
-import path from "node:path";
-import fs from "node:fs";
+import path from "path";
 import type { ClientEntry } from "./clientDetector.js";
 import { nodeResolve } from "@rollup/plugin-node-resolve";
 import commonjs from "@rollup/plugin-commonjs";
@@ -8,13 +7,7 @@ import esbuild from "rollup-plugin-esbuild";
 
 const WatchClient = (entries: Map<string, ClientEntry>): RollupWatcher => {
   const root = process.cwd();
-
-  const clientDir = path.resolve(root, ".xanix/client");
-
-  fs.mkdirSync(clientDir, {
-    recursive: true,
-  });
-
+  const outputDir = path.resolve(root, ".xanix/client");
   const input: InputOption = {};
 
   for (const entry of entries.values()) {
@@ -27,9 +20,7 @@ const WatchClient = (entries: Map<string, ClientEntry>): RollupWatcher => {
       nodeResolve({
         browser: true,
       }),
-
       commonjs(),
-
       esbuild({
         target: "es2022",
         platform: "browser",
@@ -39,7 +30,7 @@ const WatchClient = (entries: Map<string, ClientEntry>): RollupWatcher => {
     ],
 
     output: {
-      dir: clientDir,
+      dir: outputDir,
       entryFileNames: "[name].js",
       format: "esm",
       sourcemap: true,
@@ -51,20 +42,12 @@ const WatchClient = (entries: Map<string, ClientEntry>): RollupWatcher => {
 
   watcher.on("event", (event) => {
     switch (event.code) {
-      case "START":
-        console.log("[client] building...");
-        break;
-
       case "BUNDLE_START":
-        console.log("[client] bundling...");
+        // console.log("[client] bundling...");
         break;
 
       case "BUNDLE_END":
         console.log(`[client] built in ${event.duration}ms`);
-        break;
-
-      case "END":
-        console.log("[client] watching...");
         break;
 
       case "ERROR":

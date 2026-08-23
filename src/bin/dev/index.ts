@@ -1,47 +1,56 @@
-import { watch } from "rollup";
-import { nodeResolve } from "@rollup/plugin-node-resolve";
-import commonjs from "@rollup/plugin-commonjs";
-import esbuild from "rollup-plugin-esbuild";
 import path from "node:path";
 import fs from "node:fs";
-import type { ClientEntry } from "./clientDetector.js";
+import { spawn } from "node:child_process";
 import WatchServer from "./WatchServer.js";
-import WatchClient from "./WatchClient.js";
 
 const root = process.cwd();
+let child: any;
+
+function start() {
+  const filePath = path.join(root, ".xanix", "index.js");
+  child = spawn(process.execPath, [filePath], {
+    stdio: "inherit",
+  });
+}
+
+function restart() {
+  child?.kill();
+  start();
+}
 
 const dev = async () => {
-  const outputDir = path.resolve(root, ".xanix");
+  const serverDir = path.resolve(root, ".xanix");
 
-  fs.rmSync(outputDir, {
+  fs.rmSync(serverDir, {
     recursive: true,
     force: true,
   });
 
-  fs.mkdirSync(outputDir, {
+  fs.mkdirSync(serverDir, {
     recursive: true,
   });
-
-  const entries = new Map<string, ClientEntry>();
-  let clientWatcher: ReturnType<typeof watch> | null = null;
-  const watcher = await WatchServer({
-    onBuildEnd(nextEntries) {
-      const changed =
-        entries.size !== nextEntries.size ||
-        [...entries.keys()].some((key) => !nextEntries.has(key));
-
-      if (!changed) {
-        return;
+  let firstBuild = true;
+  const watch = WatchServer({
+    onBuildEnd: (entries) => {
+      if (firstBuild) {
+        firstBuild = false;
+        start();
+      } else {
+        restart();
       }
-
-      console.log("Client entries changed.");
-      entries.clear();
-      for (const [key, entry] of nextEntries) {
-        entries.set(key, entry);
-      }
-      clientWatcher?.close();
-      clientWatcher = WatchClient(entries);
     },
+  });
+
+  process.on("SIGINT", () => {
+    child?.kill();
+    watch?.close();
+    process.exit(0);
+  });
+
+  process.on("SIGTERM", () => {
+    child?.kill();
+    watch?.close();
+    process.exit(0);
   });
 };
 

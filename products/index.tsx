@@ -3,7 +3,7 @@ import Products from "./Products";
 
 const productRouter = Router();
 
-productRouter.get("/products", (req, res) => {
+productRouter.get("/", (req, res) => {
   const products = [
     { name: "Product 1", price: 10 },
     { name: "Product 2", price: 20 },

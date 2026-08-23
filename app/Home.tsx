@@ -1,11 +1,15 @@
 import React, { useEffect } from "react";
+import { XanixPageProps } from "xanix";
 
-export const metadata = {
-  title: "Home Page",
-  description: "This is the home page of our application.",
+export type HomeProps = XanixPageProps & {
+  name: string;
+  products: Array<{
+    name: string;
+    price: number;
+  }>;
 };
 
-const Home = ({ name, products }: any) => {
+const Home = ({ name, products, document }: HomeProps) => {
   const [count, setCount] = React.useState(0);
   useEffect(() => {
     const interval = setInterval(() => {
@@ -17,12 +21,15 @@ const Home = ({ name, products }: any) => {
   return (
     <div>
       {name} {count}
+      <div>{document?.metadata?.title}</div>
       <ul>
-        {products.map((product: any, index: number) => (
-          <li key={index}>
-            {product.name} - ${product.price}
-          </li>
-        ))}
+        {products.map(
+          (product: { name: string; price: number }, index: number) => (
+            <li key={index}>
+              {product.name} - ${product.price}
+            </li>
+          ),
+        )}
       </ul>
     </div>
   );

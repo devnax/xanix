@@ -1,30 +1,34 @@
 import { watch } from "rollup";
+
 import path from "node:path";
-import nodeResolve from "@rollup/plugin-node-resolve";
+
+import type { ClientEntry } from "./clientDetector.js";
+import { detectReactRoutes } from "./clientDetector.js";
+
+import { nodeResolve } from "@rollup/plugin-node-resolve";
 import commonjs from "@rollup/plugin-commonjs";
 import esbuild from "rollup-plugin-esbuild";
-import { xanix } from "../plugins/xanix.js";
-import { XanixClientEntry } from "../plugins/transform";
 
 const root = process.cwd();
 
 export type WatcherOptions = {
-  onBuildEnd?: (entries: Map<string, XanixClientEntry>) => void;
+  onBuildEnd?: (entries: Map<string, ClientEntry>) => void;
 };
 
 const WatchServer = ({ onBuildEnd }: WatcherOptions = {}) => {
-  const outputDir = path.resolve(root, ".xanix");
-  const entries = new Map<string, XanixClientEntry>();
+  const outputDir = path.resolve(root, ".xanix/server");
+  const entries = new Map<string, ClientEntry>();
 
   const watcher = watch({
     input: path.resolve(root, "index.tsx"),
     plugins: [
-      xanix({
+      detectReactRoutes({
         entries,
-        onChange: (entry) => {
-          // entries.set(entry.id, entry);
+        onChange(id, change) {
+          console.log(`[server] [${change.event}] ${id}`);
         },
       }),
+
       nodeResolve({
         preferBuiltins: true,
       }),
