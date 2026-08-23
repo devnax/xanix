@@ -44,7 +44,7 @@ export function xanix({ entries }: XanixPluginOptions): Plugin {
       };
     },
 
-    generateBundle() {
+    generateBundle(_, bundle) {
       const manifest = {
         version: 1,
         entries: [...entries.values()],

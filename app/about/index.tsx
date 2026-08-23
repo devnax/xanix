@@ -1,5 +1,5 @@
 import React, { Suspense } from "react";
-const Chunk = React.lazy(() => import("./Chunk"));
+const Chunk = React.lazy(() => import("../Chunk"));
 const About = () => {
   return (
     <div>

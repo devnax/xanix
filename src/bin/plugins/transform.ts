@@ -103,6 +103,8 @@ function findComponentImport(
 ): {
   file: string;
   export: string;
+  declaration: t.ImportDeclaration;
+  specifier: t.ImportSpecifier | t.ImportDefaultSpecifier;
 } | null {
   for (const node of ast.program.body) {
     if (!t.isImportDeclaration(node)) {
@@ -117,6 +119,8 @@ function findComponentImport(
         return {
           file: node.source.value,
           export: "default",
+          declaration: node,
+          specifier,
         };
       }
 
@@ -129,12 +133,99 @@ function findComponentImport(
         return {
           file: node.source.value,
           export: t.isIdentifier(imported) ? imported.name : imported.value,
+          declaration: node,
+          specifier,
         };
       }
     }
   }
 
   return null;
+}
+
+/**
+ * Remove a specific component from:
+ *
+ * import Home from "./Home";
+ *
+ * or:
+ *
+ * import Home, { foo } from "./Home";
+ *
+ * or:
+ *
+ * import { Home, foo } from "./Home";
+ */
+function removeComponentImport(componentImport: {
+  declaration: t.ImportDeclaration;
+  specifier: t.ImportSpecifier | t.ImportDefaultSpecifier;
+}): void {
+  const { declaration, specifier } = componentImport;
+
+  const index = declaration.specifiers.indexOf(specifier);
+
+  if (index !== -1) {
+    declaration.specifiers.splice(index, 1);
+  }
+
+  /**
+   * If the import declaration has nothing left:
+   *
+   * import Home from "./Home";
+   *
+   * becomes nothing.
+   */
+  if (declaration.specifiers.length === 0) {
+    const program = declaration.loc;
+
+    /**
+     * We don't have the ProgramPath here, so the actual
+     * declaration removal is handled separately by
+     * removeEmptyImportDeclarations().
+     */
+  }
+}
+
+function removeEmptyImportDeclarations(ast: t.File): void {
+  ast.program.body = ast.program.body.filter((statement) => {
+    if (!t.isImportDeclaration(statement)) {
+      return true;
+    }
+
+    return statement.specifiers.length > 0;
+  });
+}
+
+/**
+ * Create:
+ *
+ * const Home = (await import("./Home")).default;
+ *
+ * or:
+ *
+ * const Home = (await import("./Home")).Home;
+ */
+function createDynamicComponentImport(
+  componentName: string,
+  importPath: string,
+  exportName: string,
+): t.VariableDeclaration {
+  const importCall = t.callExpression(t.import(), [
+    t.stringLiteral(importPath),
+  ]);
+
+  const awaitedImport = t.awaitExpression(importCall);
+
+  const property =
+    exportName === "default"
+      ? t.identifier("default")
+      : t.identifier(exportName);
+
+  const value = t.memberExpression(awaitedImport, property);
+
+  return t.variableDeclaration("const", [
+    t.variableDeclarator(t.identifier(componentName), value),
+  ]);
 }
 
 /**
@@ -405,14 +496,56 @@ export function transformXanix(
       });
 
       /**
-       * Route becomes async.
+       * Remove:
+       *
+       * import Home from "./Home";
+       */
+      removeComponentImport(componentImport);
+
+      /**
+       * Add inside the route:
+       *
+       * const Home =
+       *   (await import("./Home")).default;
+       */
+      const dynamicImport = createDynamicComponentImport(
+        componentName,
+        componentImportPath,
+        componentImport.export,
+      );
+
+      /**
+       * Insert immediately before:
+       *
+       * res.send(<Home />);
+       */
+      const statementPath = callPath.getStatementParent();
+
+      if (statementPath) {
+        statementPath.insertBefore(dynamicImport);
+      }
+
+      /**
+       * Route becomes:
+       *
+       * async (req, res) => {}
        */
       if (t.isFunction(functionPath.node)) {
         functionPath.node.async = true;
       }
 
       /**
-       * await xanix_runtime(...)
+       * Replace:
+       *
+       * res.send(<Home />);
+       *
+       * with:
+       *
+       * res.send(
+       *   await xanix_runtime({
+       *     ...
+       *   })
+       * );
        */
       const runtimeCall = t.awaitExpression(
         t.callExpression(t.identifier("xanix_runtime"), [
@@ -446,6 +579,15 @@ export function transformXanix(
   if (!changed) {
     return null;
   }
+
+  /**
+   * Remove empty imports:
+   *
+   * import Home from "./Home";
+   *
+   * after Home was converted to dynamic import.
+   */
+  removeEmptyImportDeclarations(ast);
 
   /**
    * Runtime import.

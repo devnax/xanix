@@ -2,6 +2,13 @@ import path from "node:path";
 import fs from "node:fs";
 import { spawn } from "node:child_process";
 import WatchServer from "./WatchServer.js";
+import { rollup } from "rollup";
+import { xanix } from "../plugins/xanix.js";
+import { XanixClientEntry } from "../plugins/transform.js";
+import json from "@rollup/plugin-json";
+import { nodeResolve } from "@rollup/plugin-node-resolve";
+import commonjs from "@rollup/plugin-commonjs";
+import esbuild from "rollup-plugin-esbuild";
 
 const root = process.cwd();
 let child: any;
@@ -29,6 +36,7 @@ const dev = async () => {
   fs.mkdirSync(serverDir, {
     recursive: true,
   });
+
   let firstBuild = true;
   const watch = WatchServer({
     onBuildEnd: (entries) => {

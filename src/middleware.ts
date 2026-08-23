@@ -46,14 +46,14 @@ export default async function middleware(
         .send(`Client build is not a file: "${entry.build}"`);
     }
 
+    if (req.method === "HEAD") {
+      return res.end();
+    }
+
     res.status(200);
     res.setHeader("Content-Type", "application/javascript; charset=utf-8");
     res.setHeader("Content-Length", stat.size);
     res.setHeader("Cache-Control", "no-cache");
-
-    if (req.method === "HEAD") {
-      return res.end();
-    }
 
     const stream = fs.createReadStream(buildPath);
 

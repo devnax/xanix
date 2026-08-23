@@ -23,7 +23,5 @@ export default async function xanix_runtime({
     );
   }
 
-  console.log("[xanix] client entry:", entry);
-
   return renderToString(component);
 }

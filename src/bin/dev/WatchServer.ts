@@ -48,8 +48,21 @@ const WatchServer = ({ onBuildEnd }: WatcherOptions = {}) => {
       dir: outputDir,
       format: "esm",
       sourcemap: true,
-      preserveModules: true,
-      preserveModulesRoot: root,
+      // preserveModules: true,
+      // preserveModulesRoot: root,
+      chunkFileNames: (id) => {
+        if (id.type === "chunk") {
+          const entry = [...entries.values()].find(
+            (e) => e.file === id.facadeModuleId,
+          );
+          return `pages/${(entry || id).name}.js`;
+        }
+        if (id.name === "Chunk") {
+          return "chunks/[hash].js";
+        }
+
+        return "[name].js";
+      },
     },
     watch: {
       clearScreen: false,
