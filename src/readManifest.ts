@@ -15,7 +15,7 @@ interface XanixManifest {
   entries: XanixManifestEntry[];
 }
 
-async function loadManifest(): Promise<XanixManifest> {
+async function readManifest(): Promise<XanixManifest> {
   const manifestPath = path.resolve(
     process.cwd(),
     ".xanix",
@@ -26,4 +26,4 @@ async function loadManifest(): Promise<XanixManifest> {
   return JSON.parse(source) as XanixManifest;
 }
 
-export default loadManifest;
+export default readManifest;

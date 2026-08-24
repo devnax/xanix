@@ -1,15 +1,13 @@
 import path from "node:path";
-import fs from "node:fs";
 import { spawn } from "node:child_process";
 import WatchServer from "./WatchServer.js";
-import { rollup } from "rollup";
-import { xanix } from "../plugins/xanix.js";
-import { XanixClientEntry } from "../plugins/transform.js";
-import json from "@rollup/plugin-json";
-import { nodeResolve } from "@rollup/plugin-node-resolve";
-import commonjs from "@rollup/plugin-commonjs";
-import esbuild from "rollup-plugin-esbuild";
-
+import { RollupWatcher } from "rollup";
+import {
+  generateClientEntries,
+  getEntries,
+} from "../../include/clientEntry.js";
+import { createManifest } from "../../include/manifest.js";
+import WatchClient from "./WatchClient.js";
 const root = process.cwd();
 let child: any;
 
@@ -26,25 +24,24 @@ function restart() {
 }
 
 const dev = async () => {
-  const serverDir = path.resolve(root, ".xanix");
-
-  fs.rmSync(serverDir, {
-    recursive: true,
-    force: true,
-  });
-
-  fs.mkdirSync(serverDir, {
-    recursive: true,
-  });
-
+  let clientWatcher: RollupWatcher | null = null;
   let firstBuild = true;
-  const watch = WatchServer({
-    onBuildEnd: (entries) => {
+
+  const watch = await WatchServer({
+    async onClientChange() {},
+    async onClientEntryChange() {
+      const entries = await getEntries();
+      clientWatcher = await WatchClient(entries);
+    },
+    async onServerChange() {
+      restart();
+    },
+    onBuildEnd: async () => {
       if (firstBuild) {
         firstBuild = false;
+        const entries = await getEntries();
+        clientWatcher = await WatchClient(entries);
         start();
-      } else {
-        restart();
       }
     },
   });

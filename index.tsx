@@ -1,12 +1,10 @@
 import Home from "./app/Home";
 import About from "./app/about";
-import Contact from "./app/Contact";
 import express from "express";
 import productsRouter from "./products/index.tsx";
 
 const app = express();
-
-app.use("/products", productsRouter);
+app.use("/product", productsRouter);
 
 app.get("/", (req, res) => {
   res.send(
@@ -43,9 +41,9 @@ app.get("/about", (req, res) => {
   res.send(<About />);
 });
 
-app.get("/contact", (req, res) => {
-  res.send(<Contact />);
-});
+// app.get("/contact", (req, res) => {
+//   res.send(<Contact />);
+// });
 
 app.listen(3000, () => {
   console.log("Server is running on http://localhost:3000");

@@ -19,9 +19,13 @@
       "import": "./dist/runtime.js",
       "require": "./dist/runtime.js"
     },
-    "./middleware": {
-      "import": "./dist/middleware.js",
-      "require": "./dist/middleware.js"
+    "./runtime-client": {
+      "import": "./dist/runtime-client.js",
+      "require": "./dist/runtime-client.js"
+    },
+    "./page": {
+      "import": "./dist/page.js",
+      "require": "./dist/page.js"
     }
   },
   "scripts": {
@@ -38,6 +42,7 @@
     "@babel/traverse": "^8.0.4",
     "@rollup/plugin-commonjs": "^29.0.3",
     "@rollup/plugin-node-resolve": "^16.0.3",
+    "@rollup/plugin-replace": "^6.0.3",
     "@xanui/core": "^1.3.37",
     "@xanui/icons": "^1.1.14",
     "@xanui/ui": "^1.2.24",

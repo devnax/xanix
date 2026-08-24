@@ -7,23 +7,13 @@ import traverse from "@babel/traverse";
 import generate from "@babel/generator";
 import * as t from "@babel/types";
 
-export interface XanixClientEntry {
-  id: string;
-  name: string;
-  file: string;
-  path: string;
-  build: string;
-  export: string;
-}
-
 export interface XanixTransformResult {
   code: string;
   map: any;
-  clientEntries: XanixClientEntry[];
 }
 
 const RUNTIME_IMPORT = "xanix/runtime";
-const MIDDLEWARE_IMPORT = "xanix/middleware";
+const PAGE_IMPORT = "xanix/page";
 
 const SOURCE_EXTENSIONS = [".tsx", ".ts", ".jsx", ".js", ".mjs", ".cjs"];
 
@@ -31,7 +21,7 @@ function normalizeFilePath(file: string): string {
   return path.resolve(file).split(path.sep).join("/");
 }
 
-function resolveFile(file: string): string {
+export function resolveFile(file: string): string {
   const absolute = path.resolve(file);
 
   if (fs.existsSync(absolute)) {
@@ -63,7 +53,10 @@ function resolveFile(file: string): string {
   return absolute;
 }
 
-function resolveComponentFile(importer: string, importPath: string): string {
+export function resolveComponentFile(
+  importer: string,
+  importPath: string,
+): string {
   if (!importPath.startsWith(".")) {
     return importPath;
   }
@@ -73,7 +66,7 @@ function resolveComponentFile(importer: string, importPath: string): string {
   return resolveFile(base);
 }
 
-function createClientId(file: string): string {
+export function createClientId(file: string): string {
   return `c_${crypto
     .createHash("sha256")
     .update(path.normalize(file))
@@ -81,7 +74,7 @@ function createClientId(file: string): string {
     .slice(0, 12)}`;
 }
 
-function getJSXComponentName(node: t.JSXElement): string | null {
+export function getJSXComponentName(node: t.JSXElement): string | null {
   const name = node.openingElement.name;
 
   if (t.isJSXIdentifier(name)) {
@@ -97,7 +90,7 @@ function getJSXComponentName(node: t.JSXElement): string | null {
   return null;
 }
 
-function findComponentImport(
+export function findComponentImport(
   ast: t.File,
   componentName: string,
 ): {
@@ -166,23 +159,6 @@ function removeComponentImport(componentImport: {
 
   if (index !== -1) {
     declaration.specifiers.splice(index, 1);
-  }
-
-  /**
-   * If the import declaration has nothing left:
-   *
-   * import Home from "./Home";
-   *
-   * becomes nothing.
-   */
-  if (declaration.specifiers.length === 0) {
-    const program = declaration.loc;
-
-    /**
-     * We don't have the ProgramPath here, so the actual
-     * declaration removal is handled separately by
-     * removeEmptyImportDeclarations().
-     */
   }
 }
 
@@ -268,32 +244,22 @@ function findExpressAppVariable(ast: t.File): string | null {
 /**
  * Check:
  *
- * app.use(xanix_middleware)
+ * xanixRuntime(app)
  *
- * exp.use(xanix_middleware)
+ * or:
+ *
+ * xanixRuntime(server)
  */
-function hasXanixMiddleware(ast: t.File, expressVariable: string): boolean {
+function hasXanixRuntime(ast: t.File, expressVariable: string): boolean {
   let found = false;
 
   traverse(ast, {
     CallExpression(callPath) {
       const call = callPath.node;
 
-      if (!t.isMemberExpression(call.callee)) {
-        return;
-      }
-
       if (
-        !t.isIdentifier(call.callee.object, {
-          name: expressVariable,
-        })
-      ) {
-        return;
-      }
-
-      if (
-        !t.isIdentifier(call.callee.property, {
-          name: "use",
+        !t.isIdentifier(call.callee, {
+          name: "xanixRuntime",
         })
       ) {
         return;
@@ -303,7 +269,7 @@ function hasXanixMiddleware(ast: t.File, expressVariable: string): boolean {
 
       if (
         t.isIdentifier(argument, {
-          name: "xanix_middleware",
+          name: expressVariable,
         })
       ) {
         found = true;
@@ -317,34 +283,33 @@ function hasXanixMiddleware(ast: t.File, expressVariable: string): boolean {
 /**
  * Create:
  *
- * app.use(xanix_middleware);
+ * xanixRuntime(app);
  */
-function createXanixMiddleware(expressVariable: string): t.ExpressionStatement {
+function createXanixRuntime(expressVariable: string): t.ExpressionStatement {
   return t.expressionStatement(
-    t.callExpression(
-      t.memberExpression(t.identifier(expressVariable), t.identifier("use")),
-      [t.identifier("xanix_middleware")],
-    ),
+    t.callExpression(t.identifier("xanixRuntime"), [
+      t.identifier(expressVariable),
+    ]),
   );
 }
 
 /**
  * Inject:
  *
- * app.use(xanix_middleware);
+ * xanixRuntime(app);
  */
-function injectXanixMiddleware(ast: t.File): void {
+function injectXanixRuntime(ast: t.File): void {
   const expressVariable = findExpressAppVariable(ast);
 
   if (!expressVariable) {
     return;
   }
 
-  if (hasXanixMiddleware(ast, expressVariable)) {
+  if (hasXanixRuntime(ast, expressVariable)) {
     return;
   }
 
-  const middleware = createXanixMiddleware(expressVariable);
+  const runtime = createXanixRuntime(expressVariable);
 
   for (let i = 0; i < ast.program.body.length; i++) {
     const statement = ast.program.body[i];
@@ -362,14 +327,14 @@ function injectXanixMiddleware(ast: t.File): void {
         continue;
       }
 
-      ast.program.body.splice(i + 1, 0, middleware);
+      ast.program.body.splice(i + 1, 0, runtime);
 
       return;
     }
   }
 }
 
-export function transformXanix(
+export function transformer(
   code: string,
   id: string,
 ): XanixTransformResult | null {
@@ -379,10 +344,9 @@ export function transformXanix(
   });
 
   let changed = false;
-  let runtimeImported = false;
-  let middlewareImported = false;
 
-  const clientEntries: XanixClientEntry[] = [];
+  let runtimeImported = false;
+  let pageImported = false;
 
   traverse(ast, {
     ImportDeclaration(importPath) {
@@ -392,8 +356,8 @@ export function transformXanix(
         runtimeImported = true;
       }
 
-      if (source === MIDDLEWARE_IMPORT) {
-        middlewareImported = true;
+      if (source === PAGE_IMPORT) {
+        pageImported = true;
       }
     },
 
@@ -436,7 +400,6 @@ export function transformXanix(
       }
 
       const requestParam = params[0];
-
       const responseParam = params[1];
 
       if (!t.isIdentifier(requestParam) || !t.isIdentifier(responseParam)) {
@@ -468,34 +431,6 @@ export function transformXanix(
       const clientId = createClientId(normalizedFile);
 
       /**
-       * Build path:
-       *
-       * C:/project/app/Home.tsx
-       *
-       * =>
-       *
-       * C:/project/.xanix/app/Home.js
-       */
-      const root = process.cwd();
-
-      const relativeSource = path.relative(root, componentFile);
-
-      const parsed = path.parse(relativeSource);
-
-      const buildPath = normalizeFilePath(
-        path.resolve(root, ".xanix", parsed.dir, `${parsed.name}.js`),
-      );
-
-      clientEntries.push({
-        id: clientId,
-        name: componentName,
-        file: normalizedFile,
-        path: componentImportPath,
-        build: buildPath,
-        export: componentImport.export,
-      });
-
-      /**
        * Remove:
        *
        * import Home from "./Home";
@@ -503,7 +438,7 @@ export function transformXanix(
       removeComponentImport(componentImport);
 
       /**
-       * Add inside the route:
+       * Add:
        *
        * const Home =
        *   (await import("./Home")).default;
@@ -542,13 +477,16 @@ export function transformXanix(
        * with:
        *
        * res.send(
-       *   await xanix_runtime({
-       *     ...
+       *   await xanixPage({
+       *     clientId,
+       *     req,
+       *     res,
+       *     component: <Home />
        *   })
        * );
        */
-      const runtimeCall = t.awaitExpression(
-        t.callExpression(t.identifier("xanix_runtime"), [
+      const pageCall = t.awaitExpression(
+        t.callExpression(t.identifier("xanixPage"), [
           t.objectExpression([
             t.objectProperty(
               t.identifier("clientId"),
@@ -570,7 +508,7 @@ export function transformXanix(
         ]),
       );
 
-      call.arguments[0] = runtimeCall;
+      call.arguments[0] = pageCall;
 
       changed = true;
     },
@@ -584,31 +522,33 @@ export function transformXanix(
    * Remove empty imports:
    *
    * import Home from "./Home";
-   *
-   * after Home was converted to dynamic import.
    */
   removeEmptyImportDeclarations(ast);
 
   /**
-   * Runtime import.
+   * Add:
+   *
+   * import xanixRuntime from "xanix/runtime";
    */
   if (!runtimeImported) {
     ast.program.body.unshift(
       t.importDeclaration(
-        [t.importDefaultSpecifier(t.identifier("xanix_runtime"))],
+        [t.importDefaultSpecifier(t.identifier("xanixRuntime"))],
         t.stringLiteral(RUNTIME_IMPORT),
       ),
     );
   }
 
   /**
-   * Middleware import.
+   * Add:
+   *
+   * import xanixPage from "xanix/page";
    */
-  if (!middlewareImported) {
+  if (!pageImported) {
     ast.program.body.unshift(
       t.importDeclaration(
-        [t.importDefaultSpecifier(t.identifier("xanix_middleware"))],
-        t.stringLiteral(MIDDLEWARE_IMPORT),
+        [t.importDefaultSpecifier(t.identifier("xanixPage"))],
+        t.stringLiteral(PAGE_IMPORT),
       ),
     );
   }
@@ -616,15 +556,14 @@ export function transformXanix(
   /**
    * Inject:
    *
-   * app.use(xanix_middleware);
+   * xanixRuntime(app);
    */
-  injectXanixMiddleware(ast);
+  injectXanixRuntime(ast);
 
   const output = generate(ast, {}, code);
 
   return {
     code: output.code,
     map: output.map,
-    clientEntries,
   };
 }

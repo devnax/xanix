@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
 import { Command } from "commander";
-import dev from "./dev/index.js";
-import build from "./build/index.js";
-import start from "./start/index.js";
+import dev from "./cli/dev/index.js";
+import build from "./cli/build/index.js";
+import start from "./cli/start/index.js";
 const program = new Command();
 
 program.name("XANOS").description("Usages");

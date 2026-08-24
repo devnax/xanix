@@ -1,31 +1,26 @@
 import type { Plugin } from "rollup";
-import { transformXanix, type XanixClientEntry } from "./transform.js";
-import path from "node:path";
+import { entryFinder } from "./finder.js";
+import { XanixClientEntry } from "../../types.js";
 
 export type XanixPluginOptions = {
   entries: Map<string, XanixClientEntry>;
-  onChange?: (entry: XanixClientEntry) => void;
 };
 
-export function xanix({ entries }: XanixPluginOptions): Plugin {
+export function XanixEntryFinder({ entries }: XanixPluginOptions): Plugin {
   return {
-    name: "xanix",
-
-    watchChange(id, change) {
-      const file = path.resolve(id);
-    },
+    name: "xanix-entry-finder",
 
     async transform(code, id) {
       if (id.includes("node_modules") || !/\.(tsx?|jsx?)$/.test(id)) {
         return null;
       }
 
-      const result = transformXanix(code, id);
-      if (!result) {
+      const clientEntries = entryFinder(code, id);
+      if (!clientEntries) {
         return null;
       }
 
-      for (const entry of result.clientEntries) {
+      for (const entry of clientEntries) {
         const resolved = await this.resolve(entry.file, id, {
           skipSelf: true,
         });
@@ -38,13 +33,10 @@ export function xanix({ entries }: XanixPluginOptions): Plugin {
         entries.set(entry.id, entry);
       }
 
-      return {
-        code: result.code,
-        map: result.map,
-      };
+      return null;
     },
 
-    generateBundle(_, bundle) {
+    generateBundle() {
       const manifest = {
         version: 1,
         entries: [...entries.values()],

@@ -1,9 +1,9 @@
 import { Router } from "express";
 import Products from "./Products";
 
-const productRouter = Router();
+const productsRouter = Router();
 
-productRouter.get("/", (req, res) => {
+productsRouter.get("/", (req, res) => {
   const products = [
     { name: "Product 1", price: 10 },
     { name: "Product 2", price: 20 },
@@ -12,4 +12,4 @@ productRouter.get("/", (req, res) => {
   res.send(<Products products={products} />);
 });
 
-export default productRouter;
+export default productsRouter;

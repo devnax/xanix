@@ -2,7 +2,7 @@ import path from "node:path";
 import fs from "node:fs";
 import { spawn } from "node:child_process";
 import { rollup } from "rollup";
-import { xanix } from "../plugins/xanix.js";
+import { XanixTransform } from "../../plugins/XanixTransform/index.js";
 import nodeResolve from "@rollup/plugin-node-resolve";
 import commonjs from "@rollup/plugin-commonjs";
 import esbuild from "rollup-plugin-esbuild";
@@ -38,9 +38,7 @@ const dev = async () => {
   const bundle = await rollup({
     input: "./index.tsx",
     plugins: [
-      xanix({
-        entries: new Map(),
-      }),
+      XanixTransform({}),
       nodeResolve({
         preferBuiltins: true,
         extensions: [".mjs", ".js", ".json", ".ts", ".tsx", ".jsx"],

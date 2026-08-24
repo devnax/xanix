@@ -1,5 +1,5 @@
-import { renderToString } from "react-dom/server";
-import loadManifest from "./loadManifest.js";
+import type { Express } from "express";
+import express from "express";
 
 export interface XanixProps {
   clientId: string;
@@ -8,20 +8,6 @@ export interface XanixProps {
   component: React.ReactElement;
 }
 
-export default async function xanix_runtime({
-  clientId,
-  req,
-  res,
-  component,
-}: XanixProps) {
-  const manifest = await loadManifest();
-  const entry = manifest.entries.find((item) => item.id === clientId);
-
-  if (!entry) {
-    throw new Error(
-      `Xanix client entry "${clientId}" was not found in the manifest.`,
-    );
-  }
-
-  return renderToString(component);
+export default async function xanix_runtime(app: Express) {
+  app.use("/__client__", express.static(".xanix/client"));
 }
