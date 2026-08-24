@@ -40,7 +40,7 @@ const dev = async () => {
       if (firstBuild) {
         firstBuild = false;
         const entries = await getEntries();
-        clientWatcher = await WatchClient(entries);
+        // clientWatcher = await WatchClient(entries);
         start();
       }
     },

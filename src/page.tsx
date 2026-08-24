@@ -30,16 +30,6 @@ export default async function xanix_page({
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>${entry.name}</title>
-    <script type="module" src="/__client__/pages/${entry.name}.js"></script>
-    <script type="importmap">
-      {
-  "imports": {
-    "react": "/__client__/vendor/react.js",
-    "react-dom/client": "/__client__/vendor/react-dom__client.js",
-    "react/jsx-runtime": "/__client__/vendor/react__jsx-runtime.js"
-  }
-}
-</script>
   </head>
   <body>
     <div id="root">${renderToString(component)}</div>

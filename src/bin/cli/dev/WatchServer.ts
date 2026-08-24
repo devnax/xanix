@@ -39,7 +39,6 @@ const WatchServer = async ({
   });
 
   const entries = await generateClientEntries();
-
   await createManifest(entries);
 
   const watcher = watch({
