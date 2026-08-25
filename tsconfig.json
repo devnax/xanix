@@ -23,7 +23,7 @@
     },
     "include": [
         "src",
-        "app/Home.tsx",
+        "app/Home.tsx"
     ],
     "exclude": [
         "node_modules",

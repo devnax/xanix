@@ -28,7 +28,7 @@ const Home = ({ name, products, document }: HomeProps) => {
       <div>{document?.metadata?.title}</div>
       <Button onClick={() => alert("Button clicked!")}>Click</Button>
       <button>well s</button>
-      <img src={img} alt="Example" />
+      <img width={40} src={img} alt="Example" />
       <ul>
         {products.map(
           (product: { name: string; price: number }, index: number) => (

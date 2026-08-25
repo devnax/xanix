@@ -9,7 +9,6 @@ import rollupNodeResolve from "./plugins/nodeResolve.js";
 import rollupCommonjs from "./plugins/commonjs.js";
 import bundlerOutput, { outDir } from "./config/output.js";
 
-const root = process.cwd();
 const require = createRequire(import.meta.url);
 
 const buildClient = async (entries: XanixClientEntry[]) => {

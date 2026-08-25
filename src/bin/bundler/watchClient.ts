@@ -12,6 +12,7 @@ import rollupNodeResolve from "./plugins/nodeResolve.js";
 import rollupCommonjs from "./plugins/commonjs.js";
 
 const require = createRequire(import.meta.url);
+import xanixHydrate from "./plugins/XanixHydrate.js";
 
 const WatchClient = async (
   entries: XanixClientEntry[],
@@ -47,6 +48,7 @@ const WatchClient = async (
       }),
       rollupNodeResolve(),
       rollupCommonjs(),
+      xanixHydrate(entries),
       rollupEsbuild({
         sourceMap: true,
       }),
