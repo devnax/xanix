@@ -34,8 +34,8 @@ export default async function xanix_page({
   <body>
     <div id="root">${renderToString(component)}</div>
     <script type="module">
-      import Page from "/__client__/pages/${entry.name}.js";
-      import {hydrate} from "/__client__/runtime.js";
+      import Page from "/.xanix/client/pages/${entry.name.toLowerCase()}.js";
+      import {hydrate} from "/.xanix/client/runtime.js";
       hydrate(Page, ${JSON.stringify(component.props)});
     </script>
   </body>

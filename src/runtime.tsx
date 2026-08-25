@@ -9,5 +9,6 @@ export interface XanixProps {
 }
 
 export default async function xanix_runtime(app: Express) {
-  app.use("/__client__", express.static(".xanix/client"));
+  app.use("/.xanix/client", express.static(".xanix/client"));
+  app.use("/.xanix/cache", express.static(".xanix/cache"));
 }

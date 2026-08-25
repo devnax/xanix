@@ -1,6 +1,6 @@
 import type { Plugin } from "rollup";
 import { entryFinder } from "./finder.js";
-import { XanixClientEntry } from "../../types.js";
+import { XanixClientEntry } from "../../../types.js";
 
 export type XanixPluginOptions = {
   entries: Map<string, XanixClientEntry>;

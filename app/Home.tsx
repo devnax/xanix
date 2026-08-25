@@ -1,5 +1,10 @@
 import React, { useEffect } from "react";
 import { XanixPageProps } from "xanix";
+import Button from "@xanui/ui/Button";
+import { createTheme, ThemeProvider } from "@xanui/core";
+
+// import img from "./image.jpg";
+// console.log(img);
 
 export type HomeProps = XanixPageProps & {
   name: string;
@@ -19,9 +24,11 @@ const Home = ({ name, products, document }: HomeProps) => {
   }, []);
 
   return (
-    <div>
+    <ThemeProvider theme={createTheme({ mode: "light", name: "default" })}>
       {name} {count}
       <div>{document?.metadata?.title}</div>
+      <Button onClick={() => alert("Button clicked!")}>Click</Button>
+      <button>well s</button>
       <ul>
         {products.map(
           (product: { name: string; price: number }, index: number) => (
@@ -31,7 +38,7 @@ const Home = ({ name, products, document }: HomeProps) => {
           ),
         )}
       </ul>
-    </div>
+    </ThemeProvider>
   );
 };
 

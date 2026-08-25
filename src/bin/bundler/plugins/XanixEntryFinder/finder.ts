@@ -4,7 +4,7 @@ import crypto from "node:crypto";
 import { parse } from "@babel/parser";
 import traverse from "@babel/traverse";
 import * as t from "@babel/types";
-import { XanixClientEntry } from "../../types";
+import { XanixClientEntry } from "../../../types";
 
 const SOURCE_EXTENSIONS = [".tsx", ".ts", ".jsx", ".js", ".mjs", ".cjs"];
 

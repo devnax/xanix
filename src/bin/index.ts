@@ -1,19 +1,25 @@
 #!/usr/bin/env node
-
 import { Command } from "commander";
-import dev from "./cli/dev/index.js";
-import build from "./cli/build/index.js";
-import start from "./cli/start/index.js";
+import dev from "./cli/dev.js";
+import start from "./cli/start.js";
+
 const program = new Command();
 
-program.name("XANOS").description("Usages");
-program.command("dev").description("run the development server").action(dev);
-program.command("start").description("run the production server").action(start);
-
 program
-  .command("build")
-  .description("build xanos for production")
+  .name("xanix")
+  .description("Xanix application CLI")
+  .argument("[entry]", "entry file")
+  .option("--watch", "watch for file changes")
   .option("--secure <boolean>", "enable secure build")
-  .action(build);
+  .action(async (entry, options) => {
+    entry = entry ?? "index.tsx";
+    let watch = options.watch ?? false;
 
-program.parse();
+    if (watch) {
+      await dev(entry);
+    } else {
+      await start(entry);
+    }
+  });
+
+program.parseAsync();
