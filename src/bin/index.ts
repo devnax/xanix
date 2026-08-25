@@ -10,7 +10,6 @@ program
   .description("Xanix application CLI")
   .argument("[entry]", "entry file")
   .option("--watch", "watch for file changes")
-  .option("--secure <boolean>", "enable secure build")
   .action(async (entry, options) => {
     entry = entry ?? "index.tsx";
     let watch = options.watch ?? false;

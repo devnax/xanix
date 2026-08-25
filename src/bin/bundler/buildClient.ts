@@ -1,15 +1,15 @@
 import { rollup, type InputOption } from "rollup";
-import path from "node:path";
 import fs from "node:fs";
 import replace from "@rollup/plugin-replace";
-import { nodeResolve } from "@rollup/plugin-node-resolve";
-import commonjs from "@rollup/plugin-commonjs";
-import esbuild from "rollup-plugin-esbuild";
 import { createRequire } from "node:module";
 import { XanixClientEntry } from "../types";
+import XanixAssets from "./plugins/XanixAssets/index.js";
+import rollupEsbuild from "./plugins/rollupEsbuild.js";
+import rollupNodeResolve from "./plugins/nodeResolve.js";
+import rollupCommonjs from "./plugins/commonjs.js";
+import bundlerOutput, { outDir } from "./config/output.js";
 
 const root = process.cwd();
-const outputDir = path.resolve(root, ".xanix/client");
 const require = createRequire(import.meta.url);
 
 const buildClient = async (entries: XanixClientEntry[]) => {
@@ -20,12 +20,12 @@ const buildClient = async (entries: XanixClientEntry[]) => {
 
   input["xanix-runtime"] = require.resolve("xanix/runtime-client");
 
-  fs.rmSync(outputDir, {
+  fs.rmSync(outDir.client, {
     recursive: true,
     force: true,
   });
 
-  fs.mkdirSync(outputDir, {
+  fs.mkdirSync(outDir.client, {
     recursive: true,
   });
 
@@ -42,46 +42,22 @@ const buildClient = async (entries: XanixClientEntry[]) => {
       warn(warning);
     },
     plugins: [
+      XanixAssets({
+        external: true,
+      }),
       replace({
         preventAssignment: true,
         "process.env.NODE_ENV": JSON.stringify("development"),
       }),
-      nodeResolve({
-        browser: true,
-        extensions: [".mjs", ".js", ".json", ".node", ".ts", ".tsx", ".jsx"],
-        preferBuiltins: false,
-      }),
-
-      commonjs({
-        include: /node_modules/,
-        extensions: [".js", ".cjs"],
-        transformMixedEsModules: true,
-      }),
-
-      esbuild({
-        target: "es2022",
-        platform: "browser",
-        format: "esm",
-        jsx: "automatic",
-        sourceMap: false,
+      rollupNodeResolve(),
+      rollupCommonjs(),
+      rollupEsbuild({
         minify: true,
       }),
     ],
   });
 
-  await build.write({
-    dir: outputDir,
-    format: "esm",
-    sourcemap: false,
-    entryFileNames: (id: any) => {
-      if (id.name === "xanix-runtime") {
-        return "runtime.js";
-      }
-      return `pages/${id.name.toLowerCase()}.js`;
-    },
-    chunkFileNames: "chunks/[name]-[hash].js",
-    assetFileNames: "assets/[name]-[hash][extname]",
-  });
+  await build.write(bundlerOutput.client);
 
   await build.close();
 };

@@ -5,6 +5,7 @@ import path from "node:path";
 const root = process.cwd();
 import logger from "../include/logger.js";
 import { spawn } from "child_process";
+import { outDir } from "../bundler/config/output.js";
 let child: any;
 
 const build = async (rootEntry: string) => {
@@ -19,20 +20,20 @@ const build = async (rootEntry: string) => {
       logger.info(pc.green(`Build completed in ${duration}ms`), "complete");
     },
   });
-  // const filePath = path.join(root, ".xanix", "index.js");
-  // child = spawn(process.execPath, [filePath], {
-  //   stdio: "inherit",
-  // });
+  const filePath = path.join(outDir.server, "index.js");
+  child = spawn(process.execPath, [filePath], {
+    stdio: "inherit",
+  });
 
-  // process.on("SIGINT", () => {
-  //   child?.kill();
-  //   process.exit(0);
-  // });
+  process.on("SIGINT", () => {
+    child?.kill();
+    process.exit(0);
+  });
 
-  // process.on("SIGTERM", () => {
-  //   child?.kill();
-  //   process.exit(0);
-  // });
+  process.on("SIGTERM", () => {
+    child?.kill();
+    process.exit(0);
+  });
 };
 
 export default build;

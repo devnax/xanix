@@ -1,10 +1,10 @@
 import path from "node:path";
 import { rollup } from "rollup";
 import { build, type Plugin } from "esbuild";
-import esbuild from "rollup-plugin-esbuild";
-import url from "@rollup/plugin-url";
 import { XanixClientEntry } from "../types";
 import { createRequire } from "node:module";
+import xanixAssets from "./plugins/XanixAssets/index.js";
+import rollupEsbuild from "./plugins/rollupEsbuild.js";
 
 const require = createRequire(import.meta.url);
 
@@ -33,32 +33,11 @@ const GenerateGraph = async (entries: XanixClientEntry[]) => {
 
   const bundle = await rollup({
     input,
-
     plugins: [
-      url({
-        include: [
-          "**/*.jpg",
-          "**/*.jpeg",
-          "**/*.png",
-          "**/*.gif",
-          "**/*.webp",
-          "**/*.svg",
-          "**/*.ico",
-          "**/*.woff",
-          "**/*.woff2",
-          "**/*.ttf",
-          "**/*.eot",
-        ],
-
-        limit: 0,
-
-        fileName: "assets/[name]-[hash][extname]",
+      xanixAssets({
+        external: true,
       }),
-      esbuild({
-        target: "es2022",
-        platform: "browser",
-        format: "esm",
-        jsx: "automatic",
+      rollupEsbuild({
         sourceMap: true,
       }),
     ],

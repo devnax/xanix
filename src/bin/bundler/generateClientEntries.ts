@@ -1,9 +1,9 @@
 import { rollup } from "rollup";
 import path from "node:path";
-import esbuild from "rollup-plugin-esbuild";
+import rollupEsbuild from "./plugins/rollupEsbuild.js";
+import XanixAssets from "./plugins/XanixAssets/index.js";
 import { XanixClientEntry } from "../types.js";
 import { XanixEntryFinder } from "./plugins/XanixEntryFinder/index.js";
-import url from "@rollup/plugin-url";
 const root = process.cwd();
 
 const generateClientEntries = async (): Promise<XanixClientEntry[]> => {
@@ -11,32 +11,13 @@ const generateClientEntries = async (): Promise<XanixClientEntry[]> => {
   const bundle = await rollup({
     input: path.resolve(root, "index.tsx"),
     plugins: [
-      url({
-        include: [
-          "**/*.jpg",
-          "**/*.jpeg",
-          "**/*.png",
-          "**/*.gif",
-          "**/*.webp",
-          "**/*.svg",
-          "**/*.ico",
-          "**/*.woff",
-          "**/*.woff2",
-          "**/*.ttf",
-          "**/*.eot",
-        ],
-        limit: 0,
-        fileName: "assets/[name]-[hash][extname]",
+      XanixAssets({
+        external: true,
       }),
       XanixEntryFinder({
         entries,
       }),
-      esbuild({
-        target: "es2022",
-        platform: "node",
-        jsx: "automatic",
-        sourceMap: true,
-      }),
+      rollupEsbuild(),
     ],
 
     external(id) {

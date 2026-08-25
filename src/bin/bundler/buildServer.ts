@@ -1,13 +1,15 @@
 import { rollup } from "rollup";
 import path from "node:path";
+import bundlerOutput, { outDir } from "./config/output.js";
 import fs from "node:fs";
-import { nodeResolve } from "@rollup/plugin-node-resolve";
-import commonjs from "@rollup/plugin-commonjs";
-import esbuild from "rollup-plugin-esbuild";
 import { XanixTransform } from "./plugins/XanixTransform/index.js";
 import { createManifest } from "../include/manifest.js";
 import { XanixClientEntry } from "../types.js";
 import generateClientEntries from "./generateClientEntries.js";
+import xanixAssets from "./plugins/XanixAssets/index.js";
+import rollupEsbuild from "./plugins/rollupEsbuild.js";
+import rollupNodeResolve from "./plugins/nodeResolve.js";
+import rollupCommonjs from "./plugins/commonjs.js";
 
 const root = process.cwd();
 
@@ -17,14 +19,12 @@ export type WatcherOptions = {
 };
 
 const BuildServer = async ({ rootEntry, onBuildEnd }: WatcherOptions) => {
-  const outputDir = path.resolve(root, ".xanix");
-
-  fs.rmSync(outputDir, {
+  fs.rmSync(outDir.server, {
     recursive: true,
     force: true,
   });
 
-  fs.mkdirSync(outputDir, {
+  fs.mkdirSync(outDir.server, {
     recursive: true,
   });
 
@@ -44,102 +44,24 @@ const BuildServer = async ({ rootEntry, onBuildEnd }: WatcherOptions) => {
       warn(warning);
     },
     plugins: [
-      XanixTransform({}),
-
-      nodeResolve({
-        preferBuiltins: true,
-        extensions: [".mjs", ".js", ".json", ".node", ".ts", ".tsx", ".jsx"],
-      }),
-
-      commonjs({
-        include: /node_modules/,
-        extensions: [".js", ".cjs"],
-        transformMixedEsModules: true,
-      }),
-
-      esbuild({
-        target: "es2022",
-        platform: "node",
-        format: "esm",
-        jsx: "automatic",
+      xanixAssets(),
+      XanixTransform(),
+      rollupNodeResolve(false),
+      rollupCommonjs(),
+      rollupEsbuild({
         minify: true,
-        sourceMap: false,
       }),
     ],
 
     external(id) {
-      if (
-        id.startsWith("node:") ||
-        [
-          "assert",
-          "buffer",
-          "child_process",
-          "cluster",
-          "console",
-          "constants",
-          "crypto",
-          "dgram",
-          "diagnostics_channel",
-          "dns",
-          "dns/promises",
-          "domain",
-          "events",
-          "fs",
-          "fs/promises",
-          "http",
-          "http2",
-          "https",
-          "module",
-          "net",
-          "os",
-          "path",
-          "perf_hooks",
-          "process",
-          "punycode",
-          "querystring",
-          "readline",
-          "readline/promises",
-          "repl",
-          "stream",
-          "stream/promises",
-          "stream/web",
-          "string_decoder",
-          "sys",
-          "timers",
-          "timers/promises",
-          "tls",
-          "trace_events",
-          "tty",
-          "url",
-          "util",
-          "util/types",
-          "v8",
-          "vm",
-          "wasi",
-          "worker_threads",
-          "zlib",
-        ].includes(id)
-      ) {
-        return true;
-      }
-
       if (id.startsWith(".") || path.isAbsolute(id)) {
         return false;
       }
-
-      // Keep packages external
       return true;
     },
   });
 
-  await build.write({
-    dir: outputDir,
-    format: "esm",
-    sourcemap: false,
-    entryFileNames: "index.js",
-    // chunkFileNames: "chunks/[hash].js",
-    assetFileNames: "assets/[hash][extname]",
-  });
+  await build.write(bundlerOutput.server);
 
   await build.close();
   await onBuildEnd(entries);

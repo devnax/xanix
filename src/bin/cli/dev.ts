@@ -6,11 +6,12 @@ import watchClient from "../bundler/watchClient.js";
 import pc from "picocolors";
 import logger from "../include/logger.js";
 import { getEntries } from "../include/entry.js";
+import { outDir } from "../bundler/config/output.js";
 const root = process.cwd();
 let child: any;
 
 function start(loggin = true) {
-  const filePath = path.join(root, ".xanix", "index.js");
+  const filePath = path.join(outDir.server, "index.js");
   child = spawn(process.execPath, [filePath], {
     stdio: loggin ? "inherit" : "pipe",
   });

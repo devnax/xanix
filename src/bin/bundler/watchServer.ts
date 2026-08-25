@@ -1,15 +1,16 @@
 import { watch } from "rollup";
+import XanixAssets from "./plugins/XanixAssets/index.js";
 import path from "node:path";
 import fs from "node:fs";
-import { nodeResolve } from "@rollup/plugin-node-resolve";
-import commonjs from "@rollup/plugin-commonjs";
-import esbuild from "rollup-plugin-esbuild";
 import { XanixTransform } from "./plugins/XanixTransform/index.js";
 import { createManifest, readManifest } from "../include/manifest.js";
 import { XanixClientEntry } from "../types.js";
-import url from "@rollup/plugin-url";
 import generateClientEntries from "./generateClientEntries.js";
 import { entriesEqual } from "../include/entry.js";
+import rollupEsbuild from "./plugins/rollupEsbuild.js";
+import rollupNodeResolve from "./plugins/nodeResolve.js";
+import rollupCommonjs from "./plugins/commonjs.js";
+import bundlerOutput, { outDir } from "./config/output.js";
 
 const root = process.cwd();
 
@@ -33,14 +34,12 @@ const watchServer = async ({
   onServerChange,
   onClientEntryChange,
 }: WatcherOptions) => {
-  const outputDir = path.resolve(root, ".xanix");
-
-  fs.rmSync(outputDir, {
+  fs.rmSync(outDir.server, {
     recursive: true,
     force: true,
   });
 
-  fs.mkdirSync(outputDir, {
+  fs.mkdirSync(outDir.server, {
     recursive: true,
   });
 
@@ -51,25 +50,8 @@ const watchServer = async ({
     input: path.resolve(root, rootEntry),
 
     plugins: [
-      url({
-        include: [
-          "**/*.jpg",
-          "**/*.jpeg",
-          "**/*.png",
-          "**/*.gif",
-          "**/*.webp",
-          "**/*.svg",
-          "**/*.ico",
-          "**/*.woff",
-          "**/*.woff2",
-          "**/*.ttf",
-          "**/*.eot",
-        ],
-
-        // Always emit a physical file.
-        limit: 0,
-
-        fileName: "assets/[name]-[hash][extname]",
+      XanixAssets({
+        external: false,
       }),
       XanixTransform({
         onChange: async (entry, change) => {
@@ -96,102 +78,21 @@ const watchServer = async ({
           onChange?.(entry, change?.event);
         },
       }),
-
-      nodeResolve({
-        preferBuiltins: true,
-        extensions: [".mjs", ".js", ".json", ".node", ".ts", ".tsx", ".jsx"],
-      }),
-
-      commonjs({
-        include: /node_modules/,
-        extensions: [".js", ".cjs"],
-        transformMixedEsModules: true,
-      }),
-
-      esbuild({
-        target: "es2022",
-        platform: "node",
-        format: "esm",
-        jsx: "automatic",
+      rollupNodeResolve(false),
+      rollupCommonjs(),
+      rollupEsbuild({
         sourceMap: true,
-        include: /\.(mjs|js|cjs|ts|tsx|jsx)$/,
       }),
     ],
 
     external(id) {
-      // Node built-ins
-      if (
-        id.startsWith("node:") ||
-        [
-          "assert",
-          "buffer",
-          "child_process",
-          "cluster",
-          "console",
-          "constants",
-          "crypto",
-          "dgram",
-          "diagnostics_channel",
-          "dns",
-          "dns/promises",
-          "domain",
-          "events",
-          "fs",
-          "fs/promises",
-          "http",
-          "http2",
-          "https",
-          "module",
-          "net",
-          "os",
-          "path",
-          "perf_hooks",
-          "process",
-          "punycode",
-          "querystring",
-          "readline",
-          "readline/promises",
-          "repl",
-          "stream",
-          "stream/promises",
-          "stream/web",
-          "string_decoder",
-          "sys",
-          "timers",
-          "timers/promises",
-          "tls",
-          "trace_events",
-          "tty",
-          "url",
-          "util",
-          "util/types",
-          "v8",
-          "vm",
-          "wasi",
-          "worker_threads",
-          "zlib",
-        ].includes(id)
-      ) {
-        return true;
-      }
-
-      // Relative imports and absolute project files
       if (id.startsWith(".") || path.isAbsolute(id)) {
         return false;
       }
-
-      // Keep packages external
       return true;
     },
 
-    output: {
-      dir: outputDir,
-      format: "esm",
-      sourcemap: true,
-      entryFileNames: "index.js",
-      chunkFileNames: "chunks/[name].js",
-      assetFileNames: "assets/[name]-[hash][extname]",
-    },
+    output: bundlerOutput.server,
 
     watch: {
       clearScreen: false,

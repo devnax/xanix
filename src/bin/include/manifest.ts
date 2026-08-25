@@ -9,9 +9,9 @@ export const createManifest = async (entries: XanixClientEntry[]) => {
     entries: [...entries.values()],
   };
   readedManifest = manifest;
-  const outputDir = path.resolve(process.cwd(), ".xanix");
+  const outDir = path.resolve(process.cwd(), ".xanix");
   fs.writeFileSync(
-    path.resolve(outputDir, "client-manifest.json"),
+    path.resolve(outDir, "client-manifest.json"),
     JSON.stringify(manifest, null, 2),
   );
 };

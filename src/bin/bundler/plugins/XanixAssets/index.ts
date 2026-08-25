@@ -1,43 +1,24 @@
-import path from "node:path";
-import type { Plugin } from "rollup";
+import url from "@rollup/plugin-url";
 
-type XanixAssetsOptions = {
-  external?: boolean;
+const xanixAssets = (options?: { external: boolean }) => {
+  return url({
+    include: [
+      "**/*.jpg",
+      "**/*.jpeg",
+      "**/*.png",
+      "**/*.gif",
+      "**/*.webp",
+      "**/*.svg",
+      "**/*.ico",
+      "**/*.woff",
+      "**/*.woff2",
+      "**/*.ttf",
+      "**/*.eot",
+    ],
+    limit: 0,
+    fileName: "assets/[name]-[hash][extname]",
+    emitFiles: !(options?.external ?? false),
+  });
 };
 
-const assetRegex = /\.(png|jpe?g|gif|webp|svg|ico|woff|woff2|ttf|eot)$/i;
-
-export default function xanixAssets(options: XanixAssetsOptions = {}): Plugin {
-  return {
-    name: "xanix-assets",
-
-    resolveId(source, importer) {
-      if (!assetRegex.test(source)) {
-        return null;
-      }
-
-      if (options.external) {
-        // Let Rollup treat the asset as an external module.
-        return {
-          id: source,
-          external: true,
-        };
-      }
-
-      if (!importer) {
-        return null;
-      }
-
-      return path.resolve(path.dirname(importer), source);
-    },
-
-    load(id) {
-      if (options.external || !assetRegex.test(id)) {
-        return null;
-      }
-
-      const url = "/" + path.relative(process.cwd(), id).replace(/\\/g, "/");
-      return `export default ${JSON.stringify(url)};`;
-    },
-  };
-}
+export default xanixAssets;

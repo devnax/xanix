@@ -9,12 +9,12 @@ export type XanixPluginOptions = {
   ) => Promise<void>;
 };
 
-export function XanixTransform({ onChange }: XanixPluginOptions): Plugin {
+export function XanixTransform(option?: XanixPluginOptions): Plugin {
   return {
     name: "xanix-transform",
     async watchChange(id, change) {
       const file = path.resolve(id).replaceAll("\\", "/");
-      await onChange?.(file, change);
+      await option?.onChange?.(file, change);
     },
 
     async transform(code, id) {
