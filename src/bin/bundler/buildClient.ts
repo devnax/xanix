@@ -56,7 +56,7 @@ const buildClient = async (entries: XanixClientEntry[]) => {
     ],
   });
 
-  await build.write(bundlerOutput.client);
+  await build.write(bundlerOutput.client(entries));
 
   await build.close();
 };

@@ -20,16 +20,3 @@ declare global {
 }
 
 export {};
-
-export type XanixPageData = {
-  title: string;
-  meta: Map<string, string>;
-  styles: Set<string>;
-  scripts: {
-    src: string;
-    type?: string | undefined;
-    placement: "head" | "body";
-  }[];
-  headerHtml: string;
-  footerHtml: string;
-};

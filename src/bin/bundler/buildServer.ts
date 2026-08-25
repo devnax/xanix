@@ -61,7 +61,7 @@ const BuildServer = async ({ rootEntry, onBuildEnd }: WatcherOptions) => {
     },
   });
 
-  await build.write(bundlerOutput.server);
+  await build.write(bundlerOutput.server());
 
   await build.close();
   await onBuildEnd(entries);

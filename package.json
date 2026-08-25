@@ -4,7 +4,7 @@
   "description": "",
   "main": "dist/index.js",
   "module": "dist/index.js",
-  "types": "./dist/types.d.ts",
+  "types": "./dist/index.d.ts",
   "bin": "./dist/bin/index.js",
   "type": "module",
   "files": [
@@ -26,6 +26,10 @@
     "./page": {
       "import": "./dist/page.js",
       "require": "./dist/page.js"
+    },
+    "./navigate": {
+      "import": "./dist/navigate.js",
+      "require": "./dist/navigate.js"
     }
   },
   "scripts": {

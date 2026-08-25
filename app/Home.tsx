@@ -1,11 +1,10 @@
 import React, { useEffect } from "react";
-import { XanixPageProps } from "xanix";
 import Button from "@xanui/ui/Button";
 import { createTheme, ThemeProvider } from "@xanui/core";
-
 import img from "./image.png";
+import { navigate } from "xanix/navigate";
 
-export type HomeProps = XanixPageProps & {
+export type HomeProps = {
   name: string;
   products: Array<{
     name: string;
@@ -13,7 +12,7 @@ export type HomeProps = XanixPageProps & {
   }>;
 };
 
-const Home = ({ name, products, document }: HomeProps) => {
+const Home = ({ name, products }: HomeProps) => {
   const [count, setCount] = React.useState(0);
   useEffect(() => {
     const interval = setInterval(() => {
@@ -25,9 +24,9 @@ const Home = ({ name, products, document }: HomeProps) => {
   return (
     <ThemeProvider theme={createTheme({ mode: "light", name: "default" })}>
       {name} {count}
-      <div>{document?.metadata?.title}</div>
       <Button onClick={() => alert("Button clicked!")}>Click</Button>
-      <button>well s</button>
+      <button onClick={() => navigate("/about")}>About</button>
+      <button onClick={() => navigate("/product")}>Product</button>
       <img width={40} src={img} alt="Example" />
       <ul>
         {products.map(

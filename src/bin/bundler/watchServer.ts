@@ -92,7 +92,7 @@ const watchServer = async ({
       return true;
     },
 
-    output: bundlerOutput.server,
+    output: bundlerOutput.server(),
 
     watch: {
       clearScreen: false,

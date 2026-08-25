@@ -48,12 +48,12 @@ const WatchClient = async (
       }),
       rollupNodeResolve(),
       rollupCommonjs(),
-      xanixHydrate(entries),
+      // xanixHydrate(entries),
       rollupEsbuild({
         sourceMap: true,
       }),
     ],
-    output: bundlerOutput.client,
+    output: bundlerOutput.client(entries),
     watch: {
       clearScreen: false,
     },

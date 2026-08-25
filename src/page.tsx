@@ -1,6 +1,7 @@
-import { renderToPipeableStream } from "react-dom/server";
+import { renderToPipeableStream, renderToString } from "react-dom/server";
 import readManifest from "./readManifest.js";
 import { PassThrough } from "node:stream";
+import { XanixPageData } from "./types.js";
 export interface XanixProps {
   clientId: string;
   req: any;
@@ -11,9 +12,7 @@ export interface XanixProps {
 function renderPage(element: React.ReactElement): Promise<string> {
   return new Promise((resolve, reject) => {
     let html = "";
-
     const stream = new PassThrough();
-
     stream.on("data", (chunk) => {
       html += chunk.toString();
     });
@@ -44,10 +43,14 @@ export default async function xanix_page({
 }: XanixProps) {
   const manifest = await readManifest();
   const entry = manifest.entries.find((item) => item.id === clientId);
-  console.log(entry);
+  const props: Record<string, any> = component.props || {};
 
-  if ("XANIX_PAGE" in req.headers) {
-    return res.send(JSON.stringify({ page: {}, props: component.props }));
+  if ("x-navigation" in req.headers) {
+    res.json({
+      pageId: clientId,
+      props,
+    });
+    return;
   }
 
   if (!entry) {
@@ -57,6 +60,50 @@ export default async function xanix_page({
   }
 
   const html = await renderPage(component);
+  const {
+    title,
+    meta,
+    scripts,
+    styles,
+    headerHtml,
+    footerHtml,
+  }: XanixPageData = req.xanixPageData || {};
+
+  let metaTags = "";
+  if (meta && Array.isArray(meta)) {
+    metaTags = meta
+      .map((m) => `<meta name="${m.name}" content="${m.content}" />`)
+      .join("\n");
+  }
+
+  let headScriptTags = "";
+  let footerScriptTags = "";
+  if (scripts && Array.isArray(scripts)) {
+    scripts.forEach((s) => {
+      const tag = `<script src="${s.src}" type="${s.type || "text/javascript"}"></script>`;
+      if (s.placement === "head") {
+        headScriptTags += tag + "\n";
+      } else {
+        footerScriptTags += tag + "\n";
+      }
+    });
+  }
+
+  let styleTags = "";
+  if (styles && Array.isArray(styles)) {
+    styleTags = styles
+      .map((s) => `<link rel="stylesheet" href="${s.href}" />`)
+      .join("\n");
+  }
+
+  let headerContent = "";
+  let footerContent = "";
+  if (headerHtml) {
+    headerContent = renderToString(headerHtml);
+  }
+  if (footerHtml) {
+    footerContent = renderToString(footerHtml);
+  }
 
   return `
 <!DOCTYPE html>
@@ -64,15 +111,22 @@ export default async function xanix_page({
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>${entry.name}</title>
+    <title>${title || entry.name}</title>
     <script type="module" src="/.xanix/client/runtime.js"></script>
+    ${metaTags}
+    ${styleTags}
+    ${headScriptTags}
+    ${headerContent}
   </head>
   <body>
-    <div id="root">${html}</div>
-    <script type="module" >
-      window.PAGE_PROPS = ${JSON.stringify(component.props)};
-    </script>
-    <script type="module" src="/.xanix/client/pages/${entry.name.toLowerCase()}.js"></script>
+    <div id="root" page="${clientId}">
+      ${html}
+      <script type="module" >
+        window.PAGE_PROPS = ${JSON.stringify(props)};
+      </script>
+    </div>
+    ${footerContent}
+    ${footerScriptTags}
   </body>
 </html>
   `;
