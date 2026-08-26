@@ -1,5 +1,7 @@
 import type { ComponentType } from "react";
 import { createRoot, type Root } from "react-dom/client";
+import React from "react";
+export const RouteContext = React.createContext<string>("");
 
 type Page = {
   component: ComponentType<any>;
@@ -17,10 +19,7 @@ type XanixRootElement = HTMLElement & {
 export const getPath = () => {
   const path = window.location.pathname;
   const search = window.location.search;
-  if (search) {
-    return `${path}${search}`;
-  }
-  return path;
+  return search ? `${path}${search}` : path;
 };
 
 export const getImportUrl = (pageId: string) => {
@@ -39,7 +38,6 @@ function getRoot(ele: XanixRootElement): Root {
   if (!ele[ROOT_KEY]) {
     ele[ROOT_KEY] = createRoot(ele);
   }
-
   return ele[ROOT_KEY];
 }
 
@@ -62,43 +60,53 @@ export function mount(path: string, page: Page) {
   pages.set(path, page);
   const { component: Component, props } = page;
   root.render(<Component {...props} />);
-  const host = window.location.origin;
-  window.history.pushState({}, "", `${host}${path}`);
 }
 
-export const navigate = async (path: string) => {
+export const reload = async () => {
+  const path = getPath();
   let page: any = await getPage(path);
-  const mod = await import(getImportUrl(page.pageId));
-  const Component = mod.default;
-
+  const mod = await import(getImportUrl(page.pageId) + `?t=${Date.now()}`);
   mount(path, {
     pageId: page.pageId,
-    component: Component,
+    component: mod.default,
     props: page.props,
   });
 };
 
 if (typeof window !== "undefined") {
-  window.addEventListener("load", async () => {
-    const ele = getElement();
-    const pageId = ele.getAttribute("page");
-    if (!pageId) {
-      throw new Error("Page ID not found");
-    }
-
+  (window as any).xanix = async (data: { pageId: string; props: any }) => {
+    const { pageId, props } = data;
     const mod = await import(getImportUrl(pageId));
-    const Component = mod.default;
-    const props = (window as any).PAGE_PROPS;
 
     mount(getPath(), {
       pageId,
-      component: Component,
+      component: mod.default,
       props,
     });
-  });
+    const scriptTag = document.getElementById("xanix-data");
+    if (scriptTag) {
+      scriptTag.remove();
+    }
+  };
 
   window.addEventListener("popstate", async () => {
     const path = getPath();
-    await navigate(path);
+    let page: any = await getPage(path);
+    const mod = await import(getImportUrl(page.pageId));
+    mount(path, {
+      pageId: page.pageId,
+      component: mod.default,
+      props: page.props,
+    });
   });
 }
+
+const ws = new WebSocket("ws://localhost:8080");
+
+ws.onopen = () => {
+  ws.send("Hello");
+};
+
+ws.onmessage = async (event) => {
+  await reload();
+};

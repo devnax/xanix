@@ -7,24 +7,57 @@ import pc from "picocolors";
 import logger from "../include/logger.js";
 import { getEntries } from "../include/entry.js";
 import { outDir } from "../bundler/config/output.js";
+import { WebSocketServer } from "ws";
+
 const root = process.cwd();
 let child: any;
 
-function start(loggin = true) {
-  const filePath = path.join(outDir.server, "index.js");
-  child = spawn(process.execPath, [filePath], {
-    stdio: loggin ? "inherit" : "pipe",
+// function start(loggin = true) {
+//   const filePath = path.join(outDir.server, "index.js");
+//   child = spawn(process.execPath, [filePath], {
+//     stdio: loggin ? "inherit" : "pipe",
+//   });
+// }
+
+function start(logging = true): Promise<any> {
+  return new Promise((resolve, reject) => {
+    const filePath = path.join(outDir.server, "index.js");
+    child = spawn(process.execPath, [filePath], {
+      stdio: logging ? "inherit" : "pipe",
+    });
+    resolve(child);
   });
 }
 
-function restart(loggin = false) {
+async function restart(logging = false) {
   child?.kill();
-  start(loggin);
+  await start(logging);
 }
 
 const dev = async (rootEntry: string) => {
   let clientWatcher: RollupWatcher | null = null;
   let firstBuild = true;
+
+  const wss = new WebSocketServer({
+    port: 8080,
+  });
+
+  let sockets = new Set<any>();
+
+  const broadcast = (message: string) => {
+    sockets.forEach((socket: any) => {
+      if (socket.readyState === 1) {
+        socket.send(message);
+      }
+    });
+  };
+
+  wss.on("connection", (ws) => {
+    sockets.add(ws);
+    ws.on("close", () => {
+      sockets.delete(ws);
+    });
+  });
 
   const watch = await watchServer({
     rootEntry,
@@ -35,7 +68,10 @@ const dev = async (rootEntry: string) => {
       );
     },
     async onClientChange() {
-      restart(false);
+      await restart(false);
+      setTimeout(() => {
+        broadcast("reload");
+      }, 100);
     },
     async onClientEntryChange() {
       const entries = await getEntries();
@@ -47,9 +83,9 @@ const dev = async (rootEntry: string) => {
         firstBuild = false;
         const entries = await getEntries();
         clientWatcher = await watchClient(entries);
-        start();
+        await start();
       } else {
-        restart();
+        await restart();
       }
     },
   });

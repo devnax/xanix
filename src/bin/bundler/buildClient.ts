@@ -17,7 +17,7 @@ const buildClient = async (entries: XanixClientEntry[]) => {
     input[entry.name] = entry.file;
   }
 
-  input["xanix-runtime"] = require.resolve("xanix/runtime-client");
+  input["xanix-runtime"] = require.resolve("xanix/runtime");
 
   fs.rmSync(outDir.client, {
     recursive: true,

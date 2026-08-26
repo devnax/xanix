@@ -1,6 +1,5 @@
-import type { Express } from "express";
 import express from "express";
-import { XanixPageData } from "./types";
+import { XanixPageData } from "../types";
 
 export interface XanixProps {
   clientId: string;
@@ -9,7 +8,12 @@ export interface XanixProps {
   component: React.ReactElement;
 }
 
-export default async function xanix_runtime(app: Express) {
+type Options = {
+  mode: "watch" | "start";
+};
+
+export function createXanixServer(options: Options): express.Express {
+  const app = express();
   app.use("/.xanix/client", express.static(".xanix/client"));
   app.use("/.xanix/cache", express.static(".xanix/cache"));
   app.use(
@@ -64,4 +68,6 @@ export default async function xanix_runtime(app: Express) {
 
     next();
   });
+
+  return app;
 }

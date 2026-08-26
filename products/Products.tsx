@@ -1,12 +1,11 @@
 import React from "react";
-import { navigate } from "xanix/navigate";
+import { Link, navigate } from "../src/client";
 
 const Products = ({ products }: any) => {
   return (
     <div>
       <button onClick={() => navigate("/")}>Home</button>
-      <button onClick={() => navigate("/about")}>About</button>
-
+      <Link href="/about">About s</Link>
       <ul>
         {products.map((product: any, index: number) => (
           <li key={index}>

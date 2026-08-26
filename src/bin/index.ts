@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+
 import { Command } from "commander";
 import dev from "./cli/dev.js";
 import start from "./cli/start.js";

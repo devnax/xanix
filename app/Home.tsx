@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import Button from "@xanui/ui/Button";
 import { createTheme, ThemeProvider } from "@xanui/core";
 import img from "./image.png";
-import { navigate } from "xanix/navigate";
+import { navigate } from "../src/client";
 
 export type HomeProps = {
   name: string;

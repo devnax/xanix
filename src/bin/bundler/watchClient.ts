@@ -10,9 +10,8 @@ import XanixResolveCacheDeps from "./plugins/XanixResolveCacheDeps/index.js";
 import rollupEsbuild from "./plugins/rollupEsbuild.js";
 import rollupNodeResolve from "./plugins/nodeResolve.js";
 import rollupCommonjs from "./plugins/commonjs.js";
-
+import xanixReactRefresh from "./plugins/XanixReactRefresh.js";
 const require = createRequire(import.meta.url);
-import xanixHydrate from "./plugins/XanixHydrate.js";
 
 const WatchClient = async (
   entries: XanixClientEntry[],
@@ -23,7 +22,7 @@ const WatchClient = async (
     input[entry.name] = entry.file;
   }
 
-  input["xanix-runtime"] = require.resolve("xanix/runtime-client");
+  input["xanix-runtime"] = require.resolve("xanix/runtime");
 
   fs.rmSync(outDir.client, {
     recursive: true,
@@ -38,6 +37,32 @@ const WatchClient = async (
   const watcher = watch({
     input,
     plugins: [
+      // add react-refresh in xanix-runtime
+      // {
+      //   name: "xanix-react-refresh",
+      //   resolveId(id) {
+      //     if (id === "xanix/runtime") {
+      //       return require.resolve("xanix/runtime");
+      //     }
+      //     return null;
+      //   },
+      //   load(id) {
+      //     if (id === require.resolve("xanix/runtime")) {
+      //       console.log(id);
+
+      //       const code = fs.readFileSync(id, "utf-8");
+      //       const modifiedCode = `${code}
+      //         import RefreshRuntime from 'react-refresh/runtime';
+      //         RefreshRuntime.injectIntoGlobalHook(window);
+      //         window.$RefreshReg$ = () => {};
+      //         window.$RefreshSig$ = () => (type) => type;
+      //       `;
+      //       return modifiedCode;
+      //     }
+      //     return null;
+      //   },
+      // },
+
       XanixAssets({
         external: true,
       }),
@@ -49,9 +74,11 @@ const WatchClient = async (
       rollupNodeResolve(),
       rollupCommonjs(),
       // xanixHydrate(entries),
+
       rollupEsbuild({
         sourceMap: true,
       }),
+      // xanixReactRefresh(),
     ],
     output: bundlerOutput.client(entries),
     watch: {

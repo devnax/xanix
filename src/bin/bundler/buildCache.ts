@@ -29,7 +29,7 @@ const GenerateGraph = async (entries: XanixClientEntry[]) => {
     input[entry.name] = entry.file;
   }
 
-  input["xanix-runtime"] = require.resolve("xanix/runtime-client");
+  input["xanix-runtime"] = require.resolve("xanix/runtime");
 
   const bundle = await rollup({
     input,

@@ -45,7 +45,7 @@ const BuildServer = async ({ rootEntry, onBuildEnd }: WatcherOptions) => {
     },
     plugins: [
       xanixAssets(),
-      XanixTransform(),
+      XanixTransform({ mode: "start" }),
       rollupNodeResolve(false),
       rollupCommonjs(),
       rollupEsbuild({

@@ -3,13 +3,14 @@ import { transformer } from "./transformer.js";
 import path from "node:path";
 
 export type XanixPluginOptions = {
+  mode: "watch" | "start";
   onChange?: (
     id: string,
     change?: { event: "update" | "delete" | "create" },
   ) => Promise<void>;
 };
 
-export function XanixTransform(option?: XanixPluginOptions): Plugin {
+export function XanixTransform(option: XanixPluginOptions): Plugin {
   return {
     name: "xanix-transform",
     async watchChange(id, change) {
@@ -22,7 +23,7 @@ export function XanixTransform(option?: XanixPluginOptions): Plugin {
         return null;
       }
 
-      const result = transformer(code, id);
+      const result = transformer(code, id, option.mode);
       if (!result) {
         return null;
       }

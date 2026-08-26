@@ -11,7 +11,7 @@ export interface XanixTransformResult {
   map: any;
 }
 
-const RUNTIME_IMPORT = "xanix/runtime";
+const SERVER_IMPORT = "xanix/server";
 const PAGE_IMPORT = "xanix/page";
 
 const SOURCE_EXTENSIONS = [".tsx", ".ts", ".jsx", ".js", ".mjs", ".cjs"];
@@ -174,11 +174,13 @@ function removeEmptyImportDeclarations(ast: t.File): void {
 /**
  * Create:
  *
- * const Home = (await import("./Home")).default;
+ * const Home =
+ *   (await import("./Home")).default;
  *
  * or:
  *
- * const Home = (await import("./Home")).Home;
+ * const Home =
+ *   (await import("./Home")).Home;
  */
 function createDynamicComponentImport(
   componentName: string,
@@ -209,6 +211,8 @@ function createDynamicComponentImport(
  * const app = express();
  * const exp = express();
  * const server = express();
+ *
+ * Returns the variable name.
  */
 function findExpressAppVariable(ast: t.File): string | null {
   for (const statement of ast.program.body) {
@@ -241,78 +245,25 @@ function findExpressAppVariable(ast: t.File): string | null {
 }
 
 /**
- * Check:
+ * Replace:
  *
- * xanixRuntime(app)
+ * const app = express();
  *
- * or:
+ * with:
  *
- * xanixRuntime(server)
+ * const app = createXanixServer();
  */
-function hasXanixRuntime(ast: t.File, expressVariable: string): boolean {
-  let found = false;
-
-  traverse(ast, {
-    CallExpression(callPath) {
-      const call = callPath.node;
-
-      if (
-        !t.isIdentifier(call.callee, {
-          name: "xanixRuntime",
-        })
-      ) {
-        return;
-      }
-
-      const argument = call.arguments[0];
-
-      if (
-        t.isIdentifier(argument, {
-          name: expressVariable,
-        })
-      ) {
-        found = true;
-      }
-    },
-  });
-
-  return found;
-}
-
-/**
- * Create:
- *
- * xanixRuntime(app);
- */
-function createXanixRuntime(expressVariable: string): t.ExpressionStatement {
-  return t.expressionStatement(
-    t.callExpression(t.identifier("xanixRuntime"), [
-      t.identifier(expressVariable),
-    ]),
-  );
-}
-
-/**
- * Inject:
- *
- * xanixRuntime(app);
- */
-function injectXanixRuntime(ast: t.File): void {
+function transformExpressAppTocreateXanixServer(
+  ast: t.File,
+  args: { mode: "watch" | "start" },
+): boolean {
   const expressVariable = findExpressAppVariable(ast);
 
   if (!expressVariable) {
-    return;
+    return false;
   }
 
-  if (hasXanixRuntime(ast, expressVariable)) {
-    return;
-  }
-
-  const runtime = createXanixRuntime(expressVariable);
-
-  for (let i = 0; i < ast.program.body.length; i++) {
-    const statement = ast.program.body[i];
-
+  for (const statement of ast.program.body) {
     if (!t.isVariableDeclaration(statement)) {
       continue;
     }
@@ -326,16 +277,164 @@ function injectXanixRuntime(ast: t.File): void {
         continue;
       }
 
-      ast.program.body.splice(i + 1, 0, runtime);
+      if (!t.isCallExpression(declaration.init)) {
+        continue;
+      }
 
-      return;
+      if (
+        !t.isIdentifier(declaration.init.callee, {
+          name: "express",
+        })
+      ) {
+        continue;
+      }
+      // Replace express() with createXanixServer({ mode: "watch" | "start" })
+      declaration.init = t.callExpression(t.identifier("createXanixServer"), [
+        t.objectExpression([
+          t.objectProperty(t.identifier("mode"), t.stringLiteral(args.mode)),
+        ]),
+      ]);
+
+      return true;
     }
   }
+
+  return false;
+}
+
+/**
+ * Remove:
+ *
+ * import express from "express";
+ *
+ * once express() has been replaced by
+ * createXanixServer().
+ *
+ * Also handles:
+ *
+ * import express, { Router } from "express";
+ */
+function removeExpressImport(ast: t.File): void {
+  for (const statement of ast.program.body) {
+    if (!t.isImportDeclaration(statement)) {
+      continue;
+    }
+
+    if (statement.source.value !== "express") {
+      continue;
+    }
+
+    statement.specifiers = statement.specifiers.filter((specifier) => {
+      return !(
+        t.isImportDefaultSpecifier(specifier) &&
+        specifier.local.name === "express"
+      );
+    });
+  }
+
+  removeEmptyImportDeclarations(ast);
+}
+
+/**
+ * Check whether createXanixServer is already
+ * imported from xanix/server.
+ */
+function hascreateXanixServerImport(ast: t.File): boolean {
+  for (const statement of ast.program.body) {
+    if (!t.isImportDeclaration(statement)) {
+      continue;
+    }
+
+    if (statement.source.value !== SERVER_IMPORT) {
+      continue;
+    }
+
+    for (const specifier of statement.specifiers) {
+      if (
+        t.isImportSpecifier(specifier) &&
+        t.isIdentifier(specifier.imported) &&
+        specifier.imported.name === "createXanixServer"
+      ) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Add:
+ *
+ * import { createXanixServer } from "xanix/server";
+ */
+function injectcreateXanixServerImport(ast: t.File): void {
+  if (hascreateXanixServerImport(ast)) {
+    return;
+  }
+
+  ast.program.body.unshift(
+    t.importDeclaration(
+      [
+        t.importSpecifier(
+          t.identifier("createXanixServer"),
+          t.identifier("createXanixServer"),
+        ),
+      ],
+      t.stringLiteral(SERVER_IMPORT),
+    ),
+  );
+}
+
+/**
+ * Check whether xanix/page is already
+ * imported.
+ */
+function hasPageImport(ast: t.File): boolean {
+  for (const statement of ast.program.body) {
+    if (!t.isImportDeclaration(statement)) {
+      continue;
+    }
+
+    if (statement.source.value !== PAGE_IMPORT) {
+      continue;
+    }
+
+    for (const specifier of statement.specifiers) {
+      if (
+        t.isImportDefaultSpecifier(specifier) &&
+        specifier.local.name === "xanixPage"
+      ) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Add:
+ *
+ * import xanixPage from "xanix/page";
+ */
+function injectPageImport(ast: t.File): void {
+  if (hasPageImport(ast)) {
+    return;
+  }
+
+  ast.program.body.unshift(
+    t.importDeclaration(
+      [t.importDefaultSpecifier(t.identifier("xanixPage"))],
+      t.stringLiteral(PAGE_IMPORT),
+    ),
+  );
 }
 
 export function transformer(
   code: string,
   id: string,
+  mode: "watch" | "start",
 ): XanixTransformResult | null {
   const ast = parse(code, {
     sourceType: "module",
@@ -344,22 +443,7 @@ export function transformer(
 
   let changed = false;
 
-  let runtimeImported = false;
-  let pageImported = false;
-
   traverse(ast, {
-    ImportDeclaration(importPath) {
-      const source = importPath.node.source.value;
-
-      if (source === RUNTIME_IMPORT) {
-        runtimeImported = true;
-      }
-
-      if (source === PAGE_IMPORT) {
-        pageImported = true;
-      }
-    },
-
     CallExpression(callPath) {
       const call = callPath.node;
 
@@ -418,15 +502,12 @@ export function transformer(
       }
 
       const componentImportPath = componentImport.file;
-
       const componentFile = resolveComponentFile(id, componentImportPath);
-
       if (!path.isAbsolute(componentFile)) {
         return;
       }
 
       const normalizedFile = normalizeFilePath(componentFile);
-
       const clientId = createClientId(normalizedFile);
 
       /**
@@ -454,7 +535,6 @@ export function transformer(
        * res.send(<Home />);
        */
       const statementPath = callPath.getStatementParent();
-
       if (statementPath) {
         statementPath.insertBefore(dynamicImport);
       }
@@ -518,24 +598,33 @@ export function transformer(
   }
 
   /**
-   * Remove empty imports:
+   * Change:
    *
-   * import Home from "./Home";
+   * const app = express();
+   *
+   * into:
+   *
+   * const app = createXanixServer();
    */
-  removeEmptyImportDeclarations(ast);
+  const serverTransformed = transformExpressAppTocreateXanixServer(ast, {
+    mode,
+  });
 
-  /**
-   * Add:
-   *
-   * import xanixRuntime from "xanix/runtime";
-   */
-  if (!runtimeImported) {
-    ast.program.body.unshift(
-      t.importDeclaration(
-        [t.importDefaultSpecifier(t.identifier("xanixRuntime"))],
-        t.stringLiteral(RUNTIME_IMPORT),
-      ),
-    );
+  if (serverTransformed) {
+    /**
+     * Remove:
+     *
+     * import express from "express";
+     */
+    removeExpressImport(ast);
+
+    /**
+     * Add:
+     *
+     * import { createXanixServer }
+     *   from "xanix/server";
+     */
+    injectcreateXanixServerImport(ast);
   }
 
   /**
@@ -543,21 +632,12 @@ export function transformer(
    *
    * import xanixPage from "xanix/page";
    */
-  if (!pageImported) {
-    ast.program.body.unshift(
-      t.importDeclaration(
-        [t.importDefaultSpecifier(t.identifier("xanixPage"))],
-        t.stringLiteral(PAGE_IMPORT),
-      ),
-    );
-  }
+  injectPageImport(ast);
 
   /**
-   * Inject:
-   *
-   * xanixRuntime(app);
+   * Remove empty imports.
    */
-  injectXanixRuntime(ast);
+  removeEmptyImportDeclarations(ast);
 
   const output = generate(ast, {}, code);
 

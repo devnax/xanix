@@ -54,6 +54,7 @@ const watchServer = async ({
         external: false,
       }),
       XanixTransform({
+        mode: "watch",
         onChange: async (entry, change) => {
           const manifest = await readManifest();
           if (!manifest) return;

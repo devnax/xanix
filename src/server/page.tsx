@@ -1,7 +1,7 @@
 import { renderToPipeableStream, renderToString } from "react-dom/server";
 import readManifest from "./readManifest.js";
 import { PassThrough } from "node:stream";
-import { XanixPageData } from "./types.js";
+import { XanixPageData } from "../types.js";
 export interface XanixProps {
   clientId: string;
   req: any;
@@ -44,6 +44,11 @@ export default async function xanix_page({
   const manifest = await readManifest();
   const entry = manifest.entries.find((item) => item.id === clientId);
   const props: Record<string, any> = component.props || {};
+  const method = req.method.toUpperCase();
+  if (method !== "GET") {
+    res.status(405).send("Method Not Allowed");
+    return;
+  }
 
   if ("x-navigation" in req.headers) {
     res.json({
@@ -119,10 +124,10 @@ export default async function xanix_page({
     ${headerContent}
   </head>
   <body>
-    <div id="root" page="${clientId}">
+    <div id="root">
       ${html}
-      <script type="module" >
-        window.PAGE_PROPS = ${JSON.stringify(props)};
+      <script type="module" id="xanix-data">
+        window.xanix(${JSON.stringify({ props, pageId: clientId })});
       </script>
     </div>
     ${footerContent}
