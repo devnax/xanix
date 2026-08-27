@@ -90,7 +90,9 @@ const dev = async (rootEntry: string) => {
         const entries = await getEntries();
         await clientWatcher(entries);
       }
-      await start();
+      setTimeout(async () => {
+        await start();
+      }, 400);
     },
   });
 

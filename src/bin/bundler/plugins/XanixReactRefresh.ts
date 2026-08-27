@@ -65,7 +65,10 @@ if (typeof window !== "undefined") {
     },
 
     transform(code, id) {
-      if (id.includes("node_modules") || id.includes("xanix\\dist")) {
+      if (path.resolve(id) === require.resolve("xanix/runtime")) {
+        return null;
+      }
+      if (id.includes("node_modules") || id.includes("xanix/dist")) {
         return null;
       }
 

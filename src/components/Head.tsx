@@ -20,7 +20,7 @@ const Head = ({ children }: HeadProps) => {
         `,
         }}
       ></script>
-      {runtime && <script type="module" src={runtime}></script>}
+      <script type="module" src={"/.xanix/client/xanix-runtime.js"}></script>
     </head>
   );
 };
