@@ -3,17 +3,9 @@ import "express";
 declare global {
   namespace Express {
     interface Request {
-      page: {
+      document: {
         setTitle(title: string): void;
         setMeta(name: string, content: string): void;
-        setStyle(href: string): void;
-        setScript(
-          src: string,
-          type?: string,
-          placement?: "head" | "body",
-        ): void;
-        setHeaderHtml(content: string): void;
-        setFooterHtml(content: string): void;
       };
     }
   }
@@ -21,15 +13,10 @@ declare global {
 
 export {};
 
-export type XanixPageData = {
+export type XanixDocumentData = {
+  pageId: string;
+  props: Record<string, any>;
   title: string;
-  meta: Map<string, string>;
-  styles: Set<string>;
-  scripts: {
-    src: string;
-    type?: string | undefined;
-    placement: "head" | "body";
-  }[];
-  headerHtml: string;
-  footerHtml: string;
+  meta: Array<{ name: string; content: string }>;
+  runtime: string;
 };

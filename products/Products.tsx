@@ -1,11 +1,12 @@
 import React from "react";
-import { Link, navigate } from "../src/client";
+import { navigate } from "../src/client";
+import { Link } from "../src";
 
 const Products = ({ products }: any) => {
   return (
     <div>
       <button onClick={() => navigate("/")}>Home</button>
-      <Link href="/about">About s</Link>
+      <Link href="/about">About</Link>
       <ul>
         {products.map((product: any, index: number) => (
           <li key={index}>

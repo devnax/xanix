@@ -8,36 +8,23 @@ import logger from "../include/logger.js";
 import { getEntries } from "../include/entry.js";
 import { outDir } from "../bundler/config/output.js";
 import { WebSocketServer } from "ws";
+import { XanixClientEntry } from "../types.js";
 
 const root = process.cwd();
 let child: any;
 
-// function start(loggin = true) {
-//   const filePath = path.join(outDir.server, "index.js");
-//   child = spawn(process.execPath, [filePath], {
-//     stdio: loggin ? "inherit" : "pipe",
-//   });
-// }
-
-function start(logging = true): Promise<any> {
+function start(): Promise<any> {
+  child?.kill();
   return new Promise((resolve, reject) => {
     const filePath = path.join(outDir.server, "index.js");
     child = spawn(process.execPath, [filePath], {
-      stdio: logging ? "inherit" : "pipe",
+      stdio: !child ? "inherit" : "pipe",
     });
     resolve(child);
   });
 }
 
-async function restart(logging = false) {
-  child?.kill();
-  await start(logging);
-}
-
 const dev = async (rootEntry: string) => {
-  let clientWatcher: RollupWatcher | null = null;
-  let firstBuild = true;
-
   const wss = new WebSocketServer({
     port: 8080,
   });
@@ -59,6 +46,33 @@ const dev = async (rootEntry: string) => {
     });
   });
 
+  let firstBuild = true;
+  let _clientWatcher: RollupWatcher | null = null;
+
+  const clientWatcher = async (entries: XanixClientEntry[]) => {
+    let changedFiles = new Set<string>();
+    _clientWatcher?.close();
+    _clientWatcher = await watchClient(entries, {
+      onChange: (entry) => {
+        const _entry = entries.find((e) => e.file === entry);
+        let buildFile = _entry
+          ? `${_entry.id}.js`
+          : entry
+              .replace(root.replaceAll("\\", "/"), "")
+              .replace(/\.(ts|tsx|jsx)$/, ".js")
+              // replace / from first character if exists
+              .replace(/^\//, "");
+        changedFiles.add(buildFile);
+      },
+      onBuildEnd: () => {
+        if (changedFiles.size) {
+          broadcast(JSON.stringify(Array.from(changedFiles)));
+          changedFiles.clear();
+        }
+      },
+    });
+  };
+
   const watch = await watchServer({
     rootEntry,
     onChange: async (entry, event) => {
@@ -67,26 +81,16 @@ const dev = async (rootEntry: string) => {
         event ?? "update",
       );
     },
-    async onClientChange() {
-      await restart(false);
-      setTimeout(() => {
-        broadcast("reload");
-      }, 100);
-    },
-    async onClientEntryChange() {
-      const entries = await getEntries();
-      clientWatcher?.close();
-      clientWatcher = await watchClient(entries);
+    async onClientEntryChange(_entry: string, entries: XanixClientEntry[]) {
+      await clientWatcher(entries);
     },
     onBuildEnd: async () => {
       if (firstBuild) {
         firstBuild = false;
         const entries = await getEntries();
-        clientWatcher = await watchClient(entries);
-        await start();
-      } else {
-        await restart();
+        await clientWatcher(entries);
       }
+      await start();
     },
   });
 

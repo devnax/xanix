@@ -1,5 +1,5 @@
 import express from "express";
-import { XanixPageData } from "../types";
+import { XanixDocumentData } from "../types";
 
 export interface XanixProps {
   clientId: string;
@@ -25,45 +25,22 @@ export function createXanixServer(options: Options): express.Express {
     }),
   );
   app.use((req: any, res, next) => {
-    let data: XanixPageData = {
+    let data: any = {
       title: "",
-      meta: new Map<string, string>(),
-      styles: new Set<string>(),
-      scripts: Array<{
-        src: string;
-        type?: string;
-        placement: "head" | "body";
-      }>(),
-      headerHtml: "",
-      footerHtml: "",
+      meta: [],
     };
+
     if (!req.page) {
       req.page = {
         setTitle(title: string) {
           data.title = title;
         },
         setMeta(name: string, content: string) {
-          data.meta.set(name, content);
-        },
-        setStyle(href: string) {
-          data.styles.add(href);
-        },
-        setScript(
-          src: string,
-          type?: string,
-          placement: "head" | "body" = "body",
-        ) {
-          data.scripts.push({ src, type, placement });
-        },
-        setHeaderHtml(content: string) {
-          data.headerHtml = content;
-        },
-        setFooterHtml(content: string) {
-          data.footerHtml = content;
+          data.meta.push({ name, content });
         },
       };
 
-      req.xanixPageData = data;
+      req.XanixDocumentData = data;
     }
 
     next();

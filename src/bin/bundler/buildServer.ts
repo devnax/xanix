@@ -10,6 +10,7 @@ import xanixAssets from "./plugins/XanixAssets/index.js";
 import rollupEsbuild from "./plugins/rollupEsbuild.js";
 import rollupNodeResolve from "./plugins/nodeResolve.js";
 import rollupCommonjs from "./plugins/commonjs.js";
+import { getDocumentFile } from "../include/utils.js";
 
 const root = process.cwd();
 
@@ -30,9 +31,13 @@ const BuildServer = async ({ rootEntry, onBuildEnd }: WatcherOptions) => {
 
   const entries = await generateClientEntries();
   await createManifest(entries);
+  const input = {
+    index: path.resolve(root, rootEntry),
+    "xanix-document": await getDocumentFile(),
+  };
 
   const build = await rollup({
-    input: path.resolve(root, rootEntry),
+    input,
     onwarn(warning, warn) {
       if (
         warning.code === "MODULE_LEVEL_DIRECTIVE" &&

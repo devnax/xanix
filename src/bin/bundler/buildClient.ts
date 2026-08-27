@@ -8,6 +8,7 @@ import rollupEsbuild from "./plugins/rollupEsbuild.js";
 import rollupNodeResolve from "./plugins/nodeResolve.js";
 import rollupCommonjs from "./plugins/commonjs.js";
 import bundlerOutput, { outDir } from "./config/output.js";
+import { getDocumentFile } from "../include/utils.js";
 
 const require = createRequire(import.meta.url);
 
@@ -18,6 +19,7 @@ const buildClient = async (entries: XanixClientEntry[]) => {
   }
 
   input["xanix-runtime"] = require.resolve("xanix/runtime");
+  input["xanix-document"] = await getDocumentFile();
 
   fs.rmSync(outDir.client, {
     recursive: true,
@@ -56,7 +58,7 @@ const buildClient = async (entries: XanixClientEntry[]) => {
     ],
   });
 
-  await build.write(bundlerOutput.client(entries));
+  await build.write(bundlerOutput.client(entries, { isDev: false }));
 
   await build.close();
 };

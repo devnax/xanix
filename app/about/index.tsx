@@ -4,7 +4,7 @@ const Chunk = React.lazy(() => import("../Chunk"));
 const About = () => {
   return (
     <div>
-      About Page
+      About Pag
       <Suspense fallback={<div>Loading...</div>}>
         <Chunk />
       </Suspense>

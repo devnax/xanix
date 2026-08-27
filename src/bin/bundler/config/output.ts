@@ -9,25 +9,40 @@ export const outDir = {
   client: path.resolve(root, ".xanix/client"),
 };
 
-const client = (entries: XanixClientEntry[]): OutputOptions => {
+type Options = {
+  isDev?: boolean;
+};
+
+const client = (
+  entries: XanixClientEntry[],
+  { isDev }: Options,
+): OutputOptions => {
   const _entries: any = {};
   for (const entry of entries) {
     _entries[entry.name] = entry;
   }
-  return {
+  // console.log(_entries);
+
+  const opt: OutputOptions = {
     dir: outDir.client,
     format: "esm",
-    sourcemap: true,
     entryFileNames: (id: any) => {
-      if (id.name === "xanix-runtime") {
-        return "runtime.js";
-      }
       const entry = _entries[id.name];
-      return `pages/${entry.id}.js`;
+      if (entry) {
+        return `${entry.id}.js`;
+      }
+      return `[name].js`;
     },
-    chunkFileNames: "chunks/[name]-[hash].js",
-    assetFileNames: "assets/[name]-[hash][extname]",
   };
+  if (isDev) {
+    opt.sourcemap = true;
+    opt.preserveModules = true;
+    opt.preserveModulesRoot = process.cwd();
+  } else {
+    opt.chunkFileNames = "chunks/[name]-[hash].js";
+    opt.assetFileNames = "assets/[name]-[hash][extname]";
+  }
+  return opt;
 };
 
 const server = (): OutputOptions => {
@@ -35,7 +50,7 @@ const server = (): OutputOptions => {
     dir: outDir.server,
     format: "esm",
     sourcemap: false,
-    entryFileNames: "index.js",
+    entryFileNames: "[name].js",
     chunkFileNames: "chunks/[hash].js",
     assetFileNames: "assets/[hash][extname]",
   };

@@ -10,7 +10,7 @@ app.get(
   "/",
   (r, s, n) => n(),
   (req, res) => {
-    req.page.setTitle("Home Page");
+    // req.page.setTitle("Home Page");
 
     res.send(
       <Home

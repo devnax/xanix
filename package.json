@@ -19,6 +19,10 @@
       "import": "./dist/server/index.js",
       "require": "./dist/server/index.js"
     },
+    "./document": {
+      "import": "./dist/BaseDocument.js",
+      "require": "./dist/BaseDocument.js"
+    },
     "./page": {
       "import": "./dist/server/page.js",
       "require": "./dist/server/page.js"

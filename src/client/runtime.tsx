@@ -1,6 +1,7 @@
 import type { ComponentType } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import React from "react";
+import BaseDocument from "../BaseDocument.js";
+import React, { Suspense } from "react";
 export const RouteContext = React.createContext<string>("");
 
 type Page = {
@@ -8,13 +9,8 @@ type Page = {
   props: any;
   pageId: string;
 };
-
 const pages = new Map<string, Page>();
 const ROOT_KEY = "__xanix_root__";
-
-type XanixRootElement = HTMLElement & {
-  [ROOT_KEY]?: Root;
-};
 
 export const getPath = () => {
   const path = window.location.pathname;
@@ -22,56 +18,59 @@ export const getPath = () => {
   return search ? `${path}${search}` : path;
 };
 
-export const getImportUrl = (pageId: string) => {
-  return `/.xanix/client/pages/${pageId}.js`;
-};
+function App({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <head>
+        <title>My App</title>
+        <meta name="description" content="My app" />
+      </head>
+      <body>{children}</body>
+    </html>
+  );
+}
 
-function getElement(): XanixRootElement {
-  const ele = document.getElementById("root");
+export const getImportUrl = (pageId: string) => `/.xanix/client/${pageId}.js`;
+
+function getRoot(): Root {
+  let ele: any = document;
   if (!ele) {
     throw new Error("Root element not found");
   }
-  return ele as XanixRootElement;
-}
-
-function getRoot(ele: XanixRootElement): Root {
-  if (!ele[ROOT_KEY]) {
-    ele[ROOT_KEY] = createRoot(ele);
-  }
+  ele[ROOT_KEY] = ele[ROOT_KEY] ?? createRoot(ele);
   return ele[ROOT_KEY];
 }
 
 export const getPage = async (path = getPath()) => {
   let page = pages.get(path);
-  if (!page) {
-    const response = await fetch(path, {
-      headers: {
-        "X-Navigation": "true",
-      },
-    });
-    page = await response.json();
-  }
-  return page;
+  if (page) return page;
+  const response = await fetch(path, {
+    headers: {
+      "X-Navigation": "true",
+    },
+  });
+  return await response.json();
 };
 
 export function mount(path: string, page: Page) {
-  const ele = getElement();
-  const root = getRoot(ele);
+  const root = getRoot();
   pages.set(path, page);
   const { component: Component, props } = page;
-  root.render(<Component {...props} />);
-}
 
-export const reload = async () => {
-  const path = getPath();
-  let page: any = await getPage(path);
-  const mod = await import(getImportUrl(page.pageId) + `?t=${Date.now()}`);
-  mount(path, {
-    pageId: page.pageId,
-    component: mod.default,
-    props: page.props,
-  });
-};
+  root.render(
+    <BaseDocument
+      document={{
+        pageId: page.pageId,
+        props: props,
+        runtime: "",
+        title: "",
+        meta: [],
+      }}
+    >
+      <Component {...props} />
+    </BaseDocument>,
+  );
+}
 
 if (typeof window !== "undefined") {
   (window as any).xanix = async (data: { pageId: string; props: any }) => {
@@ -89,6 +88,19 @@ if (typeof window !== "undefined") {
     }
   };
 
+  window.addEventListener("load", async () => {
+    const pageId = (window as any).PAGE_ID;
+    const props = (window as any).PROPS;
+    const mod = await import(getImportUrl(pageId));
+
+    mount(getPath(), {
+      pageId,
+      component: mod.default,
+      props,
+    });
+  });
+
+  // POPSTATE event listener for handling browser navigation (back/forward)
   window.addEventListener("popstate", async () => {
     const path = getPath();
     let page: any = await getPage(path);
@@ -100,13 +112,3 @@ if (typeof window !== "undefined") {
     });
   });
 }
-
-const ws = new WebSocket("ws://localhost:8080");
-
-ws.onopen = () => {
-  ws.send("Hello");
-};
-
-ws.onmessage = async (event) => {
-  await reload();
-};

@@ -1,5 +1,5 @@
 import { HTMLProps } from "react";
-import { navigate } from "../navigation";
+import { navigate } from "../client/navigation";
 
 export type LinkProps = Omit<HTMLProps<HTMLAnchorElement>, "href"> & {
   href: string;

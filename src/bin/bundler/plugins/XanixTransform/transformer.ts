@@ -65,7 +65,7 @@ export function resolveComponentFile(
   return resolveFile(base);
 }
 
-export function createClientId(file: string): string {
+export function createPageId(file: string): string {
   return `c_${crypto
     .createHash("sha256")
     .update(path.normalize(file))
@@ -206,6 +206,218 @@ function createDynamicComponentImport(
 }
 
 /**
+ * Convert a JSX name into an expression.
+ *
+ * Example:
+ *
+ * <Home />
+ *
+ * becomes:
+ *
+ * Home
+ */
+function jsxNameToExpression(
+  name: t.JSXElement["openingElement"]["name"],
+): t.Expression | null {
+  if (t.isJSXIdentifier(name)) {
+    return t.identifier(name.name);
+  }
+
+  if (t.isJSXMemberExpression(name)) {
+    const object = jsxNameToExpressionFromJSXName(name.object);
+
+    const property = jsxNameToExpressionFromJSXName(name.property);
+
+    if (!object || !property) {
+      return null;
+    }
+
+    return t.memberExpression(object, property);
+  }
+
+  return null;
+}
+
+function jsxNameToExpressionFromJSXName(
+  name: t.JSXIdentifier | t.JSXMemberExpression,
+): t.Expression | null {
+  if (t.isJSXIdentifier(name)) {
+    return t.identifier(name.name);
+  }
+
+  if (t.isJSXMemberExpression(name)) {
+    const object = jsxNameToExpressionFromJSXName(name.object);
+
+    const property = jsxNameToExpressionFromJSXName(name.property);
+
+    if (!object || !property) {
+      return null;
+    }
+
+    return t.memberExpression(object, property);
+  }
+
+  return null;
+}
+
+/**
+ * Convert JSX attributes into an object expression.
+ *
+ * Example:
+ *
+ * <Home
+ *   name="Naxrul"
+ *   age={30}
+ *   active
+ *   {...user}
+ * />
+ *
+ * becomes:
+ *
+ * {
+ *   name: "Naxrul",
+ *   age: 30,
+ *   active: true,
+ *   ...user
+ * }
+ */
+function jsxAttributesToProps(jsx: t.JSXElement): t.ObjectExpression {
+  const properties: (t.ObjectProperty | t.SpreadElement)[] = [];
+
+  for (const attribute of jsx.openingElement.attributes) {
+    /**
+     * Handle:
+     *
+     * {...props}
+     */
+    if (t.isJSXSpreadAttribute(attribute)) {
+      properties.push(t.spreadElement(attribute.argument as t.Expression));
+
+      continue;
+    }
+
+    /**
+     * Normal JSX attribute:
+     *
+     * name="value"
+     * name={value}
+     * active
+     */
+    if (!t.isJSXAttribute(attribute)) {
+      continue;
+    }
+
+    function jsxAttributeNameToExpression(
+      name: t.JSXAttribute["name"],
+    ): t.Identifier | t.StringLiteral {
+      if (t.isJSXIdentifier(name)) {
+        return t.identifier(name.name);
+      }
+
+      return t.stringLiteral(`${name.namespace.name}:${name.name.name}`);
+    }
+
+    const key = jsxAttributeNameToExpression(attribute.name);
+    /**
+     * Boolean JSX prop:
+     *
+     * <Home active />
+     *
+     * becomes:
+     *
+     * active: true
+     */
+    if (!attribute.value) {
+      properties.push(t.objectProperty(key, t.booleanLiteral(true)));
+
+      continue;
+    }
+
+    /**
+     * String prop:
+     *
+     * name="Naxrul"
+     *
+     * becomes:
+     *
+     * name: "Naxrul"
+     */
+    if (t.isStringLiteral(attribute.value)) {
+      properties.push(
+        t.objectProperty(key, t.stringLiteral(attribute.value.value)),
+      );
+
+      continue;
+    }
+
+    /**
+     * Expression prop:
+     *
+     * age={30}
+     * user={user}
+     * items={items.map(...)}
+     */
+    if (t.isJSXExpressionContainer(attribute.value)) {
+      const expression = attribute.value.expression;
+
+      if (t.isJSXEmptyExpression(expression)) {
+        continue;
+      }
+
+      properties.push(t.objectProperty(key, expression as t.Expression));
+
+      continue;
+    }
+
+    /**
+     * JSX element as a prop:
+     *
+     * content={<div>Hello</div>}
+     */
+    if (t.isJSXElement(attribute.value)) {
+      properties.push(t.objectProperty(key, attribute.value));
+
+      continue;
+    }
+  }
+
+  return t.objectExpression(properties);
+}
+
+/**
+ * Convert:
+ *
+ * <Home name="Naxrul" age={30} />
+ *
+ * into:
+ *
+ * {
+ *   component: Home,
+ *   props: {
+ *     name: "Naxrul",
+ *     age: 30
+ *   }
+ * }
+ */
+function jsxToComponentAndProps(jsx: t.JSXElement): {
+  component: t.Expression;
+  props: t.ObjectExpression;
+} | null {
+  const component = jsxNameToExpression(jsx.openingElement.name);
+
+  if (!component) {
+    return null;
+  }
+
+  const props = jsxAttributesToProps(jsx);
+
+  return {
+    component,
+    props,
+  };
+}
+
+/**
  * Find:
  *
  * const app = express();
@@ -251,11 +463,15 @@ function findExpressAppVariable(ast: t.File): string | null {
  *
  * with:
  *
- * const app = createXanixServer();
+ * const app = createXanixServer({
+ *   mode: "watch"
+ * });
  */
 function transformExpressAppTocreateXanixServer(
   ast: t.File,
-  args: { mode: "watch" | "start" },
+  args: {
+    mode: "watch" | "start";
+  },
 ): boolean {
   const expressVariable = findExpressAppVariable(ast);
 
@@ -288,7 +504,7 @@ function transformExpressAppTocreateXanixServer(
       ) {
         continue;
       }
-      // Replace express() with createXanixServer({ mode: "watch" | "start" })
+
       declaration.init = t.callExpression(t.identifier("createXanixServer"), [
         t.objectExpression([
           t.objectProperty(t.identifier("mode"), t.stringLiteral(args.mode)),
@@ -502,13 +718,36 @@ export function transformer(
       }
 
       const componentImportPath = componentImport.file;
+
       const componentFile = resolveComponentFile(id, componentImportPath);
+
       if (!path.isAbsolute(componentFile)) {
         return;
       }
 
       const normalizedFile = normalizeFilePath(componentFile);
-      const clientId = createClientId(normalizedFile);
+
+      const pageId = createPageId(normalizedFile);
+
+      /**
+       * Convert:
+       *
+       * <Home name="Naxrul" age={30} />
+       *
+       * into:
+       *
+       * component: Home
+       *
+       * props: {
+       *   name: "Naxrul",
+       *   age: 30
+       * }
+       */
+      const componentAndProps = jsxToComponentAndProps(argument);
+
+      if (!componentAndProps) {
+        return;
+      }
 
       /**
        * Remove:
@@ -535,6 +774,7 @@ export function transformer(
        * res.send(<Home />);
        */
       const statementPath = callPath.getStatementParent();
+
       if (statementPath) {
         statementPath.insertBefore(dynamicImport);
       }
@@ -560,17 +800,17 @@ export function transformer(
        *     clientId,
        *     req,
        *     res,
-       *     component: <Home />
+       *     component: Home,
+       *     props: {
+       *       ...
+       *     }
        *   })
        * );
        */
       const pageCall = t.awaitExpression(
         t.callExpression(t.identifier("xanixPage"), [
           t.objectExpression([
-            t.objectProperty(
-              t.identifier("clientId"),
-              t.stringLiteral(clientId),
-            ),
+            t.objectProperty(t.identifier("pageId"), t.stringLiteral(pageId)),
 
             t.objectProperty(
               t.identifier("req"),
@@ -582,7 +822,12 @@ export function transformer(
               t.identifier(responseParam.name),
             ),
 
-            t.objectProperty(t.identifier("component"), argument),
+            t.objectProperty(
+              t.identifier("Component"),
+              componentAndProps.component,
+            ),
+
+            t.objectProperty(t.identifier("props"), componentAndProps.props),
           ]),
         ]),
       );

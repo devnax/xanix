@@ -12,6 +12,9 @@ export type HomeProps = {
   }>;
 };
 
+const sleep = (ms: number) =>
+  new Promise((resolve) => setTimeout(() => resolve({ name: "nax" }), ms));
+
 const Home = ({ name, products }: HomeProps) => {
   const [count, setCount] = React.useState(0);
   useEffect(() => {

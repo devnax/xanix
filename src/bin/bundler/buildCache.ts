@@ -1,10 +1,12 @@
 import path from "node:path";
+import fs from "node:fs";
 import { rollup } from "rollup";
 import { build, type Plugin } from "esbuild";
 import { XanixClientEntry } from "../types";
 import { createRequire } from "node:module";
 import xanixAssets from "./plugins/XanixAssets/index.js";
 import rollupEsbuild from "./plugins/rollupEsbuild.js";
+import { getDocumentFile } from "../include/utils.js";
 
 const require = createRequire(import.meta.url);
 
@@ -30,6 +32,7 @@ const GenerateGraph = async (entries: XanixClientEntry[]) => {
   }
 
   input["xanix-runtime"] = require.resolve("xanix/runtime");
+  input["xanix-document"] = await getDocumentFile();
 
   const bundle = await rollup({
     input,

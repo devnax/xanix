@@ -12,8 +12,6 @@ declare global {
           type?: string,
           placement?: "head" | "body",
         ): void;
-        setHeaderHtml(content: string): void;
-        setFooterHtml(content: string): void;
       };
     }
   }

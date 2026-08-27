@@ -2,6 +2,7 @@ import { watch, type InputOption, type RollupWatcher } from "rollup";
 import bundlerOutput, { outDir } from "./config/output.js";
 import XanixAssets from "./plugins/XanixAssets/index.js";
 import fs from "node:fs";
+import path from "node:path";
 import replace from "@rollup/plugin-replace";
 import { createRequire } from "node:module";
 import { XanixClientEntry } from "../types.js";
@@ -11,10 +12,20 @@ import rollupEsbuild from "./plugins/rollupEsbuild.js";
 import rollupNodeResolve from "./plugins/nodeResolve.js";
 import rollupCommonjs from "./plugins/commonjs.js";
 import xanixReactRefresh from "./plugins/XanixReactRefresh.js";
+import { getDocumentFile } from "../include/utils.js";
 const require = createRequire(import.meta.url);
+
+type Option = {
+  onChange?: (
+    entry: string,
+    event: "update" | "delete" | "create" | undefined,
+  ) => void;
+  onBuildEnd?: () => void;
+};
 
 const WatchClient = async (
   entries: XanixClientEntry[],
+  options: Option,
 ): Promise<RollupWatcher> => {
   const input: InputOption = {};
 
@@ -23,6 +34,7 @@ const WatchClient = async (
   }
 
   input["xanix-runtime"] = require.resolve("xanix/runtime");
+  input["xanix-document"] = await getDocumentFile();
 
   fs.rmSync(outDir.client, {
     recursive: true,
@@ -33,39 +45,21 @@ const WatchClient = async (
     recursive: true,
   });
   const buildCache = await BuildCache(entries);
-
   const watcher = watch({
     input,
     plugins: [
-      // add react-refresh in xanix-runtime
-      // {
-      //   name: "xanix-react-refresh",
-      //   resolveId(id) {
-      //     if (id === "xanix/runtime") {
-      //       return require.resolve("xanix/runtime");
-      //     }
-      //     return null;
-      //   },
-      //   load(id) {
-      //     if (id === require.resolve("xanix/runtime")) {
-      //       console.log(id);
-
-      //       const code = fs.readFileSync(id, "utf-8");
-      //       const modifiedCode = `${code}
-      //         import RefreshRuntime from 'react-refresh/runtime';
-      //         RefreshRuntime.injectIntoGlobalHook(window);
-      //         window.$RefreshReg$ = () => {};
-      //         window.$RefreshSig$ = () => (type) => type;
-      //       `;
-      //       return modifiedCode;
-      //     }
-      //     return null;
-      //   },
-      // },
-
+      {
+        name: "xanix-watch-client",
+        async watchChange(id, change) {
+          const entry = path.resolve(id).replaceAll("\\", "/");
+          options.onChange?.(entry, change?.event);
+        },
+      },
       XanixAssets({
         external: true,
       }),
+      xanixReactRefresh(),
+
       XanixResolveCacheDeps(buildCache, entries),
       replace({
         preventAssignment: true,
@@ -73,14 +67,11 @@ const WatchClient = async (
       }),
       rollupNodeResolve(),
       rollupCommonjs(),
-      // xanixHydrate(entries),
-
       rollupEsbuild({
         sourceMap: true,
       }),
-      // xanixReactRefresh(),
     ],
-    output: bundlerOutput.client(entries),
+    output: bundlerOutput.client(entries, { isDev: true }),
     watch: {
       clearScreen: false,
     },
@@ -91,6 +82,7 @@ const WatchClient = async (
       case "BUNDLE_START":
         break;
       case "BUNDLE_END":
+        options.onBuildEnd?.();
         break;
 
       case "ERROR":
