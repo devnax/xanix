@@ -1,5 +1,4 @@
 import express from "express";
-import { XanixDocumentData } from "../types";
 
 export interface XanixProps {
   clientId: string;
@@ -40,7 +39,7 @@ export function createXanixServer(options: Options): express.Express {
         },
       };
 
-      req.XanixDocumentData = data;
+      req.XanixPageData = data;
     }
 
     next();

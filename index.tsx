@@ -6,23 +6,20 @@ import productsRouter from "./products/index.tsx";
 const app = express();
 app.use("/product", productsRouter);
 
-app.get(
-  "/",
-  (r, s, n) => n(),
-  (req, res) => {
-    // req.page.setTitle("Home Page");
+app.get("/", (req, res) => {
+  req.page.setTitle("Home Page");
+  req.page.setMeta("name", "Nax");
 
-    res.send(
-      <Home
-        name="John Deo"
-        products={[
-          { name: "Product 1", price: 10 },
-          { name: "Product 2", price: 20 },
-        ]}
-      />,
-    );
-  },
-);
+  res.send(
+    <Home
+      name="John Deo"
+      products={[
+        { name: "Product 1", price: 10 },
+        { name: "Product 2", price: 20 },
+      ]}
+    />,
+  );
+});
 
 app.get("/about", (req, res) => {
   res.send(<About />);

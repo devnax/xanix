@@ -33,10 +33,6 @@ if (typeof window !== "undefined") {
 
   const ws = new WebSocket("ws://localhost:8080");
 
-  ws.onopen = () => {
-    ws.send("Hello");
-  };
-
   ws.onmessage = async (event) => {
     const files = JSON.parse(event.data);
 
@@ -54,6 +50,7 @@ if (typeof window !== "undefined") {
     }
 
     RefreshRuntime.performReactRefresh();
+    ws.send("reload")
   };
 }
 `;

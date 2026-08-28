@@ -23,3 +23,15 @@ export const getDocumentData = (): DocumentData => {
   global.DocumentData = global.DocumentData || {};
   return global.DocumentData;
 };
+
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+export const getDocumentFile = async () => {
+  const documentEntry = path.join(process.cwd(), ".xanix", "xanix-document.js");
+  if (fs.existsSync(documentEntry)) {
+    return documentEntry;
+  }
+  throw new Error(`Document file not found at ${documentEntry}`);
+};

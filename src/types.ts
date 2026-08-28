@@ -13,10 +13,9 @@ declare global {
 
 export {};
 
-export type XanixDocumentData = {
-  pageId: string;
-  props: Record<string, any>;
-  title: string;
-  meta: Array<{ name: string; content: string }>;
-  runtime: string;
-};
+// export type XanixDocumentData = {
+//   pageId: string;
+//   props: Record<string, any>;
+//   title: string;
+//   meta: Array<{ name: string; content: string }>;
+// };

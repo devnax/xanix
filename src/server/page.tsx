@@ -1,10 +1,9 @@
-import { renderToPipeableStream, renderToString } from "react-dom/server";
-import type { ComponentType } from "react";
+import { renderToPipeableStream } from "react-dom/server";
 import readManifest from "./readManifest.js";
 import { PassThrough } from "node:stream";
-import { XanixDocumentData } from "../types.js";
-import Document from "../BaseDocument.js";
-export interface XanixProps {
+import path from "node:path";
+
+interface XanixPageProps {
   pageId: string;
   req: any;
   res: any;
@@ -44,9 +43,12 @@ export default async function xanix_page({
   res,
   Component,
   props,
-}: XanixProps) {
+}: XanixPageProps) {
   const manifest = await readManifest();
-
+  const { title, meta } = req.XanixPageData as {
+    title: string;
+    meta: Array<{ name: string; content: string }>;
+  };
   const entry = manifest.entries.find((item) => item.id === pageId);
   const method = req.method.toUpperCase();
   if (method !== "GET") {
@@ -65,18 +67,21 @@ export default async function xanix_page({
     return JSON.stringify({
       pageId: pageId,
       props,
+      title: title || entry.name,
+      meta,
     });
   }
-  const { title, meta }: XanixDocumentData = req.XanixDocumentData || {};
+  const documentEntry = path.join(process.cwd(), ".xanix", "xanix-document.js");
+  const DocumentModule = await import(documentEntry);
+  const Document = DocumentModule.default;
 
   const html = await renderPage(
     <Document
       document={{
-        pageId: pageId,
+        pageId,
         props,
-        title,
+        title: title || entry.name,
         meta,
-        runtime: `/.xanix/client/xanix-runtime.js`,
       }}
     >
       <Component {...props} />
@@ -84,82 +89,4 @@ export default async function xanix_page({
   );
 
   return html;
-
-  //   let metaTags = "";
-  //   if (meta && Array.isArray(meta)) {
-  //     metaTags = meta
-  //       .map((m) => `<meta name="${m.name}" content="${m.content}" />`)
-  //       .join("\n");
-  //   }
-
-  //   scripts.push({
-  //     src: `/.xanix/client/xanix-runtime.js`,
-  //     type: "module",
-  //     placement: "head",
-  //   });
-
-  //   let headScriptTags = "";
-  //   let footerScriptTags = "";
-  //   if (scripts && Array.isArray(scripts)) {
-  //     scripts.forEach((s) => {
-  //       const tag = `<script src="${s.src}" type="${s.type || "text/javascript"}"></script>`;
-  //       if (s.placement === "head") {
-  //         headScriptTags += tag + "\n";
-  //       } else {
-  //         footerScriptTags += tag + "\n";
-  //       }
-  //     });
-  //   }
-
-  //   let styleTags = "";
-  //   if (styles && Array.isArray(styles)) {
-  //     styleTags = styles
-  //       .map((s) => `<link rel="stylesheet" href="${s.href}" />`)
-  //       .join("\n");
-  //   }
-
-  //   let headerContent = "";
-  //   let footerContent = "";
-  //   if (headerHtml) {
-  //     headerContent = renderToString(headerHtml);
-  //   }
-  //   if (footerHtml) {
-  //     footerContent = renderToString(footerHtml);
-  //   }
-
-  //   if ("x-navigation" in req.headers) {
-  //     res.setHeader("Content-Type", "application/json");
-  //     return JSON.stringify({
-  //       pageId: pageId,
-  //       props,
-  //       headerHtml,
-  //       footerHtml,
-  //       meta,
-  //       scripts,
-  //       styles,
-  //     });
-  //   }
-
-  //   return `
-  // <!DOCTYPE html>
-  // <html lang="en">
-  //   <head>
-  //     <meta charset="UTF-8" />
-  //     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  //     <title>${title || entry.name}</title>
-  //     ${metaTags}
-  //     ${styleTags}
-  //     ${headScriptTags}
-  //     ${headerContent}
-  //   </head>
-  //   <body>
-  //     ${html}
-  //     <script type="module" id="xanix-data">
-  //       window.xanix(${JSON.stringify({ props, pageId: pageId })});
-  //     </script>
-  //     ${footerContent}
-  //     ${footerScriptTags}
-  //   </body>
-  // </html>
-  //   `;
 }

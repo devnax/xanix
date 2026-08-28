@@ -1,5 +1,4 @@
-import { DocumentContext } from "./context.js";
-import type { XanixDocumentData } from "../../types";
+import { DocumentContext, type XanixDocumentData } from "./context.js";
 import { HTMLProps } from "react";
 
 export type DocumentProps = HTMLProps<HTMLHtmlElement> & {

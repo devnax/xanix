@@ -30,7 +30,6 @@ const dev = async (rootEntry: string) => {
   });
 
   let sockets = new Set<any>();
-
   const broadcast = (message: string) => {
     sockets.forEach((socket: any) => {
       if (socket.readyState === 1) {
@@ -43,6 +42,12 @@ const dev = async (rootEntry: string) => {
     sockets.add(ws);
     ws.on("close", () => {
       sockets.delete(ws);
+    });
+
+    ws.on("message", (message) => {
+      if (message.toString() === "reload") {
+        start();
+      }
     });
   });
 
@@ -75,24 +80,25 @@ const dev = async (rootEntry: string) => {
 
   const watch = await watchServer({
     rootEntry,
-    onChange: async (entry, event) => {
+    onChange: async (entry) => {
       logger.info(
         `reload server ${pc.yellow(entry.replace(root.replaceAll("\\", "/"), ""))}`,
-        event ?? "update",
+        "update",
       );
     },
     async onClientEntryChange(_entry: string, entries: XanixClientEntry[]) {
       await clientWatcher(entries);
+    },
+    onServerChange: async (entry: string, entries: XanixClientEntry[]) => {
+      await start();
     },
     onBuildEnd: async () => {
       if (firstBuild) {
         firstBuild = false;
         const entries = await getEntries();
         await clientWatcher(entries);
-      }
-      setTimeout(async () => {
         await start();
-      }, 400);
+      }
     },
   });
 

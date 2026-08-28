@@ -5,21 +5,28 @@ type HeadProps = {
 };
 
 const Head = ({ children }: HeadProps) => {
-  const { title, meta, runtime, pageId, props } = useDocument();
+  const { title, meta, pageId, props } = useDocument();
   return (
     <head>
       <title>{title}</title>
-      {meta.map(({ name, content }) => (
+      {meta?.map(({ name, content }) => (
         <meta key={name} name={name} content={content} />
       ))}
       {children}
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `window.PAGE_ID = "${pageId}";
-        window.PROPS = ${JSON.stringify(props)};
+      {pageId && (
+        <script
+          id={pageId}
+          dangerouslySetInnerHTML={{
+            __html: `window.XANIX_DOCUMENT = ${JSON.stringify({
+              pageId,
+              props,
+              meta,
+              title,
+            })};
         `,
-        }}
-      ></script>
+          }}
+        ></script>
+      )}
       <script type="module" src={"/.xanix/client/xanix-runtime.js"}></script>
     </head>
   );

@@ -1,12 +1,17 @@
 import { createContext, useContext } from "react";
-import { XanixDocumentData } from "../../types";
+
+export type XanixDocumentData = {
+  pageId?: string;
+  props: Record<string, any>;
+  title: string;
+  meta: Array<{ name: string; content: string }>;
+};
 
 export const DocumentContext = createContext<XanixDocumentData>({
   pageId: "",
   props: {},
   title: "",
   meta: [],
-  runtime: `/.xanix/client/xanix-runtime.js`,
 });
 
 export const useDocument = () => {

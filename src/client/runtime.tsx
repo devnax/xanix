@@ -1,34 +1,17 @@
 import type { ComponentType } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import BaseDocument from "../BaseDocument.js";
-import React, { Suspense } from "react";
-export const RouteContext = React.createContext<string>("");
+import { XanixDocumentData } from "../components/Document/context";
 
-type Page = {
+type Page = XanixDocumentData & {
   component: ComponentType<any>;
-  props: any;
-  pageId: string;
 };
 const pages = new Map<string, Page>();
 const ROOT_KEY = "__xanix_root__";
 
 export const getPath = () => {
-  const path = window.location.pathname;
-  const search = window.location.search;
-  return search ? `${path}${search}` : path;
+  const { pathname, search } = window.location;
+  return search ? `${pathname}${search}` : pathname;
 };
-
-function App({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="en">
-      <head>
-        <title>My App</title>
-        <meta name="description" content="My app" />
-      </head>
-      <body>{children}</body>
-    </html>
-  );
-}
 
 export const getImportUrl = (pageId: string) => `/.xanix/client/${pageId}.js`;
 
@@ -52,52 +35,40 @@ export const getPage = async (path = getPath()) => {
   return await response.json();
 };
 
-export function mount(path: string, page: Page) {
+export async function mount(path: string, page: Page) {
   const root = getRoot();
   pages.set(path, page);
   const { component: Component, props } = page;
-
+  const Document = (await import(getImportUrl("xanix-document"))).default;
   root.render(
-    <BaseDocument
+    <Document
       document={{
         pageId: page.pageId,
-        props: props,
-        runtime: "",
-        title: "",
-        meta: [],
+        props: page.props,
+        title: page.title,
+        meta: page.meta,
       }}
     >
       <Component {...props} />
-    </BaseDocument>,
+    </Document>,
   );
 }
 
 if (typeof window !== "undefined") {
-  (window as any).xanix = async (data: { pageId: string; props: any }) => {
-    const { pageId, props } = data;
+  window.addEventListener("load", async () => {
+    const { pageId, props, title, meta } = (window as any).XANIX_DOCUMENT;
     const mod = await import(getImportUrl(pageId));
-
+    const scriptTag = document.getElementById(pageId);
     mount(getPath(), {
-      pageId,
       component: mod.default,
+      pageId,
       props,
+      meta,
+      title,
     });
-    const scriptTag = document.getElementById("xanix-data");
     if (scriptTag) {
       scriptTag.remove();
     }
-  };
-
-  window.addEventListener("load", async () => {
-    const pageId = (window as any).PAGE_ID;
-    const props = (window as any).PROPS;
-    const mod = await import(getImportUrl(pageId));
-
-    mount(getPath(), {
-      pageId,
-      component: mod.default,
-      props,
-    });
   });
 
   // POPSTATE event listener for handling browser navigation (back/forward)
@@ -109,6 +80,8 @@ if (typeof window !== "undefined") {
       pageId: page.pageId,
       component: mod.default,
       props: page.props,
+      meta: page.meta,
+      title: page.title,
     });
   });
 }
