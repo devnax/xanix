@@ -19,7 +19,15 @@
         "declaration": true,
         "jsx": "react-jsx",
         "outDir": "./dist",
-        "rootDir": "./src"
+        "rootDir": "./src",
+        "paths": {
+            "@/*": [
+                "./src/*"
+            ],
+            "@components/*": [
+                "./src/components/*"
+            ]
+        }
     },
     "include": [
         "src",

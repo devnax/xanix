@@ -1,25 +1,18 @@
 import { watch, type InputOption, type RollupWatcher } from "rollup";
 import bundlerOutput, { outDir } from "./config/output.js";
-import XanixAssets from "./plugins/XanixAssets/index.js";
 import fs from "node:fs";
-import path from "node:path";
-import replace from "@rollup/plugin-replace";
 import { createRequire } from "node:module";
 import { XanixClientEntry } from "../types.js";
-import BuildCache from "./buildCache.js";
+import BuildCache from "./cacheNpmModules.js";
 import XanixResolveCacheDeps from "./plugins/XanixResolveCacheDeps/index.js";
-import rollupEsbuild from "./plugins/rollupEsbuild.js";
-import rollupNodeResolve from "./plugins/nodeResolve.js";
-import rollupCommonjs from "./plugins/commonjs.js";
 import xanixReactRefresh from "./plugins/XanixReactRefresh.js";
 import { getDocumentFile } from "../include/utils.js";
+import { xanixDefaultPlugins } from "./plugins/plugins.js";
+
 const require = createRequire(import.meta.url);
 
 type Option = {
-  onChange?: (
-    entry: string,
-    event: "update" | "delete" | "create" | undefined,
-  ) => void;
+  onChange?: (entry: string, event?: string) => void;
   onBuildEnd?: () => void;
 };
 
@@ -47,28 +40,14 @@ const WatchClient = async (
   const buildCache = await BuildCache(entries);
   const watcher = watch({
     input,
+    treeshake: true,
     plugins: [
-      {
-        name: "xanix-watch-client",
-        async watchChange(id, change) {
-          const entry = path.resolve(id).replaceAll("\\", "/");
-          options.onChange?.(entry, change?.event);
-        },
-      },
-      XanixAssets({
-        external: true,
-      }),
-      xanixReactRefresh(),
-
       XanixResolveCacheDeps(buildCache, entries),
-      replace({
-        preventAssignment: true,
-        "process.env.NODE_ENV": JSON.stringify("development"),
-      }),
-      rollupNodeResolve(),
-      rollupCommonjs(),
-      rollupEsbuild({
-        sourceMap: true,
+      ...xanixDefaultPlugins({
+        target: "client",
+        development: true,
+        assetExternal: true,
+        onChange: options.onChange,
       }),
     ],
     output: bundlerOutput.client(entries, { isDev: true }),

@@ -1,7 +1,7 @@
 import path from "node:path";
 import { XanixClientEntry } from "../../../types";
 import type { Plugin } from "rollup";
-import BuildCache, { CacheMetadata } from "../../buildCache.js";
+import BuildCache, { CacheMetadata } from "../../cacheNpmModules.js";
 
 function XanixResolveCacheDeps(
   metadata: CacheMetadata,

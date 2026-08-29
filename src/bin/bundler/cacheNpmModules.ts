@@ -1,12 +1,13 @@
 import path from "node:path";
-import fs from "node:fs";
 import { rollup } from "rollup";
+import { nodeResolve } from "@rollup/plugin-node-resolve";
 import { build, type Plugin } from "esbuild";
 import { XanixClientEntry } from "../types";
 import { createRequire } from "node:module";
-import xanixAssets from "./plugins/XanixAssets/index.js";
-import rollupEsbuild from "./plugins/rollupEsbuild.js";
 import { getDocumentFile } from "../include/utils.js";
+import esbuild from "rollup-plugin-esbuild";
+import url from "@rollup/plugin-url";
+import XanixTsconfigAlias from "./plugins/XanixTsconfigAlias.js";
 
 const require = createRequire(import.meta.url);
 
@@ -37,15 +38,42 @@ const GenerateGraph = async (entries: XanixClientEntry[]) => {
   const bundle = await rollup({
     input,
     plugins: [
-      xanixAssets({
-        external: true,
+      XanixTsconfigAlias(),
+      nodeResolve({
+        extensions: [".mjs", ".js", ".jsx", ".json", ".ts", ".tsx"],
       }),
-      rollupEsbuild({
-        sourceMap: true,
+      url({
+        include: [
+          "**/*.jpg",
+          "**/*.jpeg",
+          "**/*.png",
+          "**/*.gif",
+          "**/*.webp",
+          "**/*.svg",
+          "**/*.ico",
+          "**/*.woff",
+          "**/*.woff2",
+          "**/*.ttf",
+          "**/*.eot",
+          "**/*.css",
+        ],
+        limit: 0,
+        fileName: "assets/[name]-[hash][extname]",
+        emitFiles: false,
+      }),
+      esbuild({
+        target: "es2022",
+        jsx: "automatic",
+        tsconfig: false,
       }),
     ],
     external(id) {
-      if (id.startsWith(".") || path.isAbsolute(id)) {
+      if (
+        id.startsWith(".") ||
+        path.isAbsolute(id) ||
+        id === "@" ||
+        id.startsWith("@/")
+      ) {
         return false;
       }
       collector.set(id, {

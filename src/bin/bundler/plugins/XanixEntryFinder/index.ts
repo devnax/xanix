@@ -16,22 +16,22 @@ export function XanixEntryFinder({ entries }: XanixPluginOptions): Plugin {
       }
 
       const clientEntries = entryFinder(code, id);
-      // if (!clientEntries) {
-      //   return null;
-      // }
+      if (!clientEntries) {
+        return null;
+      }
 
-      // for (const entry of clientEntries) {
-      //   const resolved = await this.resolve(entry.file, id, {
-      //     skipSelf: true,
-      //   });
+      for (const entry of clientEntries) {
+        const resolved = await this.resolve(entry.file, id, {
+          skipSelf: true,
+        });
 
-      //   if (!resolved) {
-      //     this.error(
-      //       `Could not resolve client component "${entry.file}" imported by "${id}"`,
-      //     );
-      //   }
-      //   entries.set(entry.id, entry);
-      // }
+        if (!resolved) {
+          this.error(
+            `Could not resolve client component "${entry.file}" imported by "${id}"`,
+          );
+        }
+        entries.set(entry.id, entry);
+      }
 
       return null;
     },
@@ -42,11 +42,11 @@ export function XanixEntryFinder({ entries }: XanixPluginOptions): Plugin {
         entries: [...entries.values()],
       };
 
-      // this.emitFile({
-      //   type: "asset",
-      //   fileName: "client-manifest.json",
-      //   source: JSON.stringify(manifest, null, 2),
-      // });
+      this.emitFile({
+        type: "asset",
+        fileName: "client-manifest.json",
+        source: JSON.stringify(manifest, null, 2),
+      });
     },
   };
 }

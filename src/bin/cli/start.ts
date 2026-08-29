@@ -2,7 +2,6 @@ import buildServer from "../bundler/buildServer.js";
 import buildClient from "../bundler/buildClient.js";
 import pc from "picocolors";
 import path from "node:path";
-const root = process.cwd();
 import logger from "../include/logger.js";
 import { spawn } from "child_process";
 import { outDir } from "../bundler/config/output.js";
@@ -10,12 +9,12 @@ let child: any;
 
 const build = async (rootEntry: string) => {
   logger.info(pc.green("Building server..."), "server");
-  const startTime = Date.now();
+  const st = Date.now();
   await buildServer({
     rootEntry,
     onBuildEnd: async (entries) => {
       logger.info(pc.green("Building client..."), "client");
-      const duration = Date.now() - startTime;
+      const duration = Date.now() - st;
       await buildClient(entries);
       logger.info(pc.green(`Build completed in ${duration}ms`), "complete");
     },

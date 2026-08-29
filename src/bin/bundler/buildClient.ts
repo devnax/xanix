@@ -1,14 +1,10 @@
 import { rollup, type InputOption } from "rollup";
 import fs from "node:fs";
-import replace from "@rollup/plugin-replace";
 import { createRequire } from "node:module";
 import { XanixClientEntry } from "../types";
-import XanixAssets from "./plugins/XanixAssets/index.js";
-import rollupEsbuild from "./plugins/rollupEsbuild.js";
-import rollupNodeResolve from "./plugins/nodeResolve.js";
-import rollupCommonjs from "./plugins/commonjs.js";
 import bundlerOutput, { outDir } from "./config/output.js";
 import { getDocumentFile } from "../include/utils.js";
+import { xanixDefaultPlugins } from "./plugins/plugins.js";
 
 const require = createRequire(import.meta.url);
 
@@ -32,6 +28,7 @@ const buildClient = async (entries: XanixClientEntry[]) => {
 
   const build = await rollup({
     input,
+    treeshake: true,
     onwarn(warning, warn) {
       if (
         warning.code === "MODULE_LEVEL_DIRECTIVE" &&
@@ -43,23 +40,15 @@ const buildClient = async (entries: XanixClientEntry[]) => {
       warn(warning);
     },
     plugins: [
-      XanixAssets({
-        external: true,
-      }),
-      replace({
-        preventAssignment: true,
-        "process.env.NODE_ENV": JSON.stringify("development"),
-      }),
-      rollupNodeResolve(),
-      rollupCommonjs(),
-      rollupEsbuild({
-        minify: true,
+      ...xanixDefaultPlugins({
+        target: "client",
+        development: false,
+        assetExternal: true,
       }),
     ],
   });
 
   await build.write(bundlerOutput.client(entries, { isDev: false }));
-
   await build.close();
 };
 

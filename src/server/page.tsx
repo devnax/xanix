@@ -2,7 +2,7 @@ import { renderToPipeableStream } from "react-dom/server";
 import readManifest from "./readManifest.js";
 import { PassThrough } from "node:stream";
 import path from "node:path";
-
+import { pathToFileURL } from "node:url";
 interface XanixPageProps {
   pageId: string;
   req: any;
@@ -71,8 +71,9 @@ export default async function xanix_page({
       meta,
     });
   }
-  const documentEntry = path.join(process.cwd(), ".xanix", "xanix-document.js");
-  const DocumentModule = await import(documentEntry);
+  const DocumentModule = await import(
+    pathToFileURL(path.join(process.cwd(), ".xanix", "xanix-document.js")).href
+  );
   const Document = DocumentModule.default;
 
   const html = await renderPage(

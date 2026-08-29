@@ -2,15 +2,11 @@ import { rollup } from "rollup";
 import path from "node:path";
 import bundlerOutput, { outDir } from "./config/output.js";
 import fs from "node:fs";
-import { XanixTransform } from "./plugins/XanixTransform/index.js";
 import { createManifest } from "../include/manifest.js";
 import { XanixClientEntry } from "../types.js";
 import generateClientEntries from "./generateClientEntries.js";
-import xanixAssets from "./plugins/XanixAssets/index.js";
-import rollupEsbuild from "./plugins/rollupEsbuild.js";
-import rollupNodeResolve from "./plugins/nodeResolve.js";
-import rollupCommonjs from "./plugins/commonjs.js";
 import { getDocumentFile } from "../include/utils.js";
+import { xanixDefaultPlugins } from "./plugins/plugins.js";
 
 const root = process.cwd();
 
@@ -38,6 +34,7 @@ const BuildServer = async ({ rootEntry, onBuildEnd }: WatcherOptions) => {
 
   const build = await rollup({
     input,
+    treeshake: true,
     onwarn(warning, warn) {
       if (
         warning.code === "MODULE_LEVEL_DIRECTIVE" &&
@@ -49,17 +46,20 @@ const BuildServer = async ({ rootEntry, onBuildEnd }: WatcherOptions) => {
       warn(warning);
     },
     plugins: [
-      xanixAssets(),
-      XanixTransform({ mode: "start" }),
-      rollupNodeResolve(false),
-      rollupCommonjs(),
-      rollupEsbuild({
-        minify: true,
+      ...xanixDefaultPlugins({
+        target: "server",
+        development: false,
+        assetExternal: false,
       }),
     ],
 
     external(id) {
-      if (id.startsWith(".") || path.isAbsolute(id)) {
+      if (
+        id.startsWith(".") ||
+        path.isAbsolute(id) ||
+        id === "@" ||
+        id.startsWith("@/")
+      ) {
         return false;
       }
       return true;
