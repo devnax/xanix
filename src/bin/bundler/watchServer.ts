@@ -12,7 +12,7 @@ import rollupCommonjs from "./plugins/commonjs.js";
 import bundlerOutput, { outDir } from "./config/output.js";
 import { getDocumentFile } from "../include/utils.js";
 import { entriesEqual } from "../include/entry.js";
-
+import json from "@rollup/plugin-json";
 const root = process.cwd();
 
 export type WatcherOptions = {
@@ -43,85 +43,86 @@ const watchServer = async ({
   });
 
   const entries = await generateClientEntries();
-  await createManifest(entries);
+  // await createManifest(entries);
 
   const input = {
     index: path.resolve(root, rootEntry),
     "xanix-document": await getDocumentFile(),
   };
   const changedFiles = new Set<string>();
-  const watcher = watch({
-    input,
-    plugins: [
-      {
-        name: "xanix-watch-server",
-        watchChange(id) {
-          const entry = path.resolve(id).replaceAll("\\", "/");
-          changedFiles.add(entry);
-        },
-      },
-      XanixAssets({
-        external: false,
-      }),
-      XanixTransform({
-        mode: "watch",
-      }),
-      rollupNodeResolve(false),
-      rollupCommonjs(),
-      rollupEsbuild({
-        sourceMap: true,
-      }),
-    ],
+  // const watcher = watch({
+  //   input,
+  //   plugins: [
+  //     {
+  //       name: "xanix-watch-server",
+  //       watchChange(id) {
+  //         const entry = path.resolve(id).replaceAll("\\", "/");
+  //         changedFiles.add(entry);
+  //       },
+  //     },
+  //     XanixAssets({
+  //       external: false,
+  //     }),
+  //     XanixTransform({
+  //       mode: "watch",
+  //     }),
+  //     json(),
+  //     rollupNodeResolve(false),
+  //     rollupCommonjs(),
+  //     rollupEsbuild({
+  //       sourceMap: true,
+  //     }),
+  //   ],
 
-    external(id) {
-      if (id.startsWith(".") || path.isAbsolute(id)) {
-        return false;
-      }
-      return true;
-    },
+  //   external(id) {
+  //     if (id.startsWith(".") || path.isAbsolute(id)) {
+  //       return false;
+  //     }
+  //     return true;
+  //   },
 
-    output: bundlerOutput.server(),
-    watch: {
-      clearScreen: false,
-    },
-  });
+  //   output: bundlerOutput.server(),
+  //   watch: {
+  //     clearScreen: false,
+  //   },
+  // });
 
-  watcher.on("event", async (event) => {
-    switch (event.code) {
-      case "BUNDLE_START":
-        break;
-      case "BUNDLE_END":
-        if (changedFiles.size) {
-          const manifest = await readManifest();
-          if (manifest) {
-            for (const entry of changedFiles) {
-              const isClientEntry = Array.from(manifest.entries.values()).find(
-                (e) => e.file === entry,
-              );
+  // watcher.on("event", async (event) => {
+  //   switch (event.code) {
+  //     case "BUNDLE_START":
+  //       break;
+  //     case "BUNDLE_END":
+  //       if (changedFiles.size) {
+  //         const manifest = await readManifest();
+  //         if (manifest) {
+  //           for (const entry of changedFiles) {
+  //             const isClientEntry = Array.from(manifest.entries.values()).find(
+  //               (e) => e.file === entry,
+  //             );
 
-              if (!isClientEntry) {
-                const entries = await generateClientEntries();
-                const isEqual = await entriesEqual(entries);
-                if (!isEqual) {
-                  await createManifest(entries);
-                  await onClientEntryChange?.(entry, entries);
-                }
-                await onServerChange?.(entry, entries);
-              }
-              await onChange?.(entry);
-            }
-          }
-          changedFiles.clear();
-        }
-        await onBuildEnd?.(entries);
-        break;
-      case "ERROR":
-        console.error("[server]", event.error);
-        break;
-    }
-  });
+  //             if (!isClientEntry) {
+  //               const entries = await generateClientEntries();
+  //               const isEqual = await entriesEqual(entries);
+  //               if (!isEqual) {
+  //                 await createManifest(entries);
+  //                 await onClientEntryChange?.(entry, entries);
+  //               }
+  //               await onServerChange?.(entry, entries);
+  //             }
+  //             await onChange?.(entry);
+  //           }
+  //         }
+  //         changedFiles.clear();
+  //       }
+  //       await onBuildEnd?.(entries);
+  //       break;
+  //     case "ERROR":
+  //       console.error("[server]", event.error);
+  //       break;
+  //   }
+  // });
 
-  return watcher;
+  // return watcher;
 };
 
 export default watchServer;

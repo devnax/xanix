@@ -11,21 +11,34 @@ type Options = {
   mode: "watch" | "start";
 };
 
-export function createXanixServer(options: Options): express.Express {
+export function createXanixServer({ mode }: Options): express.Express {
   const app = express();
-  app.use("/.xanix/client", express.static(".xanix/client"));
-  app.use("/.xanix/cache", express.static(".xanix/cache"));
-  app.use(
-    "/assets",
-    express.static(".xanix/assets", {
-      fallthrough: false,
-      maxAge: "1y",
-      immutable: true,
-    }),
-  );
+  if (mode === "watch") {
+    app.use("/.xanix/client", express.static(".xanix/client"));
+    app.use("/assets", express.static(".xanix/assets"));
+    app.use("/.xanix/cache", express.static(".xanix/cache"));
+  } else {
+    app.use(
+      "/.xanix/client",
+      express.static(".xanix/client", {
+        maxAge: "1y",
+        immutable: true,
+        etag: true,
+      }),
+    );
+    app.use(
+      "/assets",
+      express.static(".xanix/assets", {
+        maxAge: "1y",
+        immutable: true,
+        etag: true,
+      }),
+    );
+  }
+
   app.use((req: any, res, next) => {
     let data: any = {
-      title: "",
+      title: null,
       meta: [],
     };
 

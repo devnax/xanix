@@ -151,60 +151,47 @@ export function entryFinder(code: string, id: string): XanixClientEntry[] {
       }
 
       const argument = call.arguments[0];
-
       if (!argument || !t.isJSXElement(argument)) {
         return;
       }
 
       const functionPath = callPath.getFunctionParent();
-
       if (!functionPath) {
         return;
       }
 
       const params = functionPath.node.params;
-
       if (params.length < 2) {
         return;
       }
 
       const requestParam = params[0];
       const responseParam = params[1];
-
       if (!t.isIdentifier(requestParam) || !t.isIdentifier(responseParam)) {
         return;
       }
 
       const componentName = getJSXComponentName(argument);
-
       if (!componentName) {
         return;
       }
 
       const componentImport = findComponentImport(ast, componentName);
-
       if (!componentImport) {
         return;
       }
 
       const componentImportPath = componentImport.file;
-
       const componentFile = resolveComponentFile(id, componentImportPath);
-
       if (!path.isAbsolute(componentFile)) {
         return;
       }
 
       const normalizedFile = normalizeFilePath(componentFile);
-
       const clientId = createClientId(normalizedFile);
-
       const root = process.cwd();
-
       const relativeSource = path.relative(root, componentFile);
-
       const parsed = path.parse(relativeSource);
-
       const buildPath = normalizeFilePath(
         path.resolve(root, ".xanix", parsed.dir, `${parsed.name}.js`),
       );

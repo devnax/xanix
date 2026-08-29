@@ -18,7 +18,7 @@ program
     if (watch) {
       await dev(entry);
     } else {
-      await start(entry);
+      // await start(entry);
     }
   });
 

@@ -2,8 +2,9 @@ import { rollup } from "rollup";
 import path from "node:path";
 import rollupEsbuild from "./plugins/rollupEsbuild.js";
 import XanixAssets from "./plugins/XanixAssets/index.js";
-import { XanixClientEntry } from "../types.js";
+import { type XanixClientEntry } from "../types.js";
 import { XanixEntryFinder } from "./plugins/XanixEntryFinder/index.js";
+// import json from "@rollup/plugin-json";
 const root = process.cwd();
 
 const generateClientEntries = async (): Promise<XanixClientEntry[]> => {
@@ -14,6 +15,7 @@ const generateClientEntries = async (): Promise<XanixClientEntry[]> => {
       XanixAssets({
         external: true,
       }),
+      // json(),
       XanixEntryFinder({
         entries,
       }),

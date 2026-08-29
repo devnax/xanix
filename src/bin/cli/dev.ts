@@ -54,29 +54,29 @@ const dev = async (rootEntry: string) => {
   let firstBuild = true;
   let _clientWatcher: RollupWatcher | null = null;
 
-  const clientWatcher = async (entries: XanixClientEntry[]) => {
-    let changedFiles = new Set<string>();
-    _clientWatcher?.close();
-    _clientWatcher = await watchClient(entries, {
-      onChange: (entry) => {
-        const _entry = entries.find((e) => e.file === entry);
-        let buildFile = _entry
-          ? `${_entry.id}.js`
-          : entry
-              .replace(root.replaceAll("\\", "/"), "")
-              .replace(/\.(ts|tsx|jsx)$/, ".js")
-              // replace / from first character if exists
-              .replace(/^\//, "");
-        changedFiles.add(buildFile);
-      },
-      onBuildEnd: () => {
-        if (changedFiles.size) {
-          broadcast(JSON.stringify(Array.from(changedFiles)));
-          changedFiles.clear();
-        }
-      },
-    });
-  };
+  // const clientWatcher = async (entries: XanixClientEntry[]) => {
+  //   let changedFiles = new Set<string>();
+  //   _clientWatcher?.close();
+  //   _clientWatcher = await watchClient(entries, {
+  //     onChange: (entry) => {
+  //       const _entry = entries.find((e) => e.file === entry);
+  //       let buildFile = _entry
+  //         ? `${_entry.id}.js`
+  //         : entry
+  //             .replace(root.replaceAll("\\", "/"), "")
+  //             .replace(/\.(ts|tsx|jsx)$/, ".js")
+  //             // replace / from first character if exists
+  //             .replace(/^\//, "");
+  //       changedFiles.add(buildFile);
+  //     },
+  //     onBuildEnd: () => {
+  //       if (changedFiles.size) {
+  //         broadcast(JSON.stringify(Array.from(changedFiles)));
+  //         changedFiles.clear();
+  //       }
+  //     },
+  //   });
+  // };
 
   const watch = await watchServer({
     rootEntry,
@@ -87,7 +87,7 @@ const dev = async (rootEntry: string) => {
       );
     },
     async onClientEntryChange(_entry: string, entries: XanixClientEntry[]) {
-      await clientWatcher(entries);
+      // await clientWatcher(entries);
     },
     onServerChange: async (entry: string, entries: XanixClientEntry[]) => {
       await start();
@@ -96,23 +96,23 @@ const dev = async (rootEntry: string) => {
       if (firstBuild) {
         firstBuild = false;
         const entries = await getEntries();
-        await clientWatcher(entries);
+        // await clientWatcher(entries);
         await start();
       }
     },
   });
 
-  process.on("SIGINT", () => {
-    child?.kill();
-    watch?.close();
-    process.exit(0);
-  });
+  // process.on("SIGINT", () => {
+  //   child?.kill();
+  //   watch?.close();
+  //   process.exit(0);
+  // });
 
-  process.on("SIGTERM", () => {
-    child?.kill();
-    watch?.close();
-    process.exit(0);
-  });
+  // process.on("SIGTERM", () => {
+  //   child?.kill();
+  //   watch?.close();
+  //   process.exit(0);
+  // });
 };
 
 export default dev;

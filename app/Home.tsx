@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import Button from "@xanui/ui/Button";
 import { createTheme, ThemeProvider } from "@xanui/core";
-import img from "./image.png";
+// import img from "./image.png";
 import { navigate } from "../src/client";
 
 export type HomeProps = {
@@ -30,7 +30,7 @@ const Home = ({ name, products }: HomeProps) => {
       <Button onClick={() => alert("Button clicked!")}>Click</Button>
       <button onClick={() => navigate("/about")}>About</button>
       <button onClick={() => navigate("/product")}>Product</button>
-      <img width={40} src={img} alt="Example" />
+      {/* <img width={40} src={img} alt="Example" /> */}
       <ul>
         {products.map(
           (product: { name: string; price: number }, index: number) => (
