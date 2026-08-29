@@ -31,7 +31,7 @@ export function xanixDefaultPlugins(
 
   if (isServer) {
     _plugins.push(XanixTransform({ mode: development ? "watch" : "start" }));
-    _plugins.push(xanixBrowserCodeRemover());
+    // _plugins.push(xanixBrowserCodeRemover());
   } else {
     if (development) {
       _plugins.push(xanixReactRefresh());

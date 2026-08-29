@@ -16,7 +16,7 @@ export const getPath = () => {
 export const getImportUrl = (pageId: string) => `/.xanix/client/${pageId}.js`;
 
 function getRoot(): Root {
-  let ele: any = document;
+  let ele: any = document.getElementById("root");
   if (!ele) {
     throw new Error("Root element not found");
   }
@@ -40,6 +40,19 @@ export async function mount(path: string, page: Page) {
   pages.set(path, page);
   const { component: Component, props } = page;
   const Document = (await import(getImportUrl("xanix-document"))).default;
+
+  const doc = (
+    <Document
+      document={{
+        pageId: page.pageId,
+        props: page.props,
+        title: page.title,
+        meta: page.meta,
+      }}
+    >
+      <Component {...props} />
+    </Document>
+  );
   root.render(
     <Document
       document={{
@@ -58,7 +71,6 @@ if (typeof window !== "undefined") {
   window.addEventListener("load", async () => {
     const { pageId, props, title, meta } = (window as any).XANIX_DOCUMENT;
     const mod = await import(getImportUrl(pageId));
-    const scriptTag = document.getElementById(pageId);
     mount(getPath(), {
       component: mod.default,
       pageId,
@@ -66,22 +78,19 @@ if (typeof window !== "undefined") {
       meta,
       title,
     });
-    if (scriptTag) {
-      scriptTag.remove();
-    }
   });
 
   // POPSTATE event listener for handling browser navigation (back/forward)
-  window.addEventListener("popstate", async () => {
-    const path = getPath();
-    let page: any = await getPage(path);
-    const mod = await import(getImportUrl(page.pageId));
-    mount(path, {
-      pageId: page.pageId,
-      component: mod.default,
-      props: page.props,
-      meta: page.meta,
-      title: page.title,
-    });
-  });
+  // window.addEventListener("popstate", async () => {
+  //   const path = getPath();
+  //   let page: any = await getPage(path);
+  //   const mod = await import(getImportUrl(page.pageId));
+  //   mount(path, {
+  //     pageId: page.pageId,
+  //     component: mod.default,
+  //     props: page.props,
+  //     meta: page.meta,
+  //     title: page.title,
+  //   });
+  // });
 }

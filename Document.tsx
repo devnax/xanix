@@ -1,13 +1,12 @@
 import { Document, Head, Body, type DocumentProps } from "./src/index.js";
 
-if (!__XANIX_CLIENT__) {
-  console.log("Window loaded on the server side");
-}
-
 const RootDocument = ({ document, children }: DocumentProps) => {
   return (
     <Document document={document}>
-      <Head></Head>
+      <Head>
+        <meta charSet="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      </Head>
       <Body>{children}</Body>
     </Document>
   );

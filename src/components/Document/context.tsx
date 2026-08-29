@@ -9,8 +9,8 @@ export type XanixDocumentData = {
 
 export const DocumentContext = createContext<XanixDocumentData>({
   pageId: "",
-  props: {},
   title: "",
+  props: {},
   meta: [],
 });
 

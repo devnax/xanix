@@ -1,16 +1,22 @@
+import { getImportUrl, getPage, getPath, mount } from "./runtime";
+
 let history: string[] = [];
 let currentIndex = -1;
+const XANIX_NAVIGATION = "xanix:navigate";
 
 const fire = (path: string) => {
-  window.history.pushState({}, "", path);
-  const popStateEvent = new PopStateEvent("popstate", { state: {} });
-  dispatchEvent(popStateEvent);
+  window.history.pushState(null, "", path);
+  window.dispatchEvent(
+    new CustomEvent(XANIX_NAVIGATION, {
+      detail: { path },
+    }),
+  );
 };
 
 export const navigate = async (path: string) => {
-  history = history.slice(0, currentIndex + 1);
-  history.push(path);
-  currentIndex++;
+  // history = history.slice(0, currentIndex + 1);
+  // history.push(path);
+  // currentIndex++;
   fire(path);
 };
 

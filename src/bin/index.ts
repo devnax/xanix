@@ -10,7 +10,7 @@ program
   .name("xanix")
   .description("Xanix application CLI")
   .argument("[entry]", "entry file")
-  .option("--watch", "watch for file changes")
+  .option("--watch, -w", "watch for file changes")
   .action(async (entry, options) => {
     entry = entry ?? "index.tsx";
     let watch = options.watch ?? false;
