@@ -6,8 +6,7 @@ export type DocumentProps = {
 };
 
 const Document = ({ children, document }: DocumentProps) => {
-  const isClient = typeof window !== "undefined";
-  if (isClient) {
+  if (__XANIX_CLIENT__) {
     return <DocumentProvider value={document}>{children}</DocumentProvider>;
   }
   return (

@@ -6,7 +6,7 @@ type HeadProps = {
 };
 
 const Head = ({ children }: HeadProps) => {
-  const { title, meta, pageId, props } = useDocument();
+  const { title, meta, pageId, props, params } = useDocument();
   useEffect(() => {
     document.title = title || "";
     meta?.forEach(({ name, content }) => {
@@ -29,7 +29,7 @@ const Head = ({ children }: HeadProps) => {
     }
   }, [children]);
 
-  if (typeof window !== "undefined") return <></>;
+  if (__XANIX_CLIENT__) return <></>;
 
   return (
     <head>
@@ -46,6 +46,7 @@ const Head = ({ children }: HeadProps) => {
             props,
             meta,
             title,
+            params,
             request: null,
           })};
         `,

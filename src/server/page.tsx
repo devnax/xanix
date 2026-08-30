@@ -70,6 +70,7 @@ export default async function xanix_page({
       props,
       title: title ?? entry.name.replaceAll("-", " "),
       meta,
+      params: req.params,
       request: null,
     });
   }
@@ -87,6 +88,7 @@ export default async function xanix_page({
         props,
         title: title ?? entry.name.replaceAll("-", " "),
         meta,
+        params: req.params,
         request: req,
       }}
     >

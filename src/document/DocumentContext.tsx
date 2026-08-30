@@ -6,7 +6,7 @@ export type DocumentContextData = {
 
   title: string;
   meta: Array<{ name: string; content: string }>;
-
+  params: Record<string, string>;
   request?: Request;
 };
 

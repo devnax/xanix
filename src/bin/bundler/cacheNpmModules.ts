@@ -7,7 +7,6 @@ import { createRequire } from "node:module";
 import { getDocumentFile } from "../include/utils.js";
 import esbuild from "rollup-plugin-esbuild";
 import url from "@rollup/plugin-url";
-import XanixTsconfigAlias from "./plugins/XanixTsconfigAlias.js";
 
 const require = createRequire(import.meta.url);
 
@@ -172,6 +171,10 @@ const bundleDeps = async (input: Record<string, string>, outdir: string) => {
     chunkNames: "chunks/[hash]",
     platform: "browser",
     sourcemap: true,
+    define: {
+      __XANIX_CLIENT__: "true",
+      __XANIX_SERVER__: "false",
+    },
     plugins: [makeCjsWrapperPlugin(wrappers)],
   });
 };

@@ -27,11 +27,13 @@ export const reload = (hard = false) => {
 };
 
 export const onNavigateStart = (callback: () => void) => {
-  if (typeof window === "undefined") return;
-  window.addEventListener("xanix:navigate:start", callback);
+  if (__XANIX_CLIENT__) {
+    window.addEventListener("xanix:navigate:start", callback);
+  }
 };
 
 export const onNavigateEnd = (callback: () => void) => {
-  if (typeof window === "undefined") return;
-  window.addEventListener("xanix:navigate:end", callback);
+  if (__XANIX_CLIENT__) {
+    window.addEventListener("xanix:navigate:end", callback);
+  }
 };

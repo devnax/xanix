@@ -9,7 +9,6 @@ import url from "@rollup/plugin-url";
 import path from "path";
 import { XanixTransform } from "./XanixTransform/index.js";
 import xanixReactRefresh from "./XanixReactRefresh.js";
-import xanixBrowserCodeRemover from "./XanixBrowserCodeRemover.js";
 import XanixEnvPlugin from "./XanixEnv.js";
 
 export interface XanixRollupOptions {

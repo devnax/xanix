@@ -5,7 +5,7 @@ export const useLocation = () => {
   const _document = useDocument();
   const req: any = _document?.request;
   let _url;
-  if (req) {
+  if (__XANIX_SERVER__) {
     _url = new URL(req.originalUrl, `${req.protocol}://${req.get("host")}`);
   } else {
     _url = new URL(window.location.href);

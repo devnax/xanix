@@ -3,7 +3,7 @@ import Button from "@xanui/ui/Button";
 import { createTheme, ThemeProvider } from "@xanui/core";
 // import img from "./image.png";
 import { navigate, useLocation } from "../src/navigation/index.js";
-import { useSearchParams } from "../src/router/index.js";
+import { useSearchParams, usePathname } from "../src/router/index.js";
 
 export type HomeProps = {
   name: string;
@@ -20,8 +20,11 @@ const Home = ({ name, products }: HomeProps) => {
   const [count, setCount] = React.useState(0);
   const location = useLocation();
   const searchParams = useSearchParams();
+  const pathname = usePathname();
 
   useEffect(() => {
+    console.log("pathname", pathname);
+
     const interval = setInterval(() => {
       setCount((prevCount) => prevCount + 1);
     }, 1000);

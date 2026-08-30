@@ -3,8 +3,7 @@ type BodyProps = {
 };
 
 const Body = ({ children }: BodyProps) => {
-  const isClient = typeof window !== "undefined";
-  if (isClient) {
+  if (__XANIX_CLIENT__) {
     return children;
   }
   return <body>{children}</body>;

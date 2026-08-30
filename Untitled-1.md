@@ -11,7 +11,7 @@
   useParams,
   useSearchParams,
   usePathname,
-  useRoute,
+  useRoute, - dep
 
 ## xanix/document - done
   Document,

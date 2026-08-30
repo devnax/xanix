@@ -16,13 +16,10 @@ const buildUrl = (params: URLSearchParams) => {
 };
 
 export const useSearchParams = () => {
-  const { request } = useDocument();
-  let _params;
-  if (request) {
-    _params = new URLSearchParams(request.url.split("?")[1] || "");
-  } else {
-    _params = getParams();
-  }
+  const { request }: any = useDocument();
+  let _params = new URLSearchParams(
+    __XANIX_SERVER__ ? request.url.split("?")[1] || "" : window.location.search,
+  );
   const [params, setParams] = useState(_params);
 
   useEffect(() => {
