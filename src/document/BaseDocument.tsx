@@ -1,6 +1,6 @@
-import Head from "./components/Head.js";
-import Body from "./components/Body.js";
-import Document, { DocumentProps } from "./components/Document/index.js";
+import Head from "./Head.js";
+import Body from "./Body.js";
+import Document, { DocumentProps } from "./Document.js";
 
 const BaseDocument = ({ document, children }: DocumentProps) => {
   return (

@@ -1,5 +1,5 @@
-import { createContext, useContext } from "react";
-
+import { createContext } from "react";
+import type { Request } from "express";
 export type DocumentContextData = {
   pageId: string;
   props: Record<string, any>;
@@ -7,17 +7,10 @@ export type DocumentContextData = {
   title: string;
   meta: Array<{ name: string; content: string }>;
 
-  request?: Express.Request;
+  request?: Request;
 };
 
 export const DocumentContext = createContext<DocumentContextData | null>(null);
-export const useDocument = () => {
-  const context = useContext(DocumentContext);
-  if (!context) {
-    throw new Error("useDocument must be used within a DocumentProvider");
-  }
-  return context;
-};
 
 export type DocumentProviderProps = {
   children: React.ReactNode;

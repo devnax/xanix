@@ -1,7 +1,7 @@
-import Link from "./components/Link.js";
-import Document, { DocumentProps } from "./components/Document/index.js";
-import Head from "./components/Head.js";
-import Body from "./components/Body.js";
+import Link from "./document/Link.js";
+import Document, { DocumentProps } from "./document/Document.js";
+import Head from "./document/Head.js";
+import Body from "./document/Body.js";
 export { Link, Document, Head, Body };
 
 export type * from "./types";

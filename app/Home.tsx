@@ -2,7 +2,8 @@ import React, { useEffect } from "react";
 import Button from "@xanui/ui/Button";
 import { createTheme, ThemeProvider } from "@xanui/core";
 // import img from "./image.png";
-import { navigate } from "../src/client";
+import { navigate, useLocation } from "../src/navigation/index.js";
+import { useSearchParams } from "../src/router/index.js";
 
 export type HomeProps = {
   name: string;
@@ -17,6 +18,9 @@ const sleep = (ms: number) =>
 
 const Home = ({ name, products }: HomeProps) => {
   const [count, setCount] = React.useState(0);
+  const location = useLocation();
+  const searchParams = useSearchParams();
+
   useEffect(() => {
     const interval = setInterval(() => {
       setCount((prevCount) => prevCount + 1);
@@ -27,6 +31,9 @@ const Home = ({ name, products }: HomeProps) => {
   return (
     <ThemeProvider theme={createTheme({ mode: "light", name: "default" })}>
       {name} {count}
+      <button onClick={() => searchParams.set("key", "value")}>set</button>
+      <button onClick={() => searchParams.delete("key")}>delete</button>
+      <button onClick={() => console.log(searchParams.getAll())}>show</button>
       <Button onClick={() => alert("Button clicked!")}>Click</Button>
       <button onClick={() => navigate("/abouts")}>About</button>
       <button onClick={() => navigate("/product")}>Product</button>

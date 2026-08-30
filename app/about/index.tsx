@@ -1,5 +1,5 @@
 import React, { Suspense } from "react";
-import { navigate } from "../../src/client";
+import { navigate } from "../../src/navigation/index.js";
 const Chunk = React.lazy(() => import("../Chunk"));
 const About = () => {
   return (

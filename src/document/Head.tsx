@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useDocument } from "./Document/context.js";
+import useDocument from "./useDocument.js";
 
 type HeadProps = {
   children?: React.ReactNode;
@@ -46,7 +46,7 @@ const Head = ({ children }: HeadProps) => {
             props,
             meta,
             title,
-            request: {},
+            request: null,
           })};
         `,
         }}

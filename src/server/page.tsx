@@ -70,7 +70,7 @@ export default async function xanix_page({
       props,
       title: title ?? entry.name.replaceAll("-", " "),
       meta,
-      request: {},
+      request: null,
     });
   }
   const Document = (

@@ -1,4 +1,4 @@
-import { DocumentContextData } from "../components/Document/context";
+import { DocumentContextData } from "../document/DocumentContext";
 import type { ComponentType } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
@@ -77,12 +77,17 @@ if (typeof window !== "undefined") {
 
   window.addEventListener("xanix:navigate", async (event: any) => {
     const path = event.detail.path;
+    const replace = event.detail.replace;
     dispatch("navigate:start", path);
     let page: any = await getPage(path);
     if (!page) return;
     const mod = await import(getImportUrl(page.pageId));
     mount(path, mod.default, page);
-    history.pushState(null, "", path);
+    if (replace) {
+      history.replaceState(null, "", path);
+    } else {
+      history.pushState(null, "", path);
+    }
     dispatch("navigate:end", path);
   });
 
@@ -95,6 +100,17 @@ if (typeof window !== "undefined") {
     await import(getImportUrl(page.pageId));
     pages.set(path, page);
     dispatch("preload:end", path);
+  });
+
+  window.addEventListener("xanix:reload", async (event: any) => {
+    const path = getPath();
+    dispatch("navigate:start", path);
+    let page: any = await getPage(path);
+    if (!page) return;
+    const mod = await import(getImportUrl(page.pageId) + "?t=" + Date.now());
+    mount(path, mod.default, page);
+    history.pushState(null, "", path);
+    dispatch("navigate:end", path);
   });
 
   window.addEventListener("popstate", async () => {

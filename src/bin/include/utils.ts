@@ -9,5 +9,5 @@ export const getDocumentFile = async () => {
   if (fs.existsSync(documentEntry)) {
     return documentEntry;
   }
-  return path.join(__dirname, "../../../BaseDocument.js");
+  return path.join(__dirname, "../../../document/BaseDocument.js");
 };

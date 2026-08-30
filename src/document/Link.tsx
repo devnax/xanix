@@ -1,5 +1,5 @@
 import { HTMLProps, useEffect, useRef } from "react";
-import { navigate } from "../client/navigation";
+import { navigate } from "../navigation/navigate.js";
 
 export type LinkProps = Omit<
   HTMLProps<HTMLAnchorElement>,

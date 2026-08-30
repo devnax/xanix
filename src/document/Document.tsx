@@ -1,4 +1,4 @@
-import { DocumentContextData, DocumentProvider } from "./context.js";
+import { DocumentContextData, DocumentProvider } from "./DocumentContext.js";
 
 export type DocumentProps = {
   children?: React.ReactNode;
