@@ -1,37 +1,19 @@
-import { getImportUrl, getPage, getPath, mount } from "./runtime";
-
-let history: string[] = [];
-let currentIndex = -1;
-const XANIX_NAVIGATION = "xanix:navigate";
-
-const fire = (path: string) => {
-  window.history.pushState(null, "", path);
+export const navigate = (path: string) => {
   window.dispatchEvent(
-    new CustomEvent(XANIX_NAVIGATION, {
+    new CustomEvent("xanix:navigate", {
       detail: { path },
     }),
   );
 };
 
-export const navigate = async (path: string) => {
-  // history = history.slice(0, currentIndex + 1);
-  // history.push(path);
-  // currentIndex++;
-  fire(path);
+export const back = () => {
+  window.history.back();
 };
 
-export const back = async () => {
-  if (currentIndex > 0) {
-    currentIndex--;
-    const path = history[currentIndex];
-    fire(path);
-  }
+export const forward = () => {
+  window.history.forward();
 };
 
-export const forward = async () => {
-  if (currentIndex < history.length - 1) {
-    currentIndex++;
-    const path = history[currentIndex];
-    fire(path);
-  }
+export const preload = async (path: string) => {
+  window.dispatchEvent(new CustomEvent("xanix:preload", { detail: { path } }));
 };

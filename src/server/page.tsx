@@ -3,6 +3,7 @@ import readManifest from "./readManifest.js";
 import { PassThrough } from "node:stream";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+
 interface XanixPageProps {
   pageId: string;
   req: any;
@@ -65,16 +66,19 @@ export default async function xanix_page({
   if ("x-navigation" in req.headers) {
     res.setHeader("Content-Type", "application/json");
     return JSON.stringify({
-      pageId: pageId,
+      pageId,
       props,
       title: title ?? entry.name.replaceAll("-", " "),
       meta,
+      request: {},
     });
   }
-  const DocumentModule = await import(
-    pathToFileURL(path.join(process.cwd(), ".xanix", "xanix-document.js")).href
-  );
-  const Document = DocumentModule.default;
+  const Document = (
+    await import(
+      pathToFileURL(path.join(process.cwd(), ".xanix", "xanix-document.js"))
+        .href
+    )
+  ).default;
 
   const html = await renderPage(
     <Document
@@ -83,11 +87,12 @@ export default async function xanix_page({
         props,
         title: title ?? entry.name.replaceAll("-", " "),
         meta,
+        request: req,
       }}
     >
       <Component {...props} />
     </Document>,
   );
 
-  return html;
+  return `<!DOCTYPE html>${html}`;
 }

@@ -1,5 +1,3 @@
-import { useDocument } from "./Document/context.js";
-
 type BodyProps = {
   children?: React.ReactNode;
 };
@@ -7,13 +5,9 @@ type BodyProps = {
 const Body = ({ children }: BodyProps) => {
   const isClient = typeof window !== "undefined";
   if (isClient) {
-    return <div id="root">{children}</div>;
+    return children;
   }
-  return (
-    <body>
-      <div id="root">{children}</div>
-    </body>
-  );
+  return <body>{children}</body>;
 };
 
 export default Body;

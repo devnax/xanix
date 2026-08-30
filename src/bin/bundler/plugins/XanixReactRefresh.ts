@@ -65,7 +65,7 @@ if (typeof window !== "undefined") {
       if (path.resolve(id) === require.resolve("xanix/runtime")) {
         return null;
       }
-      if (id.includes("node_modules") || id.includes("xanix/dist")) {
+      if (id.includes("node_modules") || id.includes("xanix\\dist")) {
         return null;
       }
 

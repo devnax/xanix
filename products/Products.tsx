@@ -6,7 +6,9 @@ const Products = ({ products }: any) => {
   return (
     <div>
       <button onClick={() => navigate("/")}>Home</button>
-      <Link href="/about">About</Link>
+      <Link href="/about" preload={true}>
+        About
+      </Link>
       <ul>
         {products.map((product: any, index: number) => (
           <li key={index}>

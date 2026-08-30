@@ -26,19 +26,19 @@ export type CacheMetadata = Map<
 
 const GenerateGraph = async (entries: XanixClientEntry[]) => {
   const collector = new Map<string, DependencyInfo>();
-  const input: any = {};
+  const input: any = [];
 
   for (const entry of entries) {
-    input[entry.name] = entry.file;
+    input.push(entry.file);
   }
 
-  input["xanix-runtime"] = require.resolve("xanix/runtime");
-  input["xanix-document"] = await getDocumentFile();
+  input.push(require.resolve("xanix/runtime"));
+  input.push(await getDocumentFile());
 
   const bundle = await rollup({
     input,
     plugins: [
-      XanixTsconfigAlias(),
+      // XanixTsconfigAlias(),
       nodeResolve({
         extensions: [".mjs", ".js", ".jsx", ".json", ".ts", ".tsx"],
       }),
@@ -88,7 +88,6 @@ const GenerateGraph = async (entries: XanixClientEntry[]) => {
   });
 
   await bundle.close();
-
   return collector;
 };
 
@@ -109,33 +108,54 @@ const makeCjsWrapperPlugin = (wrappers: Map<string, string>): Plugin => ({
 
 const buildWrappers = (
   input: Record<string, string>,
-): { wrappers: Map<string, string>; wrappedInput: Record<string, string> } => {
+): {
+  wrappers: Map<string, string>;
+  wrappedInput: Record<string, string>;
+} => {
   const wrappers = new Map<string, string>();
   const wrappedInput: Record<string, string> = {};
 
   for (const [name, resolved] of Object.entries(input)) {
     const key = `${name}?cjs-wrapper`;
+
     let namedExports: string[] = [];
+    let hasDefault = false;
+
     try {
       const mod = require(resolved);
+      hasDefault =
+        mod &&
+        (typeof mod === "object" || typeof mod === "function") &&
+        "default" in mod;
+
       namedExports = Object.keys(mod).filter(
-        (k) => k !== "__esModule" && k !== "default",
+        (key) => key !== "__esModule" && key !== "default",
       );
     } catch {}
 
-    const lines = [
-      `import __mod from ${JSON.stringify(resolved)};`,
-      `export default __mod;`,
-    ];
-    if (namedExports.length > 0) {
-      lines.push(`export const { ${namedExports.join(", ")} } = __mod;`);
+    const lines = [`import * as __mod from ${JSON.stringify(resolved)};`];
+    if (hasDefault) {
+      lines.push(`export default __mod.default;`);
+    } else {
+      lines.push(`export default __mod;`);
+    }
+
+    for (const exportName of namedExports) {
+      if (/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(exportName)) {
+        lines.push(
+          `export const ${exportName} = __mod[${JSON.stringify(exportName)}];`,
+        );
+      }
     }
 
     wrappers.set(key, lines.join("\n"));
     wrappedInput[name] = key;
   }
 
-  return { wrappers, wrappedInput };
+  return {
+    wrappers,
+    wrappedInput,
+  };
 };
 
 const bundleDeps = async (input: Record<string, string>, outdir: string) => {

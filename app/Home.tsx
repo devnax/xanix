@@ -28,7 +28,7 @@ const Home = ({ name, products }: HomeProps) => {
     <ThemeProvider theme={createTheme({ mode: "light", name: "default" })}>
       {name} {count}
       <Button onClick={() => alert("Button clicked!")}>Click</Button>
-      <button onClick={() => navigate("/about")}>About</button>
+      <button onClick={() => navigate("/abouts")}>About</button>
       <button onClick={() => navigate("/product")}>Product</button>
       {/* <img width={40} src={img} alt="Example" /> */}
       <ul>

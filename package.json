@@ -59,6 +59,7 @@
     "esbuild": "^0.28.2",
     "express": "^5.2.1",
     "react-refresh": "^0.18.0",
+    "react-router-dom": "^7.18.3",
     "rollup": "^4.62.5",
     "rollup-plugin-esbuild": "^6.2.1",
     "tslib": "^2.8.1",

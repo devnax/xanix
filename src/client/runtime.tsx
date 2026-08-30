@@ -1,11 +1,12 @@
+import { DocumentContextData } from "../components/Document/context";
 import type { ComponentType } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { XanixDocumentData } from "../components/Document/context";
 
-type Page = XanixDocumentData & {
+type DocumentInfo = DocumentContextData & {
   component: ComponentType<any>;
 };
-const pages = new Map<string, Page>();
+
+const pages = new Map<string, DocumentInfo>();
 const ROOT_KEY = "__xanix_root__";
 
 export const getPath = () => {
@@ -16,7 +17,7 @@ export const getPath = () => {
 export const getImportUrl = (pageId: string) => `/.xanix/client/${pageId}.js`;
 
 function getRoot(): Root {
-  let ele: any = document.getElementById("root");
+  let ele: any = document.body;
   if (!ele) {
     throw new Error("Root element not found");
   }
@@ -24,7 +25,7 @@ function getRoot(): Root {
   return ele[ROOT_KEY];
 }
 
-export const getPage = async (path = getPath()) => {
+export const getPage = async (path: string) => {
   let page = pages.get(path);
   if (page) return page;
   const response = await fetch(path, {
@@ -32,65 +33,72 @@ export const getPage = async (path = getPath()) => {
       "X-Navigation": "true",
     },
   });
+  if (!response.ok) {
+    return null;
+  }
   return await response.json();
 };
 
-export async function mount(path: string, page: Page) {
+export async function mount(
+  path: string,
+  Component: ComponentType<any>,
+  doc: DocumentInfo,
+) {
   const root = getRoot();
-  pages.set(path, page);
-  const { component: Component, props } = page;
+  pages.set(path, doc);
   const Document = (await import(getImportUrl("xanix-document"))).default;
 
-  const doc = (
-    <Document
-      document={{
-        pageId: page.pageId,
-        props: page.props,
-        title: page.title,
-        meta: page.meta,
-      }}
-    >
-      <Component {...props} />
-    </Document>
-  );
   root.render(
-    <Document
-      document={{
-        pageId: page.pageId,
-        props: page.props,
-        title: page.title,
-        meta: page.meta,
-      }}
-    >
-      <Component {...props} />
+    <Document document={doc}>
+      <Component {...doc.props} />
     </Document>,
   );
 }
 
 if (typeof window !== "undefined") {
+  const dispatch = (name: string, path: string) => {
+    window.dispatchEvent(
+      new CustomEvent(`xanix:${name}`, { detail: { path } }),
+    );
+  };
+
   window.addEventListener("load", async () => {
-    const { pageId, props, title, meta } = (window as any).XANIX_DOCUMENT;
-    const mod = await import(getImportUrl(pageId));
-    mount(getPath(), {
-      component: mod.default,
-      pageId,
-      props,
-      meta,
-      title,
-    });
+    const path = getPath();
+    dispatch("navigate:start", path);
+    const doc = (window as any).XANIX_DOCUMENT;
+    const mod = await import(getImportUrl(doc.pageId));
+    mount(path, mod.default, doc);
+    const scriptTag = document.getElementById(doc.pageId);
+    if (scriptTag) {
+      scriptTag.remove();
+    }
+    dispatch("navigate:end", path);
   });
 
-  // POPSTATE event listener for handling browser navigation (back/forward)
-  // window.addEventListener("popstate", async () => {
-  //   const path = getPath();
-  //   let page: any = await getPage(path);
-  //   const mod = await import(getImportUrl(page.pageId));
-  //   mount(path, {
-  //     pageId: page.pageId,
-  //     component: mod.default,
-  //     props: page.props,
-  //     meta: page.meta,
-  //     title: page.title,
-  //   });
-  // });
+  window.addEventListener("xanix:navigate", async (event: any) => {
+    const path = event.detail.path;
+    dispatch("navigate:start", path);
+    let page: any = await getPage(path);
+    if (!page) return;
+    const mod = await import(getImportUrl(page.pageId));
+    mount(path, mod.default, page);
+    history.pushState(null, "", path);
+    dispatch("navigate:end", path);
+  });
+
+  window.addEventListener("xanix:preload", async (event: any) => {
+    const path = event.detail.path;
+    if (!path) return;
+    dispatch("preload:start", path);
+    const page = await getPage(path);
+    if (!page) return;
+    await import(getImportUrl(page.pageId));
+    pages.set(path, page);
+    dispatch("preload:end", path);
+  });
+
+  window.addEventListener("popstate", async () => {
+    const path = getPath();
+    dispatch("navigate", path);
+  });
 }
