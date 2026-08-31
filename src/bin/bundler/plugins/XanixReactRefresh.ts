@@ -6,6 +6,7 @@ import traverse from "@babel/traverse";
 import generate from "@babel/generator";
 import * as t from "@babel/types";
 import { createRequire } from "node:module";
+import { getClientRuntimeFile } from "../../include/utils.js";
 const require = createRequire(import.meta.url);
 const root = process.cwd();
 
@@ -14,10 +15,9 @@ export default function xanixReactRefresh(): Plugin {
     name: "xanix-react-refresh",
 
     load(id) {
-      if (path.resolve(id) !== require.resolve("xanix/runtime")) {
+      if (path.resolve(id) !== getClientRuntimeFile()) {
         return null;
       }
-
       const code = fs.readFileSync(id, "utf8");
 
       const refreshCode = `
@@ -62,7 +62,7 @@ if (typeof window !== "undefined") {
     },
 
     transform(code, id) {
-      if (path.resolve(id) === require.resolve("xanix/runtime")) {
+      if (path.resolve(id) === getClientRuntimeFile()) {
         return null;
       }
       if (id.includes("node_modules") || id.includes("xanix\\dist")) {

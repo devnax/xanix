@@ -1,12 +1,9 @@
 import { rollup, type InputOption } from "rollup";
 import fs from "node:fs";
-import { createRequire } from "node:module";
 import { XanixClientEntry } from "../types";
 import bundlerOutput, { outDir } from "./config/output.js";
-import { getDocumentFile } from "../include/utils.js";
+import { getDocumentFile, getClientRuntimeFile } from "../include/utils.js";
 import { xanixDefaultPlugins } from "./plugins/plugins.js";
-
-const require = createRequire(import.meta.url);
 
 const buildClient = async (entries: XanixClientEntry[]) => {
   const input: InputOption = {};
@@ -14,7 +11,7 @@ const buildClient = async (entries: XanixClientEntry[]) => {
     input[entry.name] = entry.file;
   }
 
-  input["xanix-runtime"] = require.resolve("xanix/runtime");
+  input["xanix-runtime"] = getClientRuntimeFile();
   input["xanix-document"] = await getDocumentFile();
 
   fs.rmSync(outDir.client, {

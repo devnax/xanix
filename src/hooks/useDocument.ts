@@ -1,4 +1,4 @@
-import { DocumentContext } from "./DocumentContext";
+import { DocumentContext } from "../components/DocumentContext";
 import { useContext } from "react";
 
 const useDocument = () => {

@@ -4,7 +4,7 @@ import { nodeResolve } from "@rollup/plugin-node-resolve";
 import { build, type Plugin } from "esbuild";
 import { XanixClientEntry } from "../types";
 import { createRequire } from "node:module";
-import { getDocumentFile } from "../include/utils.js";
+import { getClientRuntimeFile, getDocumentFile } from "../include/utils.js";
 import esbuild from "rollup-plugin-esbuild";
 import url from "@rollup/plugin-url";
 
@@ -31,7 +31,7 @@ const GenerateGraph = async (entries: XanixClientEntry[]) => {
     input.push(entry.file);
   }
 
-  input.push(require.resolve("xanix/runtime"));
+  input.push(getClientRuntimeFile());
   input.push(await getDocumentFile());
 
   const bundle = await rollup({
@@ -174,6 +174,8 @@ const bundleDeps = async (input: Record<string, string>, outdir: string) => {
     define: {
       __XANIX_CLIENT__: "true",
       __XANIX_SERVER__: "false",
+      __XANIX_DEV__: "true",
+      __XANIX_PROD__: "false",
     },
     plugins: [makeCjsWrapperPlugin(wrappers)],
   });

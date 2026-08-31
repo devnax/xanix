@@ -1,25 +1,34 @@
 #!/usr/bin/env node
 
 import { Command } from "commander";
+
 import dev from "./cli/dev.js";
+import build from "./cli/build.js";
 import start from "./cli/start.js";
 
 const program = new Command();
 
-program
-  .name("xanix")
-  .description("Xanix application CLI")
-  .argument("[entry]", "entry file")
-  .option("--watch, -w", "watch for file changes")
-  .action(async (entry, options) => {
-    entry = entry ?? "index.tsx";
-    let watch = options.watch ?? false;
+program.name("xanix").description("Xanix application CLI");
 
-    if (watch) {
-      await dev(entry);
-    } else {
-      await start(entry);
-    }
+program
+  .command("dev")
+  .description("Start the Xanix development server")
+  .argument("[entry]", "entry file", "index.tsx")
+  .action(async (entry) => {
+    await dev(entry);
   });
 
-program.parseAsync();
+program
+  .command("build")
+  .description("Build the Xanix application")
+  .argument("[entry]", "entry file", "index.tsx")
+  .action(async (entry) => {
+    await build(entry);
+  });
+
+program
+  .command("start")
+  .description("Start the production server")
+  .action(start);
+
+await program.parseAsync();

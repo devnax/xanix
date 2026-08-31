@@ -1,15 +1,11 @@
 import { watch, type InputOption, type RollupWatcher } from "rollup";
 import bundlerOutput, { outDir } from "./config/output.js";
 import fs from "node:fs";
-import { createRequire } from "node:module";
 import { XanixClientEntry } from "../types.js";
 import BuildCache from "./cacheNpmModules.js";
 import XanixResolveCacheDeps from "./plugins/XanixResolveCacheDeps/index.js";
-import xanixReactRefresh from "./plugins/XanixReactRefresh.js";
-import { getDocumentFile } from "../include/utils.js";
+import { getDocumentFile, getClientRuntimeFile } from "../include/utils.js";
 import { xanixDefaultPlugins } from "./plugins/plugins.js";
-
-const require = createRequire(import.meta.url);
 
 type Option = {
   onChange?: (entry: string, event?: string) => void;
@@ -26,7 +22,7 @@ const WatchClient = async (
     input[entry.name] = entry.file;
   }
 
-  input["xanix-runtime"] = require.resolve("xanix/runtime");
+  input["xanix-runtime"] = getClientRuntimeFile();
   input["xanix-document"] = await getDocumentFile();
 
   fs.rmSync(outDir.client, {

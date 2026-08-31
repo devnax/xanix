@@ -1,15 +1,12 @@
-import { useDocument } from "../document/index.js";
 import { useState, useEffect } from "react";
+import useRequest from "./useRequest.js";
 
-export const useLocation = () => {
-  const _document = useDocument();
-  const req: any = _document?.request;
-  let _url;
-  if (__XANIX_SERVER__) {
-    _url = new URL(req.originalUrl, `${req.protocol}://${req.get("host")}`);
-  } else {
-    _url = new URL(window.location.href);
-  }
+const useLocation = () => {
+  const req: any = useRequest();
+  let _url = __XANIX_SERVER__
+    ? new URL(req.originalUrl, `${req.protocol}://${req.get("host")}`)
+    : new URL(window.location.href);
+
   const [url, setUrl] = useState(_url);
   useEffect(() => {
     const onNavigate = () => setUrl(new URL(window.location.href));
@@ -20,3 +17,5 @@ export const useLocation = () => {
   }, []);
   return url;
 };
+
+export default useLocation;

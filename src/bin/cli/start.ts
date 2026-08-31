@@ -7,18 +7,7 @@ import { spawn } from "child_process";
 import { outDir } from "../bundler/config/output.js";
 let child: any;
 
-const build = async (rootEntry: string) => {
-  logger.info(pc.green("Building server..."), "server");
-  const st = Date.now();
-  await buildServer({
-    rootEntry,
-    onBuildEnd: async (entries) => {
-      logger.info(pc.green("Building client..."), "client");
-      const duration = Date.now() - st;
-      await buildClient(entries);
-      logger.info(pc.green(`Build completed in ${duration}ms`), "complete");
-    },
-  });
+const start = async () => {
   const filePath = path.join(outDir.server, "index.js");
   child = spawn(process.execPath, [filePath], {
     stdio: "inherit",
@@ -35,4 +24,4 @@ const build = async (rootEntry: string) => {
   });
 };
 
-export default build;
+export default start;

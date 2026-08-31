@@ -1,6 +1,6 @@
-import { navigate } from "../navigation/navigate.js";
+import { navigate } from "../navigate.js";
 import { useEffect, useState } from "react";
-import useDocument from "../document/useDocument.js";
+import useDocument from "./useDocument.js";
 
 const getParams = () => {
   return new URLSearchParams(window.location.search);
@@ -15,26 +15,12 @@ const buildUrl = (params: URLSearchParams) => {
   );
 };
 
-export const useSearchParams = () => {
+const useSearchParams = () => {
   const { request }: any = useDocument();
   let _params = new URLSearchParams(
     __XANIX_SERVER__ ? request.url.split("?")[1] || "" : window.location.search,
   );
   const [params, setParams] = useState(_params);
-
-  useEffect(() => {
-    const onNavigate = () => {
-      setParams(getParams());
-    };
-
-    window.addEventListener("xanix:navigate:end", onNavigate);
-    window.addEventListener("popstate", onNavigate);
-
-    return () => {
-      window.removeEventListener("xanix:navigate:end", onNavigate);
-      window.removeEventListener("popstate", onNavigate);
-    };
-  }, []);
 
   const update = (newParams: URLSearchParams) => {
     setParams(newParams);
@@ -84,3 +70,5 @@ export const useSearchParams = () => {
     toString: () => params.toString(),
   };
 };
+
+export default useSearchParams;

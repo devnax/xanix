@@ -1,4 +1,4 @@
-import { DocumentContextData } from "../document/DocumentContext";
+import type { DocumentContextData } from "./components/DocumentContext.js";
 import type { ComponentType } from "react";
 import { createRoot, type Root } from "react-dom/client";
 

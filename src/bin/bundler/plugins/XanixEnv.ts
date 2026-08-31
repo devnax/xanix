@@ -54,22 +54,9 @@ export default function XanixEnvPlugin(
   const envs = {
     "process.env.NODE_ENV": JSON.stringify(mode),
 
-    "typeof window": isClient ? '"object"' : '"undefined"',
-    "typeof document": isClient ? '"object"' : '"undefined"',
-    "typeof navigator": isClient ? '"object"' : '"undefined"',
-    "typeof location": isClient ? '"object"' : '"undefined"',
-    "typeof history": isClient ? '"object"' : '"undefined"',
+    // "typeof window": isClient ? '"object"' : '"undefined"',
+    // "typeof document": isClient ? '"object"' : '"undefined"',
 
-    // Browser runtime
-    "typeof localStorage": isClient ? '"object"' : '"undefined"',
-    "typeof sessionStorage": isClient ? '"object"' : '"undefined"',
-
-    // Node runtime
-    "typeof process": isClient ? '"undefined"' : '"object"',
-    "typeof Buffer": isClient ? '"undefined"' : '"function"',
-    "typeof global": isClient ? '"undefined"' : '"object"',
-
-    // Framework flags
     __XANIX_CLIENT__: JSON.stringify(isClient),
     __XANIX_SERVER__: JSON.stringify(!isClient),
     __XANIX_DEV__: JSON.stringify(mode === "development"),

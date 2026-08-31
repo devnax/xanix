@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import useDocument from "./useDocument.js";
+import useDocument from "../hooks/useDocument.js";
 
 type HeadProps = {
   children?: React.ReactNode;
@@ -52,7 +52,7 @@ const Head = ({ children }: HeadProps) => {
         `,
         }}
       ></script>
-      <script type="module" src={"/.xanix/client/xanix-runtime.js"}></script>
+      <script type="module" src={`/.xanix/client/xanix-runtime.js`}></script>
     </head>
   );
 };

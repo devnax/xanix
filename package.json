@@ -19,25 +19,9 @@
       "import": "./dist/server/page.js",
       "require": "./dist/server/page.js"
     },
-    "./server": {
-      "import": "./dist/server/index.js",
-      "require": "./dist/server/index.js"
-    },
     "./runtime": {
-      "import": "./dist/client/runtime.js",
-      "require": "./dist/client/runtime.js"
-    },
-    "./navigation": {
-      "import": "./dist/navigation/index.js",
-      "require": "./dist/navigation/index.js"
-    },
-    "./router": {
-      "import": "./dist/router/index.js",
-      "require": "./dist/router/index.js"
-    },
-    "./document": {
-      "import": "./dist/document/index.js",
-      "require": "./dist/document/index.js"
+      "import": "./dist/server/runtime/index.js",
+      "require": "./dist/server/runtime/index.js"
     }
   },
   "scripts": {

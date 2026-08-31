@@ -2,8 +2,8 @@ import React, { useEffect } from "react";
 import Button from "@xanui/ui/Button";
 import { createTheme, ThemeProvider } from "@xanui/core";
 // import img from "./image.png";
-import { navigate, useLocation } from "../src/navigation/index.js";
-import { useSearchParams, usePathname } from "../src/router/index.js";
+import { navigate, useLocation } from "../src/index.js";
+import { useSearchParams, usePathname, useCookies } from "../src/index.js";
 
 export type HomeProps = {
   name: string;
@@ -21,24 +21,27 @@ const Home = ({ name, products }: HomeProps) => {
   const location = useLocation();
   const searchParams = useSearchParams();
   const pathname = usePathname();
+  const cookies = useCookies();
+
+  console.log(cookies);
 
   useEffect(() => {
     console.log("pathname", pathname);
 
-    const interval = setInterval(() => {
-      setCount((prevCount) => prevCount + 1);
-    }, 1000);
-    return () => clearInterval(interval);
+    // const interval = setInterval(() => {
+    //   setCount((prevCount) => prevCount + 1);
+    // }, 1000);
+    // return () => clearInterval(interval);
   }, []);
 
   return (
-    <ThemeProvider theme={createTheme({ mode: "light", name: "default" })}>
+    <div>
       {name} {count}
       <button onClick={() => searchParams.set("key", "value")}>set</button>
       <button onClick={() => searchParams.delete("key")}>delete</button>
       <button onClick={() => console.log(searchParams.getAll())}>show</button>
       <Button onClick={() => alert("Button clicked!")}>Click</Button>
-      <button onClick={() => navigate("/abouts")}>About</button>
+      <button onClick={() => navigate("/about")}>About</button>
       <button onClick={() => navigate("/product")}>Product</button>
       {/* <img width={40} src={img} alt="Example" /> */}
       <ul>
@@ -50,7 +53,7 @@ const Home = ({ name, products }: HomeProps) => {
           ),
         )}
       </ul>
-    </ThemeProvider>
+    </div>
   );
 };
 

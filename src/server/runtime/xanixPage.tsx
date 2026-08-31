@@ -38,7 +38,7 @@ function renderPage(element: React.ReactElement): Promise<string> {
   });
 }
 
-export default async function xanix_page({
+export default async function xanixPage({
   pageId,
   req,
   res,

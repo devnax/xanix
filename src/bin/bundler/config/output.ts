@@ -21,7 +21,6 @@ const client = (
   for (const entry of entries) {
     _entries[entry.name] = entry;
   }
-  // console.log(_entries);
 
   const opt: OutputOptions = {
     dir: outDir.client,
@@ -39,7 +38,7 @@ const client = (
     opt.preserveModules = true;
     opt.preserveModulesRoot = process.cwd();
   } else {
-    opt.chunkFileNames = "chunks/[name]-[hash].js";
+    opt.chunkFileNames = "chunks/[hash].js";
     opt.assetFileNames = "assets/[name]-[hash][extname]";
   }
   return opt;

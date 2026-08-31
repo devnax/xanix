@@ -1,4 +1,5 @@
 import { Document, Head, Body, type DocumentProps } from "./src/index.js";
+import { AppRoot, createTheme } from "@xanui/core";
 
 if (typeof window !== "undefined") {
   window.addEventListener("xanix:navigate:start", (event: any) => {
@@ -7,10 +8,6 @@ if (typeof window !== "undefined") {
   window.addEventListener("xanix:navigate:end", (event: any) => {
     console.log("Navigation ended to:", event.detail.path);
   });
-}
-
-if (false) {
-  console.log("asd");
 }
 
 const RootDocument = ({ children, document }: DocumentProps) => {
@@ -23,7 +20,11 @@ const RootDocument = ({ children, document }: DocumentProps) => {
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         {req && <meta name="request-id" content={"req.id"} />}
       </Head>
-      <Body>{children}</Body>
+      <Body>
+        <AppRoot theme={createTheme({ name: "x", mode: "dark" })}>
+          {children}
+        </AppRoot>
+      </Body>
     </Document>
   );
 };

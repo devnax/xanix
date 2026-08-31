@@ -11,8 +11,7 @@ export interface XanixTransformResult {
   map: any;
 }
 
-const SERVER_IMPORT = "xanix/server";
-const PAGE_IMPORT = "xanix/page";
+const RUNTIME_IMPORT = "xanix/runtime";
 
 const SOURCE_EXTENSIONS = [".tsx", ".ts", ".jsx", ".js", ".mjs", ".cjs"];
 
@@ -551,17 +550,13 @@ function removeExpressImport(ast: t.File): void {
   removeEmptyImportDeclarations(ast);
 }
 
-/**
- * Check whether createXanixServer is already
- * imported from xanix/server.
- */
-function hascreateXanixServerImport(ast: t.File): boolean {
+function hasRuntimeImport(ast: t.File, name: string): boolean {
   for (const statement of ast.program.body) {
     if (!t.isImportDeclaration(statement)) {
       continue;
     }
 
-    if (statement.source.value !== SERVER_IMPORT) {
+    if (statement.source.value !== RUNTIME_IMPORT) {
       continue;
     }
 
@@ -569,7 +564,7 @@ function hascreateXanixServerImport(ast: t.File): boolean {
       if (
         t.isImportSpecifier(specifier) &&
         t.isIdentifier(specifier.imported) &&
-        specifier.imported.name === "createXanixServer"
+        specifier.imported.name === name
       ) {
         return true;
       }
@@ -579,70 +574,34 @@ function hascreateXanixServerImport(ast: t.File): boolean {
   return false;
 }
 
-/**
- * Add:
- *
- * import { createXanixServer } from "xanix/server";
- */
-function injectcreateXanixServerImport(ast: t.File): void {
-  if (hascreateXanixServerImport(ast)) {
+function injectRuntimeImport(ast: t.File, name: string): void {
+  if (hasRuntimeImport(ast, name)) {
     return;
   }
 
-  ast.program.body.unshift(
-    t.importDeclaration(
-      [
-        t.importSpecifier(
-          t.identifier("createXanixServer"),
-          t.identifier("createXanixServer"),
-        ),
-      ],
-      t.stringLiteral(SERVER_IMPORT),
-    ),
-  );
-}
-
-/**
- * Check whether xanix/page is already
- * imported.
- */
-function hasPageImport(ast: t.File): boolean {
+  // Find existing:
+  // import { ... } from "xanix/runtime";
   for (const statement of ast.program.body) {
     if (!t.isImportDeclaration(statement)) {
       continue;
     }
 
-    if (statement.source.value !== PAGE_IMPORT) {
+    if (statement.source.value !== RUNTIME_IMPORT) {
       continue;
     }
 
-    for (const specifier of statement.specifiers) {
-      if (
-        t.isImportDefaultSpecifier(specifier) &&
-        specifier.local.name === "xanixPage"
-      ) {
-        return true;
-      }
-    }
-  }
+    statement.specifiers.push(
+      t.importSpecifier(t.identifier(name), t.identifier(name)),
+    );
 
-  return false;
-}
-
-/**
- * Add:
- *
- * import xanixPage from "xanix/page";
- */
-function injectPageImport(ast: t.File): void {
-  if (hasPageImport(ast)) {
     return;
   }
 
+  // No runtime import exists yet
   ast.program.body.unshift(
     t.importDeclaration(
-      [t.importDefaultSpecifier(t.identifier("xanixPage"))],
-      t.stringLiteral(PAGE_IMPORT),
+      [t.importSpecifier(t.identifier(name), t.identifier(name))],
+      t.stringLiteral(RUNTIME_IMPORT),
     ),
   );
 }
@@ -867,9 +826,9 @@ export function transformer(
      * Add:
      *
      * import { createXanixServer }
-     *   from "xanix/server";
+     *   from "xanix/runtime";
      */
-    injectcreateXanixServerImport(ast);
+    injectRuntimeImport(ast, "createXanixServer");
   }
 
   /**
@@ -877,7 +836,7 @@ export function transformer(
    *
    * import xanixPage from "xanix/page";
    */
-  injectPageImport(ast);
+  injectRuntimeImport(ast, "xanixPage");
 
   /**
    * Remove empty imports.
