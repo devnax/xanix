@@ -8,6 +8,7 @@ export type DocumentContextData = {
   meta: Array<{ name: string; content: string }>;
   params: Record<string, string>;
   request?: Request;
+  pageData: Record<string, any>;
 };
 
 export const DocumentContext = createContext<DocumentContextData | null>(null);

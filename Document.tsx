@@ -1,14 +1,14 @@
 import { Document, Head, Body, type DocumentProps } from "./src/index.js";
 import { AppRoot, createTheme } from "@xanui/core";
 
-if (typeof window !== "undefined") {
-  window.addEventListener("xanix:navigate:start", (event: any) => {
-    console.log("Navigation started to:", event.detail.path);
-  });
-  window.addEventListener("xanix:navigate:end", (event: any) => {
-    console.log("Navigation ended to:", event.detail.path);
-  });
-}
+// if (typeof window !== "undefined") {
+//   window.addEventListener("xanix:navigate:start", (event: any) => {
+//     console.log("Navigation started to:", event.detail.path);
+//   });
+//   window.addEventListener("xanix:navigate:end", (event: any) => {
+//     console.log("Navigation ended to:", event.detail.path);
+//   });
+// }
 
 const RootDocument = ({ children, document }: DocumentProps) => {
   const req = document.request;

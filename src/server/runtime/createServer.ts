@@ -1,4 +1,5 @@
 import express from "express";
+import dataLoader from "../../dataLoader.js";
 
 export interface XanixProps {
   clientId: string;
@@ -35,6 +36,13 @@ function createXanixServer({ mode }: Options): express.Express {
       }),
     );
   }
+
+  app.post("/.xanix/__data__/:xanixId", express.json(), async (req, res) => {
+    const { xanixId } = req.params;
+    const args = req.body;
+    const data = await dataLoader.result(xanixId, args);
+    res.json({ data });
+  });
 
   app.use((req: any, res, next) => {
     let data: any = {

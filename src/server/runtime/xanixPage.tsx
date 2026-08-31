@@ -1,8 +1,9 @@
-import { renderToPipeableStream } from "react-dom/server";
+import { renderToPipeableStream, renderToString } from "react-dom/server";
 import readManifest from "./readManifest.js";
 import { PassThrough } from "node:stream";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import dataLoader from "../../dataLoader.js";
 
 interface XanixPageProps {
   pageId: string;
@@ -15,7 +16,9 @@ interface XanixPageProps {
 function renderPage(element: React.ReactElement): Promise<string> {
   return new Promise((resolve, reject) => {
     let html = "";
+
     const stream = new PassThrough();
+
     stream.on("data", (chunk) => {
       html += chunk.toString();
     });
@@ -26,15 +29,27 @@ function renderPage(element: React.ReactElement): Promise<string> {
 
     stream.on("error", reject);
 
-    const { pipe } = renderToPipeableStream(element, {
+    let didError = false;
+
+    const { pipe, abort } = renderToPipeableStream(element, {
       onAllReady() {
         pipe(stream);
       },
 
       onError(error) {
+        didError = true;
         console.error("SSR error:", error);
       },
+
+      onShellError(error) {
+        reject(error);
+      },
     });
+
+    // Optional timeout protection
+    setTimeout(() => {
+      abort();
+    }, 10_000);
   });
 }
 
@@ -58,10 +73,36 @@ export default async function xanixPage({
   }
 
   if (!entry) {
-    throw new Error(
-      `Xanix client entry "${pageId}" was not found in the manifest.`,
+    res.status(404).send("Page Not Found");
+    return;
+  }
+
+  const Document = (
+    await import(
+      pathToFileURL(path.join(process.cwd(), ".xanix", "xanix-document.js"))
+        .href
+    )
+  ).default;
+
+  if (!dataLoader.isInit(pageId)) {
+    renderToString(
+      <Document
+        document={{
+          pageId,
+          props,
+          title: title ?? entry.name.replaceAll("-", " "),
+          meta,
+          params: req.params,
+          request: req,
+          pageData: {},
+        }}
+      >
+        <Component {...props} />
+      </Document>,
     );
   }
+
+  const pageData = await dataLoader.results(pageId);
 
   if ("x-navigation" in req.headers) {
     res.setHeader("Content-Type", "application/json");
@@ -72,14 +113,9 @@ export default async function xanixPage({
       meta,
       params: req.params,
       request: null,
+      pageData,
     });
   }
-  const Document = (
-    await import(
-      pathToFileURL(path.join(process.cwd(), ".xanix", "xanix-document.js"))
-        .href
-    )
-  ).default;
 
   const html = await renderPage(
     <Document
@@ -90,11 +126,11 @@ export default async function xanixPage({
         meta,
         params: req.params,
         request: req,
+        pageData,
       }}
     >
       <Component {...props} />
     </Document>,
   );
-
   return `<!DOCTYPE html>${html}`;
 }

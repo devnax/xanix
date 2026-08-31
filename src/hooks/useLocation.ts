@@ -9,7 +9,13 @@ const useLocation = () => {
 
   const [url, setUrl] = useState(_url);
   useEffect(() => {
-    const onNavigate = () => setUrl(new URL(window.location.href));
+    const onNavigate = (e: any) => {
+      const path = e.detail.path;
+      const url = new URL(path, window.location.origin);
+      const newUrl = new URL(window.location.href);
+      if (url.href === newUrl.href) return;
+      setUrl(newUrl);
+    };
     window.addEventListener("xanix:navigate:end", onNavigate);
     return () => {
       window.removeEventListener("xanix:navigate:end", onNavigate);

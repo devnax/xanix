@@ -2,6 +2,7 @@ import Home from "./app/Home";
 import About from "./app/about";
 import express from "express";
 import productsRouter from "./products/index.tsx";
+import ErrorPage from "./app/Error.tsx";
 
 const app = express();
 app.use("/product", productsRouter);
@@ -19,11 +20,17 @@ app.get("/", (req, res) => {
       ]}
     />,
   );
+
+  return;
 });
 
 app.get("/about", (req, res) => {
   res.send(<About />);
 });
+
+// app.get(/.*/, (req, res) => {
+//   res.status(404).send(<ErrorPage />);
+// });
 
 app.listen(3000, () => {
   console.log("Server is running on http://localhost:3000");

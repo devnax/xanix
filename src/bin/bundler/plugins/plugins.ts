@@ -3,13 +3,13 @@ import XanixTsconfigAlias from "./XanixTsconfigAlias.js";
 import { nodeResolve } from "@rollup/plugin-node-resolve";
 import commonjs from "@rollup/plugin-commonjs";
 import json from "@rollup/plugin-json";
-import replace from "@rollup/plugin-replace";
 import esbuild from "rollup-plugin-esbuild";
 import url from "@rollup/plugin-url";
 import path from "path";
 import { XanixTransform } from "./XanixTransform/index.js";
 import xanixReactRefresh from "./XanixReactRefresh.js";
 import XanixEnvPlugin from "./XanixEnv.js";
+import xanixUseDataId from "./xanixUseDataId.js";
 
 export interface XanixRollupOptions {
   target?: "client" | "server";
@@ -30,7 +30,7 @@ export function xanixDefaultPlugins(
 
   if (isServer) {
     _plugins.push(XanixTransform({ mode: development ? "watch" : "start" }));
-    // _plugins.push(xanixBrowserCodeRemover());
+    // _plugins.push(xanixServerData());
   } else {
     if (development) {
       _plugins.push(xanixReactRefresh());
@@ -78,6 +78,7 @@ export function xanixDefaultPlugins(
 
     commonjs(),
     json(),
+    xanixUseDataId(),
     ..._plugins,
 
     esbuild({

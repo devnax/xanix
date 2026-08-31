@@ -1,4 +1,4 @@
-import useHeaders from "./useHeaders";
+import useHeaders from "./useHeaders.js";
 
 const useCookies = () => {
   const headers = useHeaders();

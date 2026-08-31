@@ -14,6 +14,7 @@ import usePage from "./hooks/usePage.js";
 import useRequest from "./hooks/useRequest.js";
 import useHeaders from "./hooks/useHeaders.js";
 import useCookies from "./hooks/useCookies.js";
+import useData from "./hooks/useData.js";
 
 // navigate
 import {
@@ -48,6 +49,7 @@ export {
   useRequest,
   useHeaders,
   useCookies,
+  useData,
 
   // navigate
   navigate,

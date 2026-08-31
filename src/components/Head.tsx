@@ -6,7 +6,7 @@ type HeadProps = {
 };
 
 const Head = ({ children }: HeadProps) => {
-  const { title, meta, pageId, props, params } = useDocument();
+  const { title, meta, pageId, props, params, pageData } = useDocument();
   useEffect(() => {
     document.title = title || "";
     meta?.forEach(({ name, content }) => {
@@ -47,6 +47,7 @@ const Head = ({ children }: HeadProps) => {
             meta,
             title,
             params,
+            pageData,
             request: null,
           })};
         `,

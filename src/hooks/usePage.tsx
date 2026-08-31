@@ -1,4 +1,4 @@
-import useDocument from "./useDocument";
+import useDocument from "./useDocument.js";
 
 const usePage = () => {
   const { pageId, props }: any = useDocument();

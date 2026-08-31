@@ -1,4 +1,4 @@
-import useRequest from "./useRequest";
+import useRequest from "./useRequest.js";
 
 const useHeaders = () => {
   const request = useRequest();

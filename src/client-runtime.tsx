@@ -33,12 +33,18 @@ export const getPage = async (path: string) => {
       "X-Navigation": "true",
     },
   });
-  if (!response.ok) {
-    return null;
+  try {
+    const page = await response.json();
+    if (!page) return null;
+    if (page.pageId && page.props && page.meta && page.params) {
+      return page;
+    }
+    throw new Error("Invalid page structure");
+  } catch (error) {
+    console.error("Failed to fetch page:", error);
   }
-  return await response.json();
+  return null;
 };
-
 export async function mount(
   path: string,
   Component: ComponentType<any>,
@@ -75,20 +81,32 @@ if (typeof window !== "undefined") {
     dispatch("navigate:end", path);
   });
 
+  window.addEventListener("popstate", async () => {
+    dispatch("navigate", getPath());
+  });
+
   window.addEventListener("xanix:navigate", async (event: any) => {
-    const path = event.detail.path;
-    const replace = event.detail.replace;
+    const { path, replace } = event.detail;
+    const currentPath = getPath();
+    if (path === currentPath) return;
+
+    const url = new URL(path, window.location.origin);
+    const prevUrl = new URL(currentPath, window.location.origin);
+    const isSamePath = url.pathname === prevUrl.pathname;
+
     dispatch("navigate:start", path);
     let page: any = await getPage(path);
     if (!page) return;
-    const mod = await import(getImportUrl(page.pageId));
-    mount(path, mod.default, page);
+    if (!isSamePath) {
+      const mod = await import(getImportUrl(page.pageId));
+      mount(path, mod.default, page);
+    }
+    dispatch("navigate:end", path);
     if (replace) {
       history.replaceState(null, "", path);
     } else {
       history.pushState(null, "", path);
     }
-    dispatch("navigate:end", path);
   });
 
   window.addEventListener("xanix:preload", async (event: any) => {
@@ -111,10 +129,5 @@ if (typeof window !== "undefined") {
     mount(path, mod.default, page);
     history.pushState(null, "", path);
     dispatch("navigate:end", path);
-  });
-
-  window.addEventListener("popstate", async () => {
-    const path = getPath();
-    dispatch("navigate", path);
   });
 }

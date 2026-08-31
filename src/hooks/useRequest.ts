@@ -1,4 +1,4 @@
-import useDocument from "./useDocument";
+import useDocument from "./useDocument.js";
 
 const useRequest = () => {
   const { request } = useDocument();
