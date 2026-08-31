@@ -60,6 +60,7 @@ const GenerateGraph = async (entries: XanixClientEntry[]) => {
         fileName: "assets/[name]-[hash][extname]",
         emitFiles: false,
       }),
+
       esbuild({
         target: "es2022",
         jsx: "automatic",

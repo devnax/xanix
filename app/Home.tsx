@@ -35,17 +35,11 @@ const Data = () => {
 const Home = ({ name, products }: HomeProps) => {
   const [count, setCount] = React.useState(0);
   // const location = useLocation();
-  const searchParams = useSearchParams();
-  const pathname = usePathname();
-  const cookies = useCookies();
-  const page = usePage();
-  const category = "category";
+  // const searchParams = useSearchParams();
+  // const pathname = usePathname();
+  // const cookies = useCookies();
+  // const page = usePage();
   const [open, setOpen] = React.useState(false);
-  const d = useData(async (args: any) => {
-    return { name: "nax" };
-  });
-
-  // console.log(d);
 
   useEffect(() => {
     setCount(count + 1);
@@ -53,13 +47,13 @@ const Home = ({ name, products }: HomeProps) => {
 
   return (
     <div>
-      {d.data?.name} {count}
+      {name} {count}
       {open && <Data />}
       <button onClick={() => setOpen(!open)}>Toggle Data</button>
       <button onClick={() => d.reload()}>reload</button>
-      <button onClick={() => searchParams.set("key", "value")}>set</button>
+      {/* <button onClick={() => searchParams.set("key", "value")}>set</button>
       <button onClick={() => searchParams.delete("key")}>delete</button>
-      <button onClick={() => console.log(searchParams.getAll())}>show</button>
+      <button onClick={() => console.log(searchParams.getAll())}>show</button> */}
       <Button onClick={() => alert("Button clicked!")}>Click</Button>
       <button onClick={() => navigate("/abouts")}>About</button>
       <button onClick={() => navigate("/product")}>Product</button>
