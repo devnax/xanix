@@ -53,7 +53,10 @@ const watchServer = async ({
         target: "server",
         development: true,
         assetExternal: false,
-        onChange: onChange,
+        onChange: (entry) => {
+          changedFiles.add(entry);
+          return onChange?.(entry);
+        },
       }),
     ],
 
@@ -62,14 +65,15 @@ const watchServer = async ({
         id.startsWith(".") ||
         path.isAbsolute(id) ||
         id === "@" ||
-        id.startsWith("@/")
+        id.startsWith("@/") ||
+        id.startsWith("xanix")
       ) {
         return false;
       }
       return true;
     },
 
-    output: bundlerOutput.server(),
+    output: bundlerOutput.server({ isDev: true }),
     watch: {
       clearScreen: false,
     },
@@ -82,6 +86,7 @@ const watchServer = async ({
       case "BUNDLE_END":
         if (changedFiles.size) {
           const manifest = await readManifest();
+
           if (manifest) {
             for (const entry of changedFiles) {
               const isClientEntry = Array.from(manifest.entries.values()).find(

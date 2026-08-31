@@ -58,7 +58,8 @@ const BuildServer = async ({ rootEntry, onBuildEnd }: WatcherOptions) => {
         id.startsWith(".") ||
         path.isAbsolute(id) ||
         id === "@" ||
-        id.startsWith("@/")
+        id.startsWith("@/") ||
+        id.startsWith("xanix")
       ) {
         return false;
       }
@@ -66,7 +67,7 @@ const BuildServer = async ({ rootEntry, onBuildEnd }: WatcherOptions) => {
     },
   });
 
-  await build.write(bundlerOutput.server());
+  await build.write(bundlerOutput.server({ isDev: false }));
 
   await build.close();
   await onBuildEnd(entries);

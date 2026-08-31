@@ -15,7 +15,7 @@ let child: any;
 
 function start(): Promise<any> {
   child?.kill();
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     const filePath = path.join(outDir.server, "index.js");
     child = spawn(process.execPath, [filePath], {
       stdio: !child ? "inherit" : "pipe",
@@ -92,7 +92,7 @@ const dev = async (rootEntry: string) => {
     async onClientEntryChange(_entry: string, entries: XanixClientEntry[]) {
       await clientWatcher(entries);
     },
-    onServerChange: async (entry: string, entries: XanixClientEntry[]) => {
+    onServerChange: async (_entry: string, _entries: XanixClientEntry[]) => {
       await start();
     },
     onBuildEnd: async () => {

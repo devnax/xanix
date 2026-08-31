@@ -44,11 +44,11 @@ const client = (
   return opt;
 };
 
-const server = (): OutputOptions => {
+const server = (opt: Options): OutputOptions => {
   return {
     dir: outDir.server,
     format: "esm",
-    sourcemap: false,
+    sourcemap: opt.isDev ?? true,
     entryFileNames: "[name].js",
     chunkFileNames: "chunks/[hash].js",
     assetFileNames: "assets/[hash][extname]",
