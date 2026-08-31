@@ -1,23 +1,12 @@
 import fs from "node:fs";
 import path from "node:path";
-
 import ts from "typescript";
 import alias from "@rollup/plugin-alias";
 import type { Plugin } from "rollup";
 
-export interface XanixTsconfigAliasOptions {
-  tsconfigPath?: string;
-  root?: string;
-}
-
-export default function xanixTsconfigAlias(
-  options: XanixTsconfigAliasOptions = {},
-): Plugin {
-  const root = options.root ?? process.cwd();
-
-  const tsconfigPath = options.tsconfigPath
-    ? path.resolve(root, options.tsconfigPath)
-    : path.resolve(root, "tsconfig.json");
+export default function xanixTsconfigAlias(): Plugin {
+  const root = process.cwd();
+  const tsconfigPath = path.resolve(root, "tsconfig.json");
 
   if (!fs.existsSync(tsconfigPath)) {
     return {

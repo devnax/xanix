@@ -55,6 +55,9 @@ const dev = async (rootEntry: string) => {
   let _clientWatcher: RollupWatcher | null = null;
 
   const clientWatcher = async (entries: XanixClientEntry[]) => {
+    if (!entries.length) {
+      return;
+    }
     let changedFiles = new Set<string>();
     _clientWatcher?.close();
     _clientWatcher = await watchClient(entries, {

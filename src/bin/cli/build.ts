@@ -11,7 +11,9 @@ const build = async (rootEntry: string) => {
     onBuildEnd: async (entries) => {
       logger.info(pc.green("Building client..."), "client");
       const duration = Date.now() - st;
-      await buildClient(entries);
+      if (entries.length) {
+        await buildClient(entries);
+      }
       logger.info(pc.green(`Build completed in ${duration}ms`), "complete");
     },
   });

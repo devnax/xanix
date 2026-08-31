@@ -86,6 +86,12 @@ export function xanixDefaultPlugins(
       jsx: "automatic",
       tsconfig: false,
       minify: !development,
+      define: {
+        __XANIX_CLIENT__: JSON.stringify(isClient),
+        __XANIX_SERVER__: JSON.stringify(isServer),
+        __XANIX_DEV__: JSON.stringify(development),
+        __XANIX_PROD__: JSON.stringify(!development),
+      },
     }),
   ];
 }

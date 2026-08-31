@@ -33,7 +33,13 @@ const WatchClient = async (
   fs.mkdirSync(outDir.client, {
     recursive: true,
   });
-  const buildCache = await BuildCache(entries);
+
+  let buildCache: Map<string, any>;
+  if (entries.length > 0) {
+    buildCache = await BuildCache(entries);
+  } else {
+    buildCache = new Map();
+  }
   const watcher = watch({
     input,
     treeshake: true,

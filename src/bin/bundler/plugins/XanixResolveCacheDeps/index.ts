@@ -7,6 +7,11 @@ function XanixResolveCacheDeps(
   metadata: CacheMetadata,
   entries: XanixClientEntry[],
 ): Plugin {
+  if (!entries.length) {
+    return {
+      name: "xanix:cached-deps",
+    };
+  }
   return {
     name: "xanix:cached-deps",
 

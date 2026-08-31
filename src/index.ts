@@ -27,11 +27,6 @@ import {
   reload,
 } from "./navigate.js";
 
-export const isClient = __XANIX_CLIENT__;
-export const isServer = __XANIX_SERVER__;
-export const isDevelopment = __XANIX_DEV__;
-export const isProduction = __XANIX_PROD__;
-
 export {
   Link,
   Document,
