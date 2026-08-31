@@ -3,6 +3,8 @@ import "express";
 declare global {
   const __XANIX_CLIENT__: boolean;
   const __XANIX_SERVER__: boolean;
+  const __XANIX_DEV__: boolean;
+  const __XANIX_PROD__: boolean;
 }
 
 declare module "express-serve-static-core" {

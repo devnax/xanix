@@ -61,5 +61,4 @@ export {
   reload,
 };
 
-export type * from "./types";
 export type { DocumentProps };

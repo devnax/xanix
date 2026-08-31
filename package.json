@@ -1,6 +1,6 @@
 {
   "name": "xanix",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "",
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -9,7 +9,7 @@
   "type": "module",
   "files": [
     "dist",
-    "src/xanix-env.d.ts"
+    "xanix-env.d.ts"
   ],
   "exports": {
     ".": {
