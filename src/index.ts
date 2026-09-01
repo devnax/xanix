@@ -1,3 +1,7 @@
+/// <reference path="./types/globals.d.ts" />
+/// <reference path="./types/express.d.ts" />
+/// <reference path="./types/assets.d.ts" />
+
 import Link from "./components/Link.js";
 import Document, { DocumentProps } from "./components/Document.js";
 import Head from "./components/Head.js";

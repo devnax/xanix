@@ -1,6 +1,6 @@
 {
   "name": "xanix",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "",
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -8,8 +8,7 @@
   "bin": "./dist/bin/index.js",
   "type": "module",
   "files": [
-    "dist",
-    "xanix-env.d.ts"
+    "dist"
   ],
   "exports": {
     ".": {
@@ -27,8 +26,7 @@
   },
   "scripts": {
     "dev": "tsc --watch --preserveWatchOutput",
-    "build": "tsc",
-    "start": "node dist/index.js"
+    "build": "tsc && node scripts/build-types.js"
   },
   "keywords": [],
   "author": "Naxrul Ahmed",

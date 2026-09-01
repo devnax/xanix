@@ -7,7 +7,7 @@ type XanixDT = {
   callback: Callback;
 };
 
-let global: any = typeof window === "undefined" ? globalThis : window;
+let global: any = __XANIX_SERVER__ ? globalThis : window;
 global.$XANIXDT_INITIALED = new Map<PageId, boolean>();
 global.$XANIXDT = new Map<XanixId, XanixDT>();
 global.$XANIXDT_PAGES = new Map<PageId, XanixId[]>();
@@ -31,16 +31,24 @@ const registerPage = (
 };
 
 const results = async (pageId: PageId) => {
-  global.$XANIXDT_INITIALED.set(pageId, true);
+  if (global.$XANIXDT_INITIALED.has(pageId)) {
+    return global.$XANIXDT_INITIALED.get(pageId);
+  }
+
   const page = global.$XANIXDT_PAGES.get(pageId) || [];
-  const datas: Record<string, any> = {};
+  const datas: Record<XanixId, any> = {};
+
   await Promise.all(
     page.map(async (xanixId: XanixId) => {
-      const { callback, args } = global.$XANIXDT.get(xanixId)!;
-      const data = await callback(args);
-      datas[xanixId] = data;
+      const item = global.$XANIXDT.get(xanixId);
+      if (!item) return;
+      const { callback, args } = item;
+      datas[xanixId] = await callback(args);
     }),
   );
+
+  global.$XANIXDT_INITIALED.set(pageId, datas);
+
   return datas;
 };
 

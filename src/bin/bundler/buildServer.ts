@@ -5,7 +5,7 @@ import fs from "node:fs";
 import { createManifest } from "../include/manifest.js";
 import { XanixClientEntry } from "../types.js";
 import generateClientEntries from "./generateClientEntries.js";
-import { getDocumentFile } from "../include/utils.js";
+import { getDocumentFile, getDocumentFileName } from "../include/utils.js";
 import { xanixDefaultPlugins } from "./plugins/plugins.js";
 
 const root = process.cwd();
@@ -27,9 +27,10 @@ const BuildServer = async ({ rootEntry, onBuildEnd }: WatcherOptions) => {
 
   const entries = await generateClientEntries();
   await createManifest(entries);
+  const documentFileName = getDocumentFileName("production");
   const input = {
     index: path.resolve(root, rootEntry),
-    "xanix-document": await getDocumentFile(),
+    [documentFileName]: await getDocumentFile(),
   };
 
   const build = await rollup({

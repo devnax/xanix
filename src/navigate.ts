@@ -1,6 +1,6 @@
 export const navigate = (path: string, replace = false) => {
   window.dispatchEvent(
-    new CustomEvent("xanix:navigate", {
+    new CustomEvent(XANIX_NAVIGATE, {
       detail: { path, replace },
     }),
   );
@@ -15,25 +15,27 @@ export const forward = () => {
 };
 
 export const preload = async (path: string) => {
-  window.dispatchEvent(new CustomEvent("xanix:preload", { detail: { path } }));
+  window.dispatchEvent(new CustomEvent(XANIX_PRELOAD, { detail: { path } }));
 };
 
 export const reload = (hard = false) => {
-  if (hard) {
-    window.location.reload();
-    return;
+  if (__XANIX_CLIENT__) {
+    if (hard) {
+      window.location.reload();
+    } else {
+      window.dispatchEvent(new CustomEvent(XANIX_NAVIGATE_RELOAD));
+    }
   }
-  window.dispatchEvent(new CustomEvent("xanix:reload"));
 };
 
 export const onNavigateStart = (callback: () => void) => {
   if (__XANIX_CLIENT__) {
-    window.addEventListener("xanix:navigate:start", callback);
+    window.addEventListener(XANIX_NAVIGATE_START, callback);
   }
 };
 
 export const onNavigateEnd = (callback: () => void) => {
   if (__XANIX_CLIENT__) {
-    window.addEventListener("xanix:navigate:end", callback);
+    window.addEventListener(XANIX_NAVIGATE_END, callback);
   }
 };

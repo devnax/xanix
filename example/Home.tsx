@@ -17,17 +17,13 @@ const sleep = (ms: number) =>
   new Promise((resolve) => setTimeout(() => resolve({ name: "nax" }), ms));
 
 const Data = () => {
-  const d = useData(
-    async (args: any) => {
-      return args;
-    },
-    { id: 1, name: "nax" },
-  );
+  const page = usePage();
 
   return (
     <div>
-      {d.data?.name}
-      <button onClick={() => d.reload()}>reload</button>
+      Data {page.pageId}
+      {/* {d.data?.name} */}
+      {/* <button onClick={() => d.reload()}>reload</button> */}
     </div>
   );
 };
@@ -38,7 +34,7 @@ const Home = ({ name, products }: HomeProps) => {
   // const searchParams = useSearchParams();
   // const pathname = usePathname();
   // const cookies = useCookies();
-  // const page = usePage();
+  const _page = usePage();
   const [open, setOpen] = React.useState(false);
 
   useEffect(() => {
@@ -48,9 +44,10 @@ const Home = ({ name, products }: HomeProps) => {
   return (
     <div>
       {name} {count}
+      {/* <Data /> */}
       {open && <Data />}
       <button onClick={() => setOpen(!open)}>Toggle Data</button>
-      <button onClick={() => d.reload()}>reload</button>
+      {/* <button onClick={() => d.reload()}>reload</button> */}
       {/* <button onClick={() => searchParams.set("key", "value")}>set</button>
       <button onClick={() => searchParams.delete("key")}>delete</button>
       <button onClick={() => console.log(searchParams.getAll())}>show</button> */}

@@ -5,8 +5,9 @@ type BodyProps = {
 const Body = ({ children }: BodyProps) => {
   if (__XANIX_CLIENT__) {
     return children;
+  } else {
+    return <body>{children}</body>;
   }
-  return <body>{children}</body>;
 };
 
 export default Body;

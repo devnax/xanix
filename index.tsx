@@ -1,8 +1,8 @@
-import Home from "./app/Home";
-import About from "./app/about";
+import Home from "./example/Home";
+import About from "./example/about";
 import express from "express";
-import productsRouter from "./products/index.tsx";
-import ErrorPage from "./app/Error.tsx";
+import productsRouter from "./example/products";
+import ErrorPage from "./example/Error";
 
 const app = express();
 app.use("/product", productsRouter);

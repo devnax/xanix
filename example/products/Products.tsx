@@ -1,6 +1,5 @@
-import React from "react";
-import { navigate } from "../src/index.js";
-import { Link } from "../src";
+import { navigate } from "../../src/index.js";
+import { Link } from "../../src/index.js";
 
 const Products = ({ products }: any) => {
   return (

@@ -4,6 +4,7 @@ import { PassThrough } from "node:stream";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import dataLoader from "../../dataLoader.js";
+import Document from "virtual:xanix-document";
 
 interface XanixPageProps {
   pageId: string;
@@ -79,8 +80,13 @@ export default async function xanixPage({
 
   const Document = (
     await import(
-      pathToFileURL(path.join(process.cwd(), ".xanix", "xanix-document.js"))
-        .href
+      pathToFileURL(
+        path.join(
+          process.cwd(),
+          ".xanix",
+          __XANIX_DOCUMENT_FILE_NAME__ + ".js",
+        ),
+      ).href
     )
   ).default;
 

@@ -1,5 +1,4 @@
 import { navigate } from "../navigate.js";
-import { useEffect, useState } from "react";
 import useDocument from "./useDocument.js";
 
 const getParams = (req: any) => {

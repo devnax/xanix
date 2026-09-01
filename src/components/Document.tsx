@@ -8,12 +8,13 @@ export type DocumentProps = {
 const Document = ({ children, document }: DocumentProps) => {
   if (__XANIX_CLIENT__) {
     return <DocumentProvider value={document}>{children}</DocumentProvider>;
+  } else {
+    return (
+      <DocumentProvider value={document}>
+        <html>{children}</html>
+      </DocumentProvider>
+    );
   }
-  return (
-    <DocumentProvider value={document}>
-      <html>{children}</html>
-    </DocumentProvider>
-  );
 };
 
 export default Document;

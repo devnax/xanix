@@ -5,7 +5,7 @@ import { createManifest, readManifest } from "../include/manifest.js";
 import { XanixClientEntry } from "../types.js";
 import generateClientEntries from "./generateClientEntries.js";
 import bundlerOutput, { outDir } from "./config/output.js";
-import { getDocumentFile } from "../include/utils.js";
+import { getDocumentFile, getDocumentFileName } from "../include/utils.js";
 import { entriesEqual } from "../include/entry.js";
 import { xanixDefaultPlugins } from "./plugins/plugins.js";
 const root = process.cwd();
@@ -40,9 +40,11 @@ const watchServer = async ({
   const entries = await generateClientEntries();
   await createManifest(entries);
 
+  const documentFileName = getDocumentFileName("development");
+
   const input = {
+    [documentFileName]: await getDocumentFile(),
     index: path.resolve(root, rootEntry),
-    "xanix-document": await getDocumentFile(),
   };
   const changedFiles = new Set<string>();
   const watcher = watch({

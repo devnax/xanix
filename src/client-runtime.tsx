@@ -1,7 +1,6 @@
 import type { DocumentContextData } from "./components/DocumentContext.js";
 import type { ComponentType } from "react";
 import { createRoot, type Root } from "react-dom/client";
-
 type DocumentInfo = DocumentContextData & {
   component: ComponentType<any>;
 };
@@ -52,7 +51,8 @@ export async function mount(
 ) {
   const root = getRoot();
   pages.set(path, doc);
-  const Document = (await import(getImportUrl("xanix-document"))).default;
+  const Document = (await import(getImportUrl(__XANIX_DOCUMENT_FILE_NAME__)))
+    .default;
 
   root.render(
     <Document document={doc}>
@@ -61,16 +61,14 @@ export async function mount(
   );
 }
 
-if (typeof window !== "undefined") {
+if (__XANIX_CLIENT__) {
   const dispatch = (name: string, path: string) => {
-    window.dispatchEvent(
-      new CustomEvent(`xanix:${name}`, { detail: { path } }),
-    );
+    window.dispatchEvent(new CustomEvent(name, { detail: { path } }));
   };
 
   window.addEventListener("load", async () => {
     const path = getPath();
-    dispatch("navigate:start", path);
+    dispatch(XANIX_NAVIGATE_START, path);
     const doc = (window as any).XANIX_DOCUMENT;
     const mod = await import(getImportUrl(doc.pageId));
     mount(path, mod.default, doc);
@@ -78,14 +76,14 @@ if (typeof window !== "undefined") {
     if (scriptTag) {
       scriptTag.remove();
     }
-    dispatch("navigate:end", path);
+    dispatch(XANIX_NAVIGATE_END, path);
   });
 
   window.addEventListener("popstate", async () => {
-    dispatch("navigate", getPath());
+    dispatch(XANIX_NAVIGATE, getPath());
   });
 
-  window.addEventListener("xanix:navigate", async (event: any) => {
+  window.addEventListener(XANIX_NAVIGATE, async (event: any) => {
     const { path, replace } = event.detail;
     const currentPath = getPath();
     if (path === currentPath) return;
@@ -94,14 +92,14 @@ if (typeof window !== "undefined") {
     const prevUrl = new URL(currentPath, window.location.origin);
     const isSamePath = url.pathname === prevUrl.pathname;
 
-    dispatch("navigate:start", path);
+    dispatch(XANIX_NAVIGATE_START, path);
     let page: any = await getPage(path);
     if (!page) return;
     if (!isSamePath) {
       const mod = await import(getImportUrl(page.pageId));
       mount(path, mod.default, page);
     }
-    dispatch("navigate:end", path);
+    dispatch(XANIX_NAVIGATE_END, path);
     if (replace) {
       history.replaceState(null, "", path);
     } else {
@@ -109,25 +107,25 @@ if (typeof window !== "undefined") {
     }
   });
 
-  window.addEventListener("xanix:preload", async (event: any) => {
+  window.addEventListener(XANIX_PRELOAD, async (event: any) => {
     const path = event.detail.path;
     if (!path) return;
-    dispatch("preload:start", path);
+    dispatch(XANIX_PRELOAD_START, path);
     const page = await getPage(path);
     if (!page) return;
     await import(getImportUrl(page.pageId));
     pages.set(path, page);
-    dispatch("preload:end", path);
+    dispatch(XANIX_PRELOAD_END, path);
   });
 
-  window.addEventListener("xanix:reload", async (event: any) => {
+  window.addEventListener(XANIX_NAVIGATE_RELOAD, async (event: any) => {
     const path = getPath();
-    dispatch("navigate:start", path);
+    dispatch(XANIX_NAVIGATE_START, path);
     let page: any = await getPage(path);
     if (!page) return;
     const mod = await import(getImportUrl(page.pageId) + "?t=" + Date.now());
     mount(path, mod.default, page);
     history.pushState(null, "", path);
-    dispatch("navigate:end", path);
+    dispatch(XANIX_NAVIGATE_END, path);
   });
 }

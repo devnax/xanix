@@ -4,7 +4,12 @@ import fs from "node:fs";
 import { XanixClientEntry } from "../types.js";
 import BuildCache from "./cacheNpmModules.js";
 import XanixResolveCacheDeps from "./plugins/XanixResolveCacheDeps/index.js";
-import { getDocumentFile, getClientRuntimeFile } from "../include/utils.js";
+import {
+  getDocumentFile,
+  getClientRuntimeFile,
+  getClientRuntimeFileName,
+  getDocumentFileName,
+} from "../include/utils.js";
 import { xanixDefaultPlugins } from "./plugins/plugins.js";
 
 type Option = {
@@ -21,9 +26,11 @@ const WatchClient = async (
   for (const entry of entries) {
     input[entry.name] = entry.file;
   }
+  const runtimeFileName = getClientRuntimeFileName("development");
+  const documentFileName = getDocumentFileName("development");
 
-  input["xanix-runtime"] = getClientRuntimeFile();
-  input["xanix-document"] = await getDocumentFile();
+  input[runtimeFileName] = getClientRuntimeFile();
+  input[documentFileName] = await getDocumentFile();
 
   fs.rmSync(outDir.client, {
     recursive: true,

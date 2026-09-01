@@ -15,7 +15,7 @@ const useData = (
 useData.register = (xanixId: string, callback: Callback) => {
   if (typeof __XANIX_SERVER__ !== "undefined" && __XANIX_SERVER__) {
     loader.register(xanixId, callback);
-    return async (args?: Record<string, any>) => {
+    return (args?: Record<string, any>) => {
       const page = usePage();
       const doc = useDocument();
 
