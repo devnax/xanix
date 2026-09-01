@@ -6,6 +6,13 @@ declare global {
   const __XANIX_DEV__: boolean;
   const __XANIX_PROD__: boolean;
 
+  // XANIX Data
+  const XANIXDT: {
+    handlers: Record<string, () => Promise<any>>;
+    pages: Record<string, string[]>;
+    initialed: Record<string, boolean>;
+  };
+
   // navigation events
   const XANIX_NAVIGATE: string;
   const XANIX_NAVIGATE_START: string;

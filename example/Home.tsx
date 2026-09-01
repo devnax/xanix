@@ -44,7 +44,7 @@ const Home = ({ name, products }: HomeProps) => {
   return (
     <div>
       {name} {count}
-      {/* <Data /> */}
+      <Data />
       {open && <Data />}
       <button onClick={() => setOpen(!open)}>Toggle Data</button>
       {/* <button onClick={() => d.reload()}>reload</button> */}

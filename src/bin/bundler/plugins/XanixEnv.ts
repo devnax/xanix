@@ -65,6 +65,9 @@ export default function XanixEnvPlugin(
 
     __XANIX_DOCUMENT_FILE_NAME__: JSON.stringify(getDocumentFileName(mode)),
 
+    // XANIX Data
+    XANIXDT: JSON.stringify("globalThis.$XANIXDT"),
+
     __XANIX_CLIENT__: JSON.stringify(isClient),
     __XANIX_SERVER__: JSON.stringify(!isClient),
     __XANIX_DEV__: JSON.stringify(mode === "development"),

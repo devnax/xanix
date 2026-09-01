@@ -1,5 +1,6 @@
 import type { Plugin } from "rollup";
 import XanixTsconfigAlias from "./XanixTsconfigAlias.js";
+import XanixDocument from "./XanixDocument/index.js";
 import { nodeResolve } from "@rollup/plugin-node-resolve";
 import commonjs from "@rollup/plugin-commonjs";
 import json from "@rollup/plugin-json";
@@ -30,7 +31,7 @@ export function xanixDefaultPlugins(
 
   if (isServer) {
     _plugins.push(XanixTransform({ mode: development ? "watch" : "start" }));
-    // _plugins.push(xanixServerData());
+    _plugins.push(XanixDocument());
   } else {
     if (development) {
       _plugins.push(xanixReactRefresh());
@@ -65,6 +66,7 @@ export function xanixDefaultPlugins(
       fileName: "assets/[name]-[hash][extname]",
       emitFiles: !(options?.assetExternal ?? false),
     }),
+
     XanixTsconfigAlias(),
     XanixEnvPlugin({
       mode: development ? "development" : "production",

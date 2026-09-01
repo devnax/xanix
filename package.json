@@ -22,6 +22,10 @@
     "./runtime": {
       "import": "./dist/server/runtime/index.js",
       "require": "./dist/server/runtime/index.js"
+    },
+    "./BaseDocument": {
+      "types": "./dist/components/BaseDocument.d.ts",
+      "import": "./dist/components/BaseDocument.js"
     }
   },
   "scripts": {

@@ -5,7 +5,6 @@ import fs from "node:fs";
 import { createManifest } from "../include/manifest.js";
 import { XanixClientEntry } from "../types.js";
 import generateClientEntries from "./generateClientEntries.js";
-import { getDocumentFile, getDocumentFileName } from "../include/utils.js";
 import { xanixDefaultPlugins } from "./plugins/plugins.js";
 
 const root = process.cwd();
@@ -27,10 +26,8 @@ const BuildServer = async ({ rootEntry, onBuildEnd }: WatcherOptions) => {
 
   const entries = await generateClientEntries();
   await createManifest(entries);
-  const documentFileName = getDocumentFileName("production");
   const input = {
     index: path.resolve(root, rootEntry),
-    [documentFileName]: await getDocumentFile(),
   };
 
   const build = await rollup({
@@ -60,7 +57,8 @@ const BuildServer = async ({ rootEntry, onBuildEnd }: WatcherOptions) => {
         path.isAbsolute(id) ||
         id === "@" ||
         id.startsWith("@/") ||
-        id.startsWith("xanix")
+        id.startsWith("xanix") ||
+        id === "virtual:xanix-document"
       ) {
         return false;
       }

@@ -1,9 +1,7 @@
 import { renderToPipeableStream, renderToString } from "react-dom/server";
 import readManifest from "./readManifest.js";
 import { PassThrough } from "node:stream";
-import path from "node:path";
-import { pathToFileURL } from "node:url";
-import dataLoader from "../../dataLoader.js";
+// import dataLoader from "../../dataLoader.js";
 import Document from "virtual:xanix-document";
 
 interface XanixPageProps {
@@ -78,37 +76,25 @@ export default async function xanixPage({
     return;
   }
 
-  const Document = (
-    await import(
-      pathToFileURL(
-        path.join(
-          process.cwd(),
-          ".xanix",
-          __XANIX_DOCUMENT_FILE_NAME__ + ".js",
-        ),
-      ).href
-    )
-  ).default;
+  // if (!dataLoader.isInit(pageId)) {
+  //   renderToString(
+  //     <Document
+  //       document={{
+  //         pageId,
+  //         props,
+  //         title: title ?? entry.name.replaceAll("-", " "),
+  //         meta,
+  //         params: req.params,
+  //         request: req,
+  //         pageData: {},
+  //       }}
+  //     >
+  //       <Component {...props} />
+  //     </Document>,
+  //   );
+  // }
 
-  if (!dataLoader.isInit(pageId)) {
-    renderToString(
-      <Document
-        document={{
-          pageId,
-          props,
-          title: title ?? entry.name.replaceAll("-", " "),
-          meta,
-          params: req.params,
-          request: req,
-          pageData: {},
-        }}
-      >
-        <Component {...props} />
-      </Document>,
-    );
-  }
-
-  const pageData = await dataLoader.results(pageId);
+  // const pageData = await dataLoader.results(pageId);
 
   if ("x-navigation" in req.headers) {
     res.setHeader("Content-Type", "application/json");
@@ -119,7 +105,7 @@ export default async function xanixPage({
       meta,
       params: req.params,
       request: null,
-      pageData,
+      pageData: {},
     });
   }
 
@@ -132,7 +118,7 @@ export default async function xanixPage({
         meta,
         params: req.params,
         request: req,
-        pageData,
+        pageData: {},
       }}
     >
       <Component {...props} />

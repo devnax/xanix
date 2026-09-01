@@ -39,11 +39,7 @@ const watchServer = async ({
 
   const entries = await generateClientEntries();
   await createManifest(entries);
-
-  const documentFileName = getDocumentFileName("development");
-
   const input = {
-    [documentFileName]: await getDocumentFile(),
     index: path.resolve(root, rootEntry),
   };
   const changedFiles = new Set<string>();
@@ -68,7 +64,8 @@ const watchServer = async ({
         path.isAbsolute(id) ||
         id === "@" ||
         id.startsWith("@/") ||
-        id.startsWith("xanix")
+        id.startsWith("xanix") ||
+        id === "virtual:xanix-document"
       ) {
         return false;
       }

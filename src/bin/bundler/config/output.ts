@@ -50,8 +50,18 @@ const server = (opt: Options): OutputOptions => {
     format: "esm",
     sourcemap: opt.isDev ?? true,
     entryFileNames: "[name].js",
-    chunkFileNames: "chunks/[hash].js",
+    chunkFileNames: "chunks/[name].js",
     assetFileNames: "assets/[hash][extname]",
+    // manualChunks(id) {
+    //   const filename = path.basename(id);
+    //   return filename.split(".")[0];
+
+    //   return "vendor";
+
+    //   if (id.includes("virtual:xanix-document")) {
+    //     return "vendor";
+    //   }
+    // },
   };
 };
 
