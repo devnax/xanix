@@ -1,12 +1,14 @@
 import fs from "node:fs";
 import path from "node:path";
+
 import alias from "@rollup/plugin-alias";
-import ts from "typescript";
 import type { Plugin } from "rollup";
+import ts from "typescript";
 
 export default function xanixTsconfigAlias(): Plugin {
   const root = process.cwd();
   const tsconfigPath = path.resolve(root, "tsconfig.json");
+
   if (!fs.existsSync(tsconfigPath)) {
     return {
       name: "xanix-tsconfig-alias",
@@ -14,27 +16,30 @@ export default function xanixTsconfigAlias(): Plugin {
   }
 
   const result = ts.readConfigFile(tsconfigPath, ts.sys.readFile);
-  if (result.error) {
-    const message = ts.flattenDiagnosticMessageText(
-      result.error.messageText,
-      "\n",
-    );
 
-    throw new Error(`[xanix] Failed to read tsconfig.json:\n${message}`);
+  if (result.error) {
+    throw new Error(
+      `[xanix] Failed to read tsconfig.json:\n${ts.flattenDiagnosticMessageText(
+        result.error.messageText,
+        "\n",
+      )}`,
+    );
   }
 
   const config = result.config;
   const compilerOptions = config.compilerOptions ?? {};
+
   const baseUrl = compilerOptions.baseUrl ?? ".";
   const basePath = path.resolve(path.dirname(tsconfigPath), baseUrl);
+
   const paths = compilerOptions.paths ?? {};
 
-  const entries = Object.entries(paths)
+  const entries: any = Object.entries(paths)
     .map(([find, replacements]) => {
       const replacement = (replacements as any)?.[0];
+
       if (!replacement) return null;
 
-      // @components/*
       if (find.endsWith("/*")) {
         const findPrefix = find.slice(0, -2);
         const replacementPrefix = replacement.endsWith("/*")
@@ -43,20 +48,19 @@ export default function xanixTsconfigAlias(): Plugin {
 
         return {
           find: new RegExp(`^${escapeRegExp(findPrefix)}/(.+)$`),
-
-          replacement: `${path.resolve(basePath, replacementPrefix)}/$1`,
+          replacement: path.resolve(basePath, replacementPrefix) + "/$1",
         };
       }
 
-      // @foo
       return {
         find,
         replacement: path.resolve(basePath, replacement),
       };
     })
-    .filter((entry): entry is NonNullable<typeof entry> => entry !== null);
+    .filter(Boolean);
 
   return alias({
+    customResolver: undefined,
     entries,
   });
 }

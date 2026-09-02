@@ -37,7 +37,7 @@ const watchServer = async ({
     recursive: true,
   });
 
-  const entries = await generateClientEntries();
+  const entries = await generateClientEntries({ rootEntry });
   await createManifest(entries);
   const input = {
     index: path.resolve(root, rootEntry),
@@ -92,7 +92,7 @@ const watchServer = async ({
               );
 
               if (!isClientEntry) {
-                const entries = await generateClientEntries();
+                const entries = await generateClientEntries({ rootEntry });
                 const isEqual = await entriesEqual(entries);
                 if (!isEqual) {
                   await createManifest(entries);

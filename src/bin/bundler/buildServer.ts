@@ -25,7 +25,7 @@ const BuildServer = async ({ rootEntry, onBuildEnd }: WatcherOptions) => {
     recursive: true,
   });
 
-  const entries = await generateClientEntries();
+  const entries = await generateClientEntries({ rootEntry });
   await createManifest(entries);
   const input = {
     index: path.resolve(root, rootEntry),

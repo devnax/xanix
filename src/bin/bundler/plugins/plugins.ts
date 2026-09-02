@@ -42,6 +42,8 @@ export function xanixDefaultPlugins(
   }
 
   return [
+    XanixTsconfigAlias(),
+
     {
       name: "watch",
       async watchChange(id, change) {
@@ -70,7 +72,6 @@ export function xanixDefaultPlugins(
       emitFiles: !(options?.assetExternal ?? false),
     }),
 
-    XanixTsconfigAlias(),
     XanixEnvPlugin({
       mode: development ? "development" : "production",
       isClient,
