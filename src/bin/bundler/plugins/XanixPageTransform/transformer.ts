@@ -12,7 +12,6 @@ export interface XanixTransformResult {
 }
 
 const RUNTIME_IMPORT = "xanix/runtime";
-
 const SOURCE_EXTENSIONS = [".tsx", ".ts", ".jsx", ".js", ".mjs", ".cjs"];
 
 function normalizeFilePath(file: string): string {
@@ -21,7 +20,6 @@ function normalizeFilePath(file: string): string {
 
 export function resolveFile(file: string): string {
   const absolute = path.resolve(file);
-
   if (fs.existsSync(absolute)) {
     const stat = fs.statSync(absolute);
 
@@ -32,7 +30,6 @@ export function resolveFile(file: string): string {
 
   for (const ext of SOURCE_EXTENSIONS) {
     const candidate = `${absolute}${ext}`;
-
     if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
       return path.resolve(candidate);
     }
@@ -41,7 +38,6 @@ export function resolveFile(file: string): string {
   if (fs.existsSync(absolute) && fs.statSync(absolute).isDirectory()) {
     for (const ext of SOURCE_EXTENSIONS) {
       const candidate = path.join(absolute, `index${ext}`);
-
       if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
         return path.resolve(candidate);
       }
@@ -60,7 +56,6 @@ export function resolveComponentFile(
   }
 
   const base = path.resolve(path.dirname(importer), importPath);
-
   return resolveFile(base);
 }
 
@@ -416,140 +411,6 @@ function jsxToComponentAndProps(jsx: t.JSXElement): {
   };
 }
 
-/**
- * Find:
- *
- * const app = express();
- * const exp = express();
- * const server = express();
- *
- * Returns the variable name.
- */
-function findExpressAppVariable(ast: t.File): string | null {
-  for (const statement of ast.program.body) {
-    if (!t.isVariableDeclaration(statement)) {
-      continue;
-    }
-
-    for (const declaration of statement.declarations) {
-      if (!t.isIdentifier(declaration.id)) {
-        continue;
-      }
-
-      if (!t.isCallExpression(declaration.init)) {
-        continue;
-      }
-
-      if (
-        !t.isIdentifier(declaration.init.callee, {
-          name: "express",
-        })
-      ) {
-        continue;
-      }
-
-      return declaration.id.name;
-    }
-  }
-
-  return null;
-}
-
-/**
- * Replace:
- *
- * const app = express();
- *
- * with:
- *
- * const app = createXanixServer({
- *   mode: "watch"
- * });
- */
-function transformExpressAppTocreateXanixServer(
-  ast: t.File,
-  args: {
-    mode: "watch" | "start";
-  },
-): boolean {
-  const expressVariable = findExpressAppVariable(ast);
-
-  if (!expressVariable) {
-    return false;
-  }
-
-  for (const statement of ast.program.body) {
-    if (!t.isVariableDeclaration(statement)) {
-      continue;
-    }
-
-    for (const declaration of statement.declarations) {
-      if (!t.isIdentifier(declaration.id)) {
-        continue;
-      }
-
-      if (declaration.id.name !== expressVariable) {
-        continue;
-      }
-
-      if (!t.isCallExpression(declaration.init)) {
-        continue;
-      }
-
-      if (
-        !t.isIdentifier(declaration.init.callee, {
-          name: "express",
-        })
-      ) {
-        continue;
-      }
-
-      declaration.init = t.callExpression(t.identifier("createXanixServer"), [
-        t.objectExpression([
-          t.objectProperty(t.identifier("mode"), t.stringLiteral(args.mode)),
-        ]),
-      ]);
-
-      return true;
-    }
-  }
-
-  return false;
-}
-
-/**
- * Remove:
- *
- * import express from "express";
- *
- * once express() has been replaced by
- * createXanixServer().
- *
- * Also handles:
- *
- * import express, { Router } from "express";
- */
-function removeExpressImport(ast: t.File): void {
-  for (const statement of ast.program.body) {
-    if (!t.isImportDeclaration(statement)) {
-      continue;
-    }
-
-    if (statement.source.value !== "express") {
-      continue;
-    }
-
-    statement.specifiers = statement.specifiers.filter((specifier) => {
-      return !(
-        t.isImportDefaultSpecifier(specifier) &&
-        specifier.local.name === "express"
-      );
-    });
-  }
-
-  removeEmptyImportDeclarations(ast);
-}
-
 function hasRuntimeImport(ast: t.File, name: string): boolean {
   for (const statement of ast.program.body) {
     if (!t.isImportDeclaration(statement)) {
@@ -609,7 +470,6 @@ function injectRuntimeImport(ast: t.File, name: string): void {
 export function transformer(
   code: string,
   id: string,
-  mode: "watch" | "start",
 ): XanixTransformResult | null {
   const ast = parse(code, {
     sourceType: "module",
@@ -799,36 +659,6 @@ export function transformer(
 
   if (!changed) {
     return null;
-  }
-
-  /**
-   * Change:
-   *
-   * const app = express();
-   *
-   * into:
-   *
-   * const app = createXanixServer();
-   */
-  const serverTransformed = transformExpressAppTocreateXanixServer(ast, {
-    mode,
-  });
-
-  if (serverTransformed) {
-    /**
-     * Remove:
-     *
-     * import express from "express";
-     */
-    removeExpressImport(ast);
-
-    /**
-     * Add:
-     *
-     * import { createXanixServer }
-     *   from "xanix/runtime";
-     */
-    injectRuntimeImport(ast, "createXanixServer");
   }
 
   /**

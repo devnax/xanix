@@ -53,7 +53,6 @@ const watchServer = async ({
         assetExternal: false,
         onChange: (entry) => {
           changedFiles.add(entry);
-          return onChange?.(entry);
         },
       }),
     ],

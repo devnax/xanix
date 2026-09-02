@@ -7,10 +7,11 @@ import json from "@rollup/plugin-json";
 import esbuild from "rollup-plugin-esbuild";
 import url from "@rollup/plugin-url";
 import path from "path";
-import { XanixTransform } from "./XanixTransform/index.js";
+import XanixPageTransform from "./XanixPageTransform/index.js";
 import xanixReactRefresh from "./XanixReactRefresh.js";
 import XanixEnvPlugin from "./XanixEnv.js";
 import xanixUseDataId from "./xanixUseDataId.js";
+import XanixServerTransform from "./XanixServerTransform.js";
 
 export interface XanixRollupOptions {
   target?: "client" | "server";
@@ -30,8 +31,10 @@ export function xanixDefaultPlugins(
   let _plugins: Plugin[] = [];
 
   if (isServer) {
-    _plugins.push(XanixTransform({ mode: development ? "watch" : "start" }));
-    // _plugins.push(XanixDocument());
+    _plugins.push(XanixPageTransform());
+    _plugins.push(
+      XanixServerTransform({ mode: development ? "watch" : "start" }),
+    );
   } else {
     if (development) {
       _plugins.push(xanixReactRefresh());

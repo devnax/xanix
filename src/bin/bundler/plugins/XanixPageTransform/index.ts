@@ -1,19 +1,15 @@
 import type { Plugin } from "rollup";
 import { transformer } from "./transformer.js";
 
-export type XanixPluginOptions = {
-  mode: "watch" | "start";
-};
-
-export function XanixTransform(option: XanixPluginOptions): Plugin {
+export default function XanixPageTransform(): Plugin {
   return {
-    name: "xanix-transform",
+    name: "xanix-page-transform",
     async transform(code, id) {
       if (id.includes("node_modules") || !/\.(tsx?|jsx?)$/.test(id)) {
         return null;
       }
 
-      const result = transformer(code, id, option.mode);
+      const result = transformer(code, id);
       if (!result) {
         return null;
       }
