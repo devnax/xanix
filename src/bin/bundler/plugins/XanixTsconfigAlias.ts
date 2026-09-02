@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import alias from "@rollup/plugin-alias";
+import ts from "typescript";
 import type { Plugin } from "rollup";
 
 export default function xanixTsconfigAlias(): Plugin {
@@ -12,41 +13,48 @@ export default function xanixTsconfigAlias(): Plugin {
     };
   }
 
-  let config: any;
+  const result = ts.readConfigFile(tsconfigPath, ts.sys.readFile);
+  if (result.error) {
+    const message = ts.flattenDiagnosticMessageText(
+      result.error.messageText,
+      "\n",
+    );
 
-  try {
-    const content = fs.readFileSync(tsconfigPath, "utf8");
-    config = parseJsonc(content);
-  } catch (error: any) {
-    throw new Error(`[xanix] Failed to read tsconfig.json:\n${error.message}`);
+    throw new Error(`[xanix] Failed to read tsconfig.json:\n${message}`);
   }
 
+  const config = result.config;
   const compilerOptions = config.compilerOptions ?? {};
   const baseUrl = compilerOptions.baseUrl ?? ".";
   const basePath = path.resolve(path.dirname(tsconfigPath), baseUrl);
   const paths = compilerOptions.paths ?? {};
 
   const entries = Object.entries(paths)
-    .map(([find, replacements]: [string, any]) => {
-      const replacement = replacements?.[0];
+    .map(([find, replacements]) => {
+      const replacement = (replacements as any)?.[0];
       if (!replacement) return null;
 
-      if (find.includes("*")) {
-        const findPrefix = find.replace(/\/?\*$/, "");
-        const replacementPrefix = replacement.replace(/\/?\*$/, "");
+      // @components/*
+      if (find.endsWith("/*")) {
+        const findPrefix = find.slice(0, -2);
+        const replacementPrefix = replacement.endsWith("/*")
+          ? replacement.slice(0, -2)
+          : replacement;
 
         return {
           find: new RegExp(`^${escapeRegExp(findPrefix)}/(.+)$`),
+
           replacement: `${path.resolve(basePath, replacementPrefix)}/$1`,
         };
       }
 
+      // @foo
       return {
         find,
         replacement: path.resolve(basePath, replacement),
       };
     })
-    .filter(Boolean) as any[];
+    .filter((entry): entry is NonNullable<typeof entry> => entry !== null);
 
   return alias({
     entries,
@@ -55,17 +63,4 @@ export default function xanixTsconfigAlias(): Plugin {
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-function parseJsonc(content: string) {
-  const withoutComments = content
-    // Remove /* block comments */
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    // Remove // comments
-    .replace(/\/\/.*$/gm, "");
-
-  // Remove trailing commas
-  const withoutTrailingCommas = withoutComments.replace(/,\s*([}\]])/g, "$1");
-
-  return JSON.parse(withoutTrailingCommas);
 }
