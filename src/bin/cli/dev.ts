@@ -6,9 +6,9 @@ import watchClient from "../bundler/watchClient.js";
 import pc from "picocolors";
 import logger from "../include/logger.js";
 import { getEntries } from "../include/entry.js";
-import { outDir } from "../bundler/config/output.js";
 import { WebSocketServer } from "ws";
 import { XanixClientEntry } from "../types.js";
+import outdirs from "../../outdirs.js";
 
 const root = process.cwd();
 let child: any;
@@ -16,7 +16,7 @@ let child: any;
 function start(): Promise<any> {
   child?.kill();
   return new Promise((resolve) => {
-    const filePath = path.join(outDir.server, "index.js");
+    const filePath = path.join(outdirs.server, "index.js");
     child = spawn(process.execPath, [filePath], {
       stdio: !child ? "inherit" : "pipe",
     });

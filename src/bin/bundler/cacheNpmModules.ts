@@ -8,6 +8,7 @@ import { getClientRuntimeFile } from "../include/utils.js";
 import esbuild from "rollup-plugin-esbuild";
 import url from "@rollup/plugin-url";
 import XanixDocument from "./plugins/XanixDocument/index.js";
+import outdirs from "../../outdirs.js";
 
 const require = createRequire(import.meta.url);
 
@@ -198,7 +199,7 @@ const BuildCache = async (entries: XanixClientEntry[]) => {
     });
   }
 
-  const cacheDir = path.resolve(process.cwd(), ".xanix/cache");
+  const cacheDir = path.resolve(outdirs.server, "cache");
   await bundleDeps(input, cacheDir);
 
   return metadata;

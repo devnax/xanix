@@ -1,11 +1,12 @@
 import { rollup } from "rollup";
 import path from "node:path";
-import bundlerOutput, { outDir } from "./config/output.js";
+import bundlerOutput from "./config/output.js";
 import fs from "node:fs";
 import { createManifest } from "../include/manifest.js";
 import { XanixClientEntry } from "../types.js";
 import generateClientEntries from "./generateClientEntries.js";
 import { xanixDefaultPlugins } from "./plugins/plugins.js";
+import outdirs from "../../outdirs.js";
 
 const root = process.cwd();
 
@@ -15,12 +16,12 @@ export type WatcherOptions = {
 };
 
 const BuildServer = async ({ rootEntry, onBuildEnd }: WatcherOptions) => {
-  fs.rmSync(outDir.server, {
+  fs.rmSync(outdirs.server, {
     recursive: true,
     force: true,
   });
 
-  fs.mkdirSync(outDir.server, {
+  fs.mkdirSync(outdirs.server, {
     recursive: true,
   });
 

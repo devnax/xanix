@@ -25,6 +25,7 @@ const references = [
   '/// <reference path="./types/globals.d.ts" />',
   '/// <reference path="./types/express.d.ts" />',
   '/// <reference path="./types/assets.d.ts" />',
+  '/// <reference path="./types/xanix-virtual.d.ts" />',
 ].join("\n");
 
 let content = fs.readFileSync(indexDts, "utf8");

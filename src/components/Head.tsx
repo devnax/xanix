@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import useDocument from "../hooks/useDocument.js";
+import outdirs from "../outdirs.js";
 
 type HeadProps = {
   children?: React.ReactNode;
@@ -57,7 +58,7 @@ const Head = ({ children }: HeadProps) => {
         ></script>
         <script
           type="module"
-          src={`/.xanix/client/${__XANIX_CLIENT_RUNTIME_FILE_NAME__}.js`}
+          src={`/${outdirs.client}/${__XANIX_CLIENT_RUNTIME_FILE_NAME__}.js`}
         ></script>
       </head>
     );

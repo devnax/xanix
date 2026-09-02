@@ -2,6 +2,7 @@ import path from "node:path";
 import { XanixClientEntry } from "../../../types";
 import type { Plugin } from "rollup";
 import BuildCache, { CacheMetadata } from "../../cacheNpmModules.js";
+import outdirs from "../../../../outdirs.js";
 
 function XanixResolveCacheDeps(
   metadata: CacheMetadata,
@@ -22,13 +23,16 @@ function XanixResolveCacheDeps(
 
       const dependency = metadata.get(source);
       if (dependency) {
-        return { id: `/.xanix/cache/${dependency.file}`, external: true };
+        return { id: `/${outdirs.cache}/${dependency.file}`, external: true };
       }
 
       const buildCache = await BuildCache(entries);
       const newDependency = buildCache.get(source);
       if (newDependency) {
-        return { id: `/.xanix/cache/${newDependency.file}`, external: true };
+        return {
+          id: `/${outdirs.cache}/${newDependency.file}`,
+          external: true,
+        };
       }
     },
   };

@@ -2,6 +2,7 @@ import usePage from "./usePage.js";
 import React, { useEffect, useRef } from "react";
 import useDocument from "./useDocument.js";
 import loader from "../dataLoader.js";
+import outdirs from "../outdirs.js";
 
 type Callback = (args: Record<string, any>) => Promise<any>;
 
@@ -41,7 +42,7 @@ useData.register = (xanixId: string, callback: Callback) => {
 
       const reload = async () => {
         setLoading(true);
-        const res = await fetch(`/.xanix/__data__/${xanixId}`, {
+        const res = await fetch(`/${outdirs.root}/__data__/${xanixId}`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

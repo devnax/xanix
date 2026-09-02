@@ -19,7 +19,6 @@ declare global {
   const XANIX_PRELOAD: string;
   const XANIX_PRELOAD_START: string;
   const XANIX_PRELOAD_END: string;
-
   const XANIX_NAVIGATE_RELOAD: string;
 }
 

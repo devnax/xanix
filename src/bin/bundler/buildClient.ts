@@ -1,12 +1,13 @@
 import { rollup, type InputOption } from "rollup";
 import fs from "node:fs";
 import { XanixClientEntry } from "../types";
-import bundlerOutput, { outDir } from "./config/output.js";
+import bundlerOutput from "./config/output.js";
 import {
   getClientRuntimeFile,
   getClientRuntimeFileName,
 } from "../include/utils.js";
 import { xanixDefaultPlugins } from "./plugins/plugins.js";
+import outdirs from "../../outdirs.js";
 
 const buildClient = async (entries: XanixClientEntry[]) => {
   const input: InputOption = {};
@@ -17,12 +18,12 @@ const buildClient = async (entries: XanixClientEntry[]) => {
   const runtimeFileName = getClientRuntimeFileName("production");
   input[runtimeFileName] = getClientRuntimeFile();
 
-  fs.rmSync(outDir.client, {
+  fs.rmSync(outdirs.client, {
     recursive: true,
     force: true,
   });
 
-  fs.mkdirSync(outDir.client, {
+  fs.mkdirSync(outdirs.client, {
     recursive: true,
   });
 

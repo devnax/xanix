@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import outdirs from "../../outdirs";
 
 interface XanixManifestEntry {
   id: string;
@@ -18,7 +19,7 @@ interface XanixManifest {
 async function readManifest(): Promise<XanixManifest> {
   const manifestPath = path.resolve(
     process.cwd(),
-    ".xanix",
+    outdirs.root,
     "client-manifest.json",
   );
 

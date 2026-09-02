@@ -1,13 +1,9 @@
 import path from "node:path";
 import { OutputOptions } from "rollup";
 import { XanixClientEntry } from "../../types";
+import outdirs from "../../../outdirs.js";
 
 const root = process.cwd();
-
-export const outDir = {
-  server: path.resolve(root, ".xanix"),
-  client: path.resolve(root, ".xanix/client"),
-};
 
 type Options = {
   isDev?: boolean;
@@ -23,7 +19,7 @@ const client = (
   }
 
   const opt: OutputOptions = {
-    dir: outDir.client,
+    dir: outdirs.client,
     format: "esm",
     entryFileNames: (id: any) => {
       const entry = _entries[id.name];
@@ -46,7 +42,7 @@ const client = (
 
 const server = (opt: Options): OutputOptions => {
   return {
-    dir: outDir.server,
+    dir: outdirs.server,
     format: "esm",
     sourcemap: opt.isDev ?? true,
     entryFileNames: "[name].js",

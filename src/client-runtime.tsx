@@ -1,6 +1,7 @@
 import type { DocumentContextData } from "./components/DocumentContext.js";
 import type { ComponentType } from "react";
 import { createRoot, type Root } from "react-dom/client";
+import outdirs from "./outdirs.js";
 
 type DocumentInfo = DocumentContextData & {
   component: ComponentType<any>;
@@ -14,7 +15,8 @@ export const getPath = () => {
   return search ? `${pathname}${search}` : pathname;
 };
 
-export const getImportUrl = (pageId: string) => `/.xanix/client/${pageId}.js`;
+export const getImportUrl = (pageId: string) =>
+  `/${outdirs.client}/${pageId}.js`;
 
 function getRoot(): Root {
   let ele: any = document.body;

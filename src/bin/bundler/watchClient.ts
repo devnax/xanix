@@ -1,5 +1,5 @@
 import { watch, type InputOption, type RollupWatcher } from "rollup";
-import bundlerOutput, { outDir } from "./config/output.js";
+import bundlerOutput from "./config/output.js";
 import fs from "node:fs";
 import { XanixClientEntry } from "../types.js";
 import BuildCache from "./cacheNpmModules.js";
@@ -9,6 +9,7 @@ import {
   getClientRuntimeFileName,
 } from "../include/utils.js";
 import { xanixDefaultPlugins } from "./plugins/plugins.js";
+import outdirs from "../../outdirs.js";
 
 type Option = {
   onChange?: (entry: string, event?: string) => void;
@@ -27,12 +28,12 @@ const WatchClient = async (
   const runtimeFileName = getClientRuntimeFileName("development");
   input[runtimeFileName] = getClientRuntimeFile();
 
-  fs.rmSync(outDir.client, {
+  fs.rmSync(outdirs.client, {
     recursive: true,
     force: true,
   });
 
-  fs.mkdirSync(outDir.client, {
+  fs.mkdirSync(outdirs.client, {
     recursive: true,
   });
 

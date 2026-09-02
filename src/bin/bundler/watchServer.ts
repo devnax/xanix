@@ -4,9 +4,10 @@ import fs from "node:fs";
 import { createManifest, readManifest } from "../include/manifest.js";
 import { XanixClientEntry } from "../types.js";
 import generateClientEntries from "./generateClientEntries.js";
-import bundlerOutput, { outDir } from "./config/output.js";
+import bundlerOutput from "./config/output.js";
 import { entriesEqual } from "../include/entry.js";
 import { xanixDefaultPlugins } from "./plugins/plugins.js";
+import outdirs from "../../outdirs.js";
 const root = process.cwd();
 
 export type WatcherOptions = {
@@ -27,12 +28,12 @@ const watchServer = async ({
   onServerChange,
   onClientEntryChange,
 }: WatcherOptions) => {
-  fs.rmSync(outDir.server, {
+  fs.rmSync(outdirs.server, {
     recursive: true,
     force: true,
   });
 
-  fs.mkdirSync(outDir.server, {
+  fs.mkdirSync(outdirs.server, {
     recursive: true,
   });
 

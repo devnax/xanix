@@ -1,6 +1,7 @@
 import path from "node:path";
 import fs from "node:fs";
 import { ClientManifest, XanixClientEntry } from "../types.js";
+import outdirs from "../../outdirs.js";
 let readedManifest: ClientManifest | null = null;
 
 export const createManifest = async (entries: XanixClientEntry[]) => {
@@ -9,7 +10,7 @@ export const createManifest = async (entries: XanixClientEntry[]) => {
     entries: [...entries.values()],
   };
   readedManifest = manifest;
-  const outDir = path.resolve(process.cwd(), ".xanix");
+  const outDir = path.resolve(process.cwd(), outdirs.root);
   fs.writeFileSync(
     path.resolve(outDir, "client-manifest.json"),
     JSON.stringify(manifest, null, 2),

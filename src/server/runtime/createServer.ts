@@ -1,5 +1,6 @@
 import express from "express";
 import dataLoader from "../../dataLoader.js";
+import outdirs from "../../outdirs.js";
 
 export interface XanixProps {
   clientId: string;
@@ -15,21 +16,21 @@ type Options = {
 function createXanixServer({ mode }: Options): express.Express {
   const app = express();
   if (mode === "watch") {
-    app.use("/.xanix/client", express.static(".xanix/client"));
-    app.use("/assets", express.static(".xanix/assets"));
-    app.use("/.xanix/cache", express.static(".xanix/cache"));
+    app.use(`/${outdirs.client}`, express.static(`${outdirs.client}`));
+    app.use(`/assets`, express.static(outdirs.assets));
+    app.use(`/${outdirs.cache}`, express.static(`${outdirs.cache}`));
   } else {
     app.use(
-      "/.xanix/client",
-      express.static(".xanix/client", {
+      `/${outdirs.client}`,
+      express.static(`${outdirs.client}`, {
         maxAge: "1y",
         immutable: true,
         etag: true,
       }),
     );
     app.use(
-      "/assets",
-      express.static(".xanix/assets", {
+      `/assets`,
+      express.static(outdirs.assets, {
         maxAge: "1y",
         immutable: true,
         etag: true,
@@ -37,12 +38,16 @@ function createXanixServer({ mode }: Options): express.Express {
     );
   }
 
-  app.post("/.xanix/__data__/:xanixId", express.json(), async (req, res) => {
-    const { xanixId } = req.params;
-    const args = req.body;
-    const data = await dataLoader.result(xanixId, args);
-    res.json({ data });
-  });
+  app.post(
+    `/${outdirs.root}/__data__/:xanixId`,
+    express.json(),
+    async (req, res) => {
+      const { xanixId } = req.params;
+      const args = req.body;
+      const data = await dataLoader.result(xanixId, args);
+      res.json({ data });
+    },
+  );
 
   app.use((req: any, res, next) => {
     let data: any = {

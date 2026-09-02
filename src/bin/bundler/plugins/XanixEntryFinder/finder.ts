@@ -5,6 +5,7 @@ import { parse } from "@babel/parser";
 import traverse from "@babel/traverse";
 import * as t from "@babel/types";
 import { XanixClientEntry } from "../../../types";
+import outdirs from "../../../../outdirs.js";
 
 const SOURCE_EXTENSIONS = [".tsx", ".ts", ".jsx", ".js", ".mjs", ".cjs"];
 
@@ -193,7 +194,7 @@ export function entryFinder(code: string, id: string): XanixClientEntry[] {
       const relativeSource = path.relative(root, componentFile);
       const parsed = path.parse(relativeSource);
       const buildPath = normalizeFilePath(
-        path.resolve(root, ".xanix", parsed.dir, `${parsed.name}.js`),
+        path.resolve(root, outdirs.root, parsed.dir, `${parsed.name}.js`),
       );
 
       const entry: XanixClientEntry = {
