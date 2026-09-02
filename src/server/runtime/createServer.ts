@@ -51,7 +51,7 @@ function createXanixServer({ mode }: Options): express.Express {
 
   app.use((req: any, res, next) => {
     let data: any = {
-      title: null,
+      title: "",
       meta: [],
     };
 

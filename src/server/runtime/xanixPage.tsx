@@ -83,7 +83,7 @@ export default async function xanixPage({
         document={{
           pageId,
           props,
-          title: title ?? entry.name.replaceAll("-", " "),
+          title,
           meta,
           params: req.params,
           request: req,
@@ -102,7 +102,7 @@ export default async function xanixPage({
     return JSON.stringify({
       pageId,
       props,
-      title: title ?? entry.name.replaceAll("-", " "),
+      title,
       meta,
       params: req.params,
       request: null,

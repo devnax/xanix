@@ -10,7 +10,7 @@ const Head = ({ children }: HeadProps) => {
   const { title, meta, pageId, props, params, pageData } = useDocument();
   if (__XANIX_CLIENT__) {
     useEffect(() => {
-      document.title = title || "";
+      if (title) document.title = title;
       meta?.forEach(({ name, content }) => {
         let element = document.querySelector(`meta[name="${name}"]`);
         if (!element) {
@@ -36,7 +36,7 @@ const Head = ({ children }: HeadProps) => {
   if (__XANIX_SERVER__) {
     return (
       <head>
-        <title>{title}</title>
+        {title && <title>{title}</title>}
         {meta?.map(({ name, content }) => (
           <meta key={name} name={name} content={content} />
         ))}

@@ -1,19 +1,15 @@
 import fs from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
-
 import type { Plugin } from "rollup";
-import { fileURLToPath } from "node:url";
 
-const __dirname = fileURLToPath(import.meta.url);
 const require = createRequire(import.meta.url);
-
 const VIRTUAL_ID = "virtual:xanix-document";
 const RESOLVED_ID = "\0virtual:xanix-document";
 
 export default function xanixDocument(): Plugin {
   const root = process.cwd();
-  const userDocument = path.resolve(root, "Document.tsx");
+  const userDocument = path.resolve(root, "document.tsx");
   const baseDocument =
     require.resolve("../../../../../dist/components/BaseDocument.js");
 
