@@ -2,8 +2,7 @@ import React, { useEffect } from "react";
 import Button from "@xanui/ui/Button";
 import { createTheme, ThemeProvider } from "@xanui/core";
 import img from "./image.png";
-import { navigate, useLocation, usePage, useData } from "../src/index.js";
-import { useSearchParams, usePathname, useCookies } from "../src/index.js";
+import { navigate, useLocation, usePage, useData } from "xanix";
 
 export type HomeProps = {
   name: string;
@@ -18,12 +17,14 @@ const sleep = (ms: number) =>
 
 const Data = () => {
   const page = usePage();
-
+  const d = useData(async () => {
+    return await sleep(1000);
+  });
   return (
     <div>
       Data {page.pageId}
-      {/* {d.data?.name} */}
-      {/* <button onClick={() => d.reload()}>reload</button> */}
+      {d.data?.name}
+      <button onClick={() => d.reload()}>reload</button>
     </div>
   );
 };

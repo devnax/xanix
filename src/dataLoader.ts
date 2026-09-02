@@ -1,3 +1,5 @@
+import { IS_SERVER } from "./utils.js";
+
 type PageId = string;
 type Callback = (args: Record<string, any>) => Promise<any>;
 type XanixId = string;
@@ -7,7 +9,7 @@ type XanixDT = {
   callback: Callback;
 };
 
-let global: any = __XANIX_SERVER__ ? globalThis : window;
+let global: any = IS_SERVER ? globalThis : {};
 global.$XANIXDT_INITIALED = new Map<PageId, boolean>();
 global.$XANIXDT = new Map<XanixId, XanixDT>();
 global.$XANIXDT_PAGES = new Map<PageId, XanixId[]>();

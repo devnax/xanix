@@ -4,9 +4,10 @@ import { nodeResolve } from "@rollup/plugin-node-resolve";
 import { build, type Plugin } from "esbuild";
 import { XanixClientEntry } from "../types";
 import { createRequire } from "node:module";
-import { getClientRuntimeFile, getDocumentFile } from "../include/utils.js";
+import { getClientRuntimeFile } from "../include/utils.js";
 import esbuild from "rollup-plugin-esbuild";
 import url from "@rollup/plugin-url";
+import XanixDocument from "./plugins/XanixDocument/index.js";
 
 const require = createRequire(import.meta.url);
 
@@ -32,12 +33,10 @@ const GenerateGraph = async (entries: XanixClientEntry[]) => {
   }
 
   input.push(getClientRuntimeFile());
-  input.push(await getDocumentFile());
 
   const bundle = await rollup({
     input,
     plugins: [
-      // XanixTsconfigAlias(),
       nodeResolve({
         extensions: [".mjs", ".js", ".jsx", ".json", ".ts", ".tsx"],
       }),
@@ -60,7 +59,7 @@ const GenerateGraph = async (entries: XanixClientEntry[]) => {
         fileName: "assets/[name]-[hash][extname]",
         emitFiles: false,
       }),
-
+      XanixDocument(),
       esbuild({
         target: "es2022",
         jsx: "automatic",
@@ -72,7 +71,8 @@ const GenerateGraph = async (entries: XanixClientEntry[]) => {
         id.startsWith(".") ||
         path.isAbsolute(id) ||
         id === "@" ||
-        id.startsWith("@/")
+        id.startsWith("@/") ||
+        id === "virtual:xanix-document"
       ) {
         return false;
       }
@@ -123,6 +123,7 @@ const buildWrappers = (
 
     try {
       const mod = require(resolved);
+
       hasDefault =
         mod &&
         (typeof mod === "object" || typeof mod === "function") &&
@@ -131,7 +132,9 @@ const buildWrappers = (
       namedExports = Object.keys(mod).filter(
         (key) => key !== "__esModule" && key !== "default",
       );
-    } catch {}
+    } catch (err: any) {
+      // console.log(err);
+    }
 
     const lines = [`import * as __mod from ${JSON.stringify(resolved)};`];
     if (hasDefault) {
@@ -139,7 +142,7 @@ const buildWrappers = (
     } else {
       lines.push(`export default __mod;`);
     }
-
+    lines.push("");
     for (const exportName of namedExports) {
       if (/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(exportName)) {
         lines.push(

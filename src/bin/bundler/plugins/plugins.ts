@@ -31,7 +31,7 @@ export function xanixDefaultPlugins(
 
   if (isServer) {
     _plugins.push(XanixTransform({ mode: development ? "watch" : "start" }));
-    _plugins.push(XanixDocument());
+    // _plugins.push(XanixDocument());
   } else {
     if (development) {
       _plugins.push(xanixReactRefresh());
@@ -81,6 +81,7 @@ export function xanixDefaultPlugins(
     commonjs(),
     json(),
     xanixUseDataId(),
+    XanixDocument(),
     ..._plugins,
 
     esbuild({

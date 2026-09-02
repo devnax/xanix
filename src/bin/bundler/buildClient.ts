@@ -3,10 +3,8 @@ import fs from "node:fs";
 import { XanixClientEntry } from "../types";
 import bundlerOutput, { outDir } from "./config/output.js";
 import {
-  getDocumentFile,
   getClientRuntimeFile,
   getClientRuntimeFileName,
-  getDocumentFileName,
 } from "../include/utils.js";
 import { xanixDefaultPlugins } from "./plugins/plugins.js";
 
@@ -17,9 +15,7 @@ const buildClient = async (entries: XanixClientEntry[]) => {
   }
 
   const runtimeFileName = getClientRuntimeFileName("production");
-  const documentFileName = getDocumentFileName("production");
   input[runtimeFileName] = getClientRuntimeFile();
-  input[documentFileName] = await getDocumentFile();
 
   fs.rmSync(outDir.client, {
     recursive: true,

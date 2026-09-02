@@ -5,10 +5,8 @@ import { XanixClientEntry } from "../types.js";
 import BuildCache from "./cacheNpmModules.js";
 import XanixResolveCacheDeps from "./plugins/XanixResolveCacheDeps/index.js";
 import {
-  getDocumentFile,
   getClientRuntimeFile,
   getClientRuntimeFileName,
-  getDocumentFileName,
 } from "../include/utils.js";
 import { xanixDefaultPlugins } from "./plugins/plugins.js";
 
@@ -27,10 +25,7 @@ const WatchClient = async (
     input[entry.name] = entry.file;
   }
   const runtimeFileName = getClientRuntimeFileName("development");
-  const documentFileName = getDocumentFileName("development");
-
   input[runtimeFileName] = getClientRuntimeFile();
-  input[documentFileName] = await getDocumentFile();
 
   fs.rmSync(outDir.client, {
     recursive: true,

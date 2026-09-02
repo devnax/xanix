@@ -6,14 +6,8 @@ export const navigate = (path: string, replace = false) => {
   );
 };
 
-export const back = () => {
-  window.history.back();
-};
-
-export const forward = () => {
-  window.history.forward();
-};
-
+export const back = () => window.history.back();
+export const forward = () => window.history.forward();
 export const preload = async (path: string) => {
   window.dispatchEvent(new CustomEvent(XANIX_PRELOAD, { detail: { path } }));
 };

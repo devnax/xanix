@@ -5,9 +5,7 @@ import { parse } from "@babel/parser";
 import traverse from "@babel/traverse";
 import generate from "@babel/generator";
 import * as t from "@babel/types";
-import { createRequire } from "node:module";
 import { getClientRuntimeFile } from "../../include/utils.js";
-const require = createRequire(import.meta.url);
 const root = process.cwd();
 
 export default function xanixReactRefresh(): Plugin {
@@ -25,14 +23,12 @@ import * as RefreshRuntime from "react-refresh/runtime";
 
 ${code}
 
-if (typeof window !== "undefined") {
   RefreshRuntime.injectIntoGlobalHook(window);
-
   window.$RefreshReg$ = RefreshRuntime.register;
   window.$RefreshSig$ = () => (type) => type;
-
   const ws = new WebSocket("ws://localhost:8080");
 
+  
   ws.onmessage = async (event) => {
     const files = JSON.parse(event.data);
 
@@ -52,7 +48,6 @@ if (typeof window !== "undefined") {
     RefreshRuntime.performReactRefresh();
     ws.send("reload")
   };
-}
 `;
 
       return {
@@ -65,7 +60,7 @@ if (typeof window !== "undefined") {
       if (path.resolve(id) === getClientRuntimeFile()) {
         return null;
       }
-      if (id.includes("node_modules") || id.includes("xanix\\dist")) {
+      if (id.includes("node_modules")) {
         return null;
       }
 
@@ -83,13 +78,11 @@ if (typeof window !== "undefined") {
       traverse(ast, {
         FunctionDeclaration(path) {
           const node = path.node;
-
           if (!node.id) {
             return;
           }
 
           const name = node.id.name;
-
           if (!isReactComponent(name)) {
             return;
           }
@@ -99,13 +92,11 @@ if (typeof window !== "undefined") {
 
         VariableDeclarator(path) {
           const node = path.node;
-
           if (!t.isIdentifier(node.id)) {
             return;
           }
 
           const name = node.id.name;
-
           if (!isReactComponent(name)) {
             return;
           }

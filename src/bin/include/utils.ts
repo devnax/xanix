@@ -1,4 +1,3 @@
-import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import crypto from "node:crypto";
@@ -17,23 +16,6 @@ export const getClientRuntimeFile = () => {
 export const getClientRuntimeFileName = (
   mode: "development" | "production",
 ) => {
-  if (mode === "development") {
-    return "xanix-runtime";
-  }
-  return uid("xanix-runtime", 32);
-};
-
-export const getDocumentFile = async () => {
-  const documentEntry = path.join(process.cwd(), "Document.tsx");
-  if (fs.existsSync(documentEntry)) {
-    return documentEntry;
-  }
-  return path.join(__dirname, "../../../components/BaseDocument.js");
-};
-
-export const getDocumentFileName = (mode: "development" | "production") => {
-  if (mode === "development") {
-    return "xanix-documents";
-  }
-  return uid("xanix-document", 32);
+  let n = "xanix-runtime";
+  return mode === "development" ? n : uid(n, 16);
 };

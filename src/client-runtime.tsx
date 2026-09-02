@@ -1,6 +1,7 @@
 import type { DocumentContextData } from "./components/DocumentContext.js";
 import type { ComponentType } from "react";
 import { createRoot, type Root } from "react-dom/client";
+
 type DocumentInfo = DocumentContextData & {
   component: ComponentType<any>;
 };
@@ -51,8 +52,7 @@ export async function mount(
 ) {
   const root = getRoot();
   pages.set(path, doc);
-  const Document = (await import(getImportUrl(__XANIX_DOCUMENT_FILE_NAME__)))
-    .default;
+  const Document = (await import("virtual:xanix-document")).default;
 
   root.render(
     <Document document={doc}>

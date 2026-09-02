@@ -1,11 +1,13 @@
 {
   "name": "xanix",
-  "version": "1.0.6",
+  "version": "1.0.9",
   "description": "",
   "main": "dist/index.js",
   "module": "dist/index.js",
   "types": "./dist/index.d.ts",
-  "bin": "./dist/bin/index.js",
+  "bin": {
+    "xanix": "dist/bin/index.js"
+  },
   "type": "module",
   "files": [
     "dist"
@@ -22,10 +24,6 @@
     "./runtime": {
       "import": "./dist/server/runtime/index.js",
       "require": "./dist/server/runtime/index.js"
-    },
-    "./BaseDocument": {
-      "types": "./dist/components/BaseDocument.d.ts",
-      "import": "./dist/components/BaseDocument.js"
     }
   },
   "scripts": {

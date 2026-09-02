@@ -5,7 +5,6 @@ import { createManifest, readManifest } from "../include/manifest.js";
 import { XanixClientEntry } from "../types.js";
 import generateClientEntries from "./generateClientEntries.js";
 import bundlerOutput, { outDir } from "./config/output.js";
-import { getDocumentFile, getDocumentFileName } from "../include/utils.js";
 import { entriesEqual } from "../include/entry.js";
 import { xanixDefaultPlugins } from "./plugins/plugins.js";
 const root = process.cwd();

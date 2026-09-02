@@ -1,8 +1,7 @@
 import { renderToPipeableStream, renderToString } from "react-dom/server";
 import readManifest from "./readManifest.js";
 import { PassThrough } from "node:stream";
-// import dataLoader from "../../dataLoader.js";
-import Document from "virtual:xanix-document";
+import dataLoader from "../../dataLoader.js";
 
 interface XanixPageProps {
   pageId: string;
@@ -76,25 +75,27 @@ export default async function xanixPage({
     return;
   }
 
-  // if (!dataLoader.isInit(pageId)) {
-  //   renderToString(
-  //     <Document
-  //       document={{
-  //         pageId,
-  //         props,
-  //         title: title ?? entry.name.replaceAll("-", " "),
-  //         meta,
-  //         params: req.params,
-  //         request: req,
-  //         pageData: {},
-  //       }}
-  //     >
-  //       <Component {...props} />
-  //     </Document>,
-  //   );
-  // }
+  const Document = (await import("virtual:xanix-document")).default;
 
-  // const pageData = await dataLoader.results(pageId);
+  if (!dataLoader.isInit(pageId)) {
+    renderToString(
+      <Document
+        document={{
+          pageId,
+          props,
+          title: title ?? entry.name.replaceAll("-", " "),
+          meta,
+          params: req.params,
+          request: req,
+          pageData: {},
+        }}
+      >
+        <Component {...props} />
+      </Document>,
+    );
+  }
+
+  const pageData = await dataLoader.results(pageId);
 
   if ("x-navigation" in req.headers) {
     res.setHeader("Content-Type", "application/json");
@@ -105,7 +106,7 @@ export default async function xanixPage({
       meta,
       params: req.params,
       request: null,
-      pageData: {},
+      pageData,
     });
   }
 
@@ -118,7 +119,7 @@ export default async function xanixPage({
         meta,
         params: req.params,
         request: req,
-        pageData: {},
+        pageData,
       }}
     >
       <Component {...props} />

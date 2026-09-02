@@ -32,7 +32,6 @@ export default function xanixDocument(): Plugin {
       if (id !== RESOLVED_ID) {
         return null;
       }
-      console.log(id);
 
       const document = fs.existsSync(userDocument)
         ? userDocument

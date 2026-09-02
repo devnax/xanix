@@ -1,4 +1,4 @@
-import { Head, Body, Document, type DocumentProps } from "./src/index.js";
+import { Head, Body, Document, type DocumentProps } from "xanix";
 
 const BaseDocument = ({ document, children }: DocumentProps) => {
   return (

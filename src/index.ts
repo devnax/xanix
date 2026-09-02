@@ -20,6 +20,8 @@ import useHeaders from "./hooks/useHeaders.js";
 import useCookies from "./hooks/useCookies.js";
 import useData from "./hooks/useData.js";
 
+export * from "./utils.js";
+
 // navigate
 import {
   navigate,

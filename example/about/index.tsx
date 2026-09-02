@@ -1,7 +1,9 @@
 import React, { Suspense } from "react";
-import { navigate } from "../../src/index.js";
+import { navigate, useDocument } from "xanix";
 const Chunk = React.lazy(() => import("../Chunk"));
+
 const About = () => {
+  const doc = useDocument();
   return (
     <div>
       About Pag
