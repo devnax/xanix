@@ -1,7 +1,8 @@
 /// <reference path="./types/globals.d.ts" />
 /// <reference path="./types/express.d.ts" />
+/// <reference path="./types/xanix-virtual.d.ts" />
 /// <reference path="./types/assets.d.ts" />
-
+import type { Request } from "express";
 import Link from "./components/Link.js";
 import Document, { DocumentProps } from "./components/Document.js";
 import Head from "./components/Head.js";
@@ -10,12 +11,14 @@ import Script from "./components/Script.js";
 
 // hooks
 import useDocument from "./hooks/useDocument.js";
+import useMetadata from "./hooks/useMetadata.js";
 import useLocation from "./hooks/useLocation.js";
 import useParams from "./hooks/useParams.js";
 import usePathname from "./hooks/usePathname.js";
 import useSearchParams from "./hooks/useSearchParams.js";
 import usePage from "./hooks/usePage.js";
 import useRequest from "./hooks/useRequest.js";
+import useResponse from "./hooks/useResponse.js";
 import useHeaders from "./hooks/useHeaders.js";
 import useCookies from "./hooks/useCookies.js";
 import useData from "./hooks/useData.js";
@@ -25,6 +28,7 @@ export * from "./utils.js";
 // navigate
 import {
   navigate,
+  redirect,
   back,
   forward,
   preload,
@@ -42,18 +46,21 @@ export {
 
   // hooks
   useDocument,
+  useMetadata,
   useLocation,
   useParams,
   usePathname,
   useSearchParams,
   usePage,
   useRequest,
+  useResponse,
   useHeaders,
   useCookies,
   useData,
 
   // navigate
   navigate,
+  redirect,
   back,
   forward,
   preload,
@@ -62,4 +69,11 @@ export {
   reload,
 };
 
-export type { DocumentProps };
+export type XanixDocumentProps = DocumentProps & {
+  request?: Request;
+  metadata: Record<string, any>;
+  page: {
+    id: string;
+    props: Record<string, any>;
+  };
+};

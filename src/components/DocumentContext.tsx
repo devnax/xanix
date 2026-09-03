@@ -1,14 +1,13 @@
 import { createContext } from "react";
-import type { Request } from "express";
+import type { Request, Response } from "express";
 export type DocumentContextData = {
   pageId: string;
   props: Record<string, any>;
-
-  title: string;
-  meta: Array<{ name: string; content: string }>;
+  metadata: Record<string, any>;
   params: Record<string, string>;
   request?: Request;
-  pageData: Record<string, any>;
+  response?: Response;
+  usedata: Record<string, any>;
 };
 
 export const DocumentContext = createContext<DocumentContextData | null>(null);

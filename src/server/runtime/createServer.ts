@@ -49,28 +49,6 @@ function createXanixServer({ mode }: Options): express.Express {
     },
   );
 
-  app.use((req: any, res, next) => {
-    let data: any = {
-      title: "",
-      meta: [],
-    };
-
-    if (!req.page) {
-      req.page = {
-        setTitle(title: string) {
-          data.title = title;
-        },
-        setMeta(name: string, content: string) {
-          data.meta.push({ name, content });
-        },
-      };
-
-      req.XanixPageData = data;
-    }
-
-    next();
-  });
-
   return app;
 }
 

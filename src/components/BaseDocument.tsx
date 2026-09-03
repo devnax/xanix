@@ -1,6 +1,6 @@
-import { Head, Body, Document, type DocumentProps } from "xanix";
+import { Head, Body, Document, type XanixDocumentProps } from "xanix";
 
-const BaseDocument = ({ document, children }: DocumentProps) => {
+const BaseDocument = ({ document, children }: XanixDocumentProps) => {
   return (
     <Document document={document}>
       <Head>

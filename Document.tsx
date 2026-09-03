@@ -1,6 +1,17 @@
-import { Head, Body, Document, type DocumentProps } from "xanix";
+import { Head, Body, Document, type XanixDocumentProps } from "xanix";
+import type { Request } from "express";
 
-const BaseDocument = ({ document, children }: DocumentProps) => {
+export const metadata = async (
+  request: Request,
+  context: { id: string; name: string },
+) => {
+  return {
+    title: "My App",
+    description: "This is my app",
+  };
+};
+
+const RootDocument = ({ document, children }: XanixDocumentProps) => {
   return (
     <Document document={document}>
       <Head>
@@ -12,4 +23,4 @@ const BaseDocument = ({ document, children }: DocumentProps) => {
   );
 };
 
-export default BaseDocument;
+export default RootDocument;

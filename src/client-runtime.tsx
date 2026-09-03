@@ -38,7 +38,7 @@ export const getPage = async (path: string) => {
   try {
     const page = await response.json();
     if (!page) return null;
-    if (page.pageId && page.props && page.meta && page.params) {
+    if (page.pageId && page.props && page.params && page.metadata) {
       return page;
     }
     throw new Error("Invalid page structure");
@@ -57,7 +57,13 @@ export async function mount(
   const Document = (await import("virtual:xanix-document")).default;
 
   root.render(
-    <Document document={doc}>
+    <Document
+      document={doc}
+      metadata={doc.metadata}
+      page={{ id: doc.pageId, props: doc.props }}
+      request={doc.request}
+      response={doc.response}
+    >
       <Component {...doc.props} />
     </Document>,
   );

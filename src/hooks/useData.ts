@@ -21,8 +21,8 @@ useData.register = (xanixId: string, callback: Callback) => {
       const doc = useDocument();
 
       loader.registerPage(page.pageId, xanixId, args ?? {});
-      const pageData = doc.pageData || {};
-      const itemData = pageData[xanixId];
+      const usedata = doc.usedata || {};
+      const itemData = usedata[xanixId];
 
       return {
         data: itemData,
@@ -33,8 +33,8 @@ useData.register = (xanixId: string, callback: Callback) => {
   } else {
     return (args?: Record<string, any>) => {
       const doc = useDocument();
-      const pageData = doc.pageData || {};
-      const itemData = pageData[xanixId];
+      const usedata = doc.usedata || {};
+      const itemData = usedata[xanixId];
 
       const [loading, setLoading] = React.useState(!itemData);
       const [data, setData] = React.useState(itemData);

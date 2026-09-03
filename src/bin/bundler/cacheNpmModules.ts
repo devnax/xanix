@@ -6,6 +6,7 @@ import { createRequire } from "node:module";
 import { getClientRuntimeFile } from "../include/utils.js";
 import outdirs from "../../outdirs.js";
 import { xanixDefaultPlugins } from "./plugins/plugins.js";
+import defines from "./config/defines.js";
 
 const require = createRequire(import.meta.url);
 
@@ -108,7 +109,7 @@ const buildWrappers = (
         (key) => key !== "__esModule" && key !== "default",
       );
     } catch (err: any) {
-      // console.log(err);
+      console.log(err);
     }
 
     const lines = [`import * as __mod from ${JSON.stringify(resolved)};`];
@@ -150,12 +151,7 @@ const bundleDeps = async (input: Record<string, string>, outdir: string) => {
     chunkNames: "chunks/[hash]",
     platform: "browser",
     sourcemap: true,
-    define: {
-      __XANIX_CLIENT__: "true",
-      __XANIX_SERVER__: "false",
-      __XANIX_DEV__: "true",
-      __XANIX_PROD__: "false",
-    },
+    define: defines({ mode: "development", isClient: true }),
     plugins: [makeCjsWrapperPlugin(wrappers)],
   });
 };

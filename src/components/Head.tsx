@@ -7,20 +7,9 @@ type HeadProps = {
 };
 
 const Head = ({ children }: HeadProps) => {
-  const { title, meta, pageId, props, params, pageData } = useDocument();
+  const { pageId, props, params, metadata, usedata } = useDocument();
   if (__XANIX_CLIENT__) {
     useEffect(() => {
-      if (title) document.title = title;
-      meta?.forEach(({ name, content }) => {
-        let element = document.querySelector(`meta[name="${name}"]`);
-        if (!element) {
-          element = document.createElement("meta");
-          element.setAttribute("name", name);
-          document.head.appendChild(element);
-        }
-        element.setAttribute("content", content);
-      });
-      // add children
       const head = document.head;
       if (children) {
         const container = document.createElement("div");
@@ -36,10 +25,6 @@ const Head = ({ children }: HeadProps) => {
   if (__XANIX_SERVER__) {
     return (
       <head>
-        {title && <title>{title}</title>}
-        {meta?.map(({ name, content }) => (
-          <meta key={name} name={name} content={content} />
-        ))}
         {children}
         <script
           id={pageId}
@@ -47,11 +32,9 @@ const Head = ({ children }: HeadProps) => {
             __html: `window.XANIX_DOCUMENT = ${JSON.stringify({
               pageId,
               props,
-              meta,
-              title,
               params,
-              pageData,
-              request: null,
+              metadata,
+              usedata,
             })};
         `,
           }}

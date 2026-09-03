@@ -3,7 +3,7 @@ import path from "node:path";
 import dotenv from "dotenv";
 import type { Plugin } from "rollup";
 import replace from "@rollup/plugin-replace";
-import { getClientRuntimeFileName } from "../../include/utils.js";
+import defines from "../config/defines.js";
 
 export interface XanixEnvPluginOptions {
   /**
@@ -53,26 +53,11 @@ export default function XanixEnvPlugin(
   }
 
   const envs = {
-    "process.env.NODE_ENV": JSON.stringify(mode),
     ...(isClient ? clientEnv : serverEnv),
-
-    __XANIX_CLIENT_RUNTIME_FILE_NAME__: JSON.stringify(
-      getClientRuntimeFileName(mode),
-    ),
-
-    __XANIX_CLIENT__: JSON.stringify(isClient),
-    __XANIX_SERVER__: JSON.stringify(!isClient),
-    __XANIX_DEV__: JSON.stringify(mode === "development"),
-    __XANIX_PROD__: JSON.stringify(mode === "production"),
-
-    XANIX_NAVIGATE: JSON.stringify("xanix:navigate"),
-    XANIX_NAVIGATE_START: JSON.stringify("xanix:navigate:start"),
-    XANIX_NAVIGATE_END: JSON.stringify("xanix:navigate:end"),
-    XANIX_NAVIGATE_RELOAD: JSON.stringify("xanix:navigate:reload"),
-
-    XANIX_PRELOAD: JSON.stringify("xanix:preload"),
-    XANIX_PRELOAD_START: JSON.stringify("xanix:preload:start"),
-    XANIX_PRELOAD_END: JSON.stringify("xanix:preload:end"),
+    ...defines({
+      mode,
+      isClient,
+    }),
   };
 
   return replace({

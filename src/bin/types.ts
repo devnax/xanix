@@ -3,7 +3,6 @@ export interface XanixClientEntry {
   name: string;
   file: string;
   path: string;
-  build: string;
   export: string;
 }
 

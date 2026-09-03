@@ -202,7 +202,7 @@ export function entryFinder(code: string, id: string): XanixClientEntry[] {
         name: componentName,
         file: normalizedFile,
         path: componentImportPath,
-        build: buildPath,
+        // build: buildPath,
         export: componentImport.export,
       };
 
