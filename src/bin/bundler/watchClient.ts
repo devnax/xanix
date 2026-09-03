@@ -14,6 +14,7 @@ import outdirs from "../../outdirs.js";
 type Option = {
   onChange?: (entry: string, event?: string) => void;
   onBuildEnd?: () => void;
+  WebSocketPort: number;
 };
 
 const WatchClient = async (
@@ -49,6 +50,7 @@ const WatchClient = async (
     plugins: [
       XanixResolveCacheDeps(buildCache, entries),
       ...xanixDefaultPlugins({
+        WebSocketPort: options.WebSocketPort,
         target: "client",
         development: true,
         assetExternal: true,

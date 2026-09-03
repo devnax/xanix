@@ -8,7 +8,7 @@ import * as t from "@babel/types";
 import { getClientRuntimeFile } from "../../include/utils.js";
 const root = process.cwd();
 
-export default function xanixReactRefresh(): Plugin {
+export default function xanixReactRefresh(WebSocketPort: number): Plugin {
   return {
     name: "xanix-react-refresh",
 
@@ -26,7 +26,7 @@ ${code}
   RefreshRuntime.injectIntoGlobalHook(window);
   window.$RefreshReg$ = RefreshRuntime.register;
   window.$RefreshSig$ = () => (type) => type;
-  const ws = new WebSocket("ws://localhost:8080");
+  const ws = new WebSocket("ws://localhost:" + ${WebSocketPort});
 
   
   ws.onmessage = async (event) => {

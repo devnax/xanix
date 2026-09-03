@@ -9,6 +9,7 @@ import { getEntries } from "../include/entry.js";
 import { WebSocketServer } from "ws";
 import { XanixClientEntry } from "../types.js";
 import outdirs from "../../outdirs.js";
+import { getWebSocketPort } from "../include/utils.js";
 
 const root = process.cwd();
 let child: any;
@@ -25,8 +26,9 @@ function start(): Promise<any> {
 }
 
 const dev = async (rootEntry: string) => {
+  const WebSocketPort = getWebSocketPort();
   const wss = new WebSocketServer({
-    port: 8080,
+    port: WebSocketPort,
   });
 
   let sockets = new Set<any>();
@@ -61,6 +63,7 @@ const dev = async (rootEntry: string) => {
     let changedFiles = new Set<string>();
     _clientWatcher?.close();
     _clientWatcher = await watchClient(entries, {
+      WebSocketPort,
       onChange: (entry) => {
         const _entry = entries.find((e) => e.file === entry);
         let buildFile = _entry

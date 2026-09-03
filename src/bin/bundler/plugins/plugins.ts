@@ -18,11 +18,10 @@ export interface XanixRollupOptions {
   development?: boolean;
   assetExternal?: boolean;
   onChange?: (entry: string, event?: string) => void;
+  WebSocketPort?: number;
 }
 
-export function xanixDefaultPlugins(
-  options: XanixRollupOptions = {},
-): Plugin[] {
+export function xanixDefaultPlugins(options: XanixRollupOptions): Plugin[] {
   const target = options.target ?? "client";
   const development = options.development ?? true;
   const isClient = target === "client";
@@ -37,7 +36,7 @@ export function xanixDefaultPlugins(
     );
   } else {
     if (development) {
-      _plugins.push(xanixReactRefresh());
+      _plugins.push(xanixReactRefresh(options.WebSocketPort as number));
     }
   }
 

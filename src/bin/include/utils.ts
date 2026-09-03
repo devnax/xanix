@@ -19,3 +19,7 @@ export const getClientRuntimeFileName = (
   let n = "xanix-runtime";
   return mode === "development" ? n : uid(n, 16);
 };
+
+export function getWebSocketPort() {
+  return Math.floor(Math.random() * (65535 - 49152 + 1)) + 49152;
+}
