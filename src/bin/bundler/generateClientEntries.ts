@@ -3,6 +3,7 @@ import path from "node:path";
 import { type XanixClientEntry } from "../types.js";
 import { XanixEntryFinder } from "./plugins/XanixEntryFinder/index.js";
 import { xanixDefaultPlugins } from "./plugins/plugins.js";
+import external from "./config/external.js";
 
 const root = process.cwd();
 const generateClientEntries = async ({
@@ -25,12 +26,7 @@ const generateClientEntries = async ({
     ],
 
     external(id) {
-      if (
-        id.startsWith(".") ||
-        path.isAbsolute(id) ||
-        id === "@" ||
-        id.startsWith("@/")
-      ) {
+      if (!external(id)) {
         return false;
       }
       return true;

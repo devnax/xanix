@@ -7,7 +7,7 @@ type HeadProps = {
 };
 
 const Head = ({ children }: HeadProps) => {
-  const { pageId, props, params, metadata, usedata } = useDocument();
+  const { pageId, props, params, path, metadata, usedata } = useDocument();
   if (__XANIX_CLIENT__) {
     useEffect(() => {
       const head = document.head;
@@ -33,6 +33,7 @@ const Head = ({ children }: HeadProps) => {
               pageId,
               props,
               params,
+              path,
               metadata,
               usedata,
             })};

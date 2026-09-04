@@ -38,7 +38,7 @@ const WatchClient = async (
     recursive: true,
   });
 
-  let buildCache: Map<string, any>;
+  let buildCache: Map<string, any> = new Map();
   if (entries.length > 0) {
     buildCache = await BuildCache(entries);
   } else {

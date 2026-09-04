@@ -1,6 +1,7 @@
 import { watch } from "rollup";
 import path from "node:path";
 import fs from "node:fs";
+import external from "./config/external.js";
 import { createManifest, readManifest } from "../include/manifest.js";
 import { XanixClientEntry } from "../types.js";
 import generateClientEntries from "./generateClientEntries.js";
@@ -58,16 +59,10 @@ const watchServer = async ({
     ],
 
     external(id) {
-      if (
-        id.startsWith(".") ||
-        path.isAbsolute(id) ||
-        id === "@" ||
-        id.startsWith("@/") ||
-        id.startsWith("xanix") ||
-        id === "virtual:xanix-document"
-      ) {
+      if (!external(id)) {
         return false;
       }
+
       return true;
     },
 

@@ -25,7 +25,7 @@ useData.register = (xanixId: string, callback: Callback) => {
       const itemData = usedata[xanixId];
 
       return {
-        data: itemData,
+        data: `data_${xanixId}`,
         loading: false,
         reload: async () => {},
       };
@@ -59,11 +59,11 @@ useData.register = (xanixId: string, callback: Callback) => {
       };
 
       useEffect(() => {
-        if (init.current) {
-          reload();
-        } else if (!itemData) {
-          reload();
-        }
+        // if (init.current) {
+        //   reload();
+        // } else if (!itemData) {
+        //   reload();
+        // }
         init.current = true;
       }, [JSON.stringify(args)]);
 

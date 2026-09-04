@@ -1,9 +1,6 @@
-import path from "node:path";
 import { OutputOptions } from "rollup";
 import { XanixClientEntry } from "../../types";
 import outdirs from "../../../outdirs.js";
-
-const root = process.cwd();
 
 type Options = {
   isDev?: boolean;

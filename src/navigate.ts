@@ -1,22 +1,20 @@
 import XanixRedirect from "./classes/XanixRedirect.js";
 
-export const navigate = (path: string, replace = false) => {
+export const navigate = (
+  path: string,
+  options?: { replace?: boolean; status?: number },
+) => {
   if (__XANIX_CLIENT__) {
     window.dispatchEvent(
       new CustomEvent(XANIX_NAVIGATE, {
-        detail: { path, replace },
+        detail: { path, replace: options?.replace },
       }),
     );
+  } else {
+    throw new XanixRedirect(options?.status ?? 302, path);
   }
 };
 
-export const redirect = (path: string, status = 302) => {
-  if (__XANIX_SERVER__) {
-    throw new XanixRedirect(status, path);
-  } else {
-    navigate(path, true);
-  }
-};
 export const back = () => window.history.back();
 export const forward = () => window.history.forward();
 export const preload = async (path: string) => {

@@ -27,12 +27,12 @@ function getRoot(): Root {
   return ele[ROOT_KEY];
 }
 
-export const getPage = async (path: string) => {
+const getPage = async (path: string) => {
   let page = pages.get(path);
   if (page) return page;
   const response = await fetch(path, {
     headers: {
-      "X-Navigation": "true",
+      "x-xanix-page": __XANIX_PAGE_NAVIGATION_HEADER__VALUE__,
     },
   });
   try {
@@ -75,15 +75,16 @@ if (__XANIX_CLIENT__) {
   };
 
   window.addEventListener("load", async () => {
-    const path = getPath();
+    const page = (window as any).XANIX_DOCUMENT;
+    const path = page.path;
     dispatch(XANIX_NAVIGATE_START, path);
-    const doc = (window as any).XANIX_DOCUMENT;
-    const mod = await import(getImportUrl(doc.pageId));
-    mount(path, mod.default, doc);
-    const scriptTag = document.getElementById(doc.pageId);
+    const mod = await import(getImportUrl(page.pageId));
+    mount(path, mod.default, page);
+    const scriptTag = document.getElementById(page.pageId);
     if (scriptTag) {
       scriptTag.remove();
     }
+    history.pushState(null, "", page.path);
     dispatch(XANIX_NAVIGATE_END, path);
   });
 
@@ -93,25 +94,16 @@ if (__XANIX_CLIENT__) {
 
   window.addEventListener(XANIX_NAVIGATE, async (event: any) => {
     const { path, replace } = event.detail;
-    const currentPath = getPath();
-    if (path === currentPath) return;
-
-    const url = new URL(path, window.location.origin);
-    const prevUrl = new URL(currentPath, window.location.origin);
-    const isSamePath = url.pathname === prevUrl.pathname;
-
     dispatch(XANIX_NAVIGATE_START, path);
     let page: any = await getPage(path);
     if (!page) return;
-    if (!isSamePath) {
-      const mod = await import(getImportUrl(page.pageId));
-      mount(path, mod.default, page);
-    }
-    dispatch(XANIX_NAVIGATE_END, path);
+    const mod = await import(getImportUrl(page.pageId));
+    mount(path, mod.default, page);
+    dispatch(XANIX_NAVIGATE_END, page.path);
     if (replace) {
-      history.replaceState(null, "", path);
+      history.replaceState(null, "", page.path);
     } else {
-      history.pushState(null, "", path);
+      history.pushState(null, "", page.path);
     }
   });
 
@@ -123,7 +115,7 @@ if (__XANIX_CLIENT__) {
     if (!page) return;
     await import(getImportUrl(page.pageId));
     pages.set(path, page);
-    dispatch(XANIX_PRELOAD_END, path);
+    dispatch(XANIX_PRELOAD_END, page.path);
   });
 
   window.addEventListener(XANIX_NAVIGATE_RELOAD, async (event: any) => {
@@ -133,7 +125,6 @@ if (__XANIX_CLIENT__) {
     if (!page) return;
     const mod = await import(getImportUrl(page.pageId) + "?t=" + Date.now());
     mount(path, mod.default, page);
-    history.pushState(null, "", path);
-    dispatch(XANIX_NAVIGATE_END, path);
+    dispatch(XANIX_NAVIGATE_END, page.path);
   });
 }

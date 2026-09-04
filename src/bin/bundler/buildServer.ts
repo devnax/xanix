@@ -2,6 +2,7 @@ import { rollup } from "rollup";
 import path from "node:path";
 import bundlerOutput from "./config/output.js";
 import fs from "node:fs";
+import external from "./config/external.js";
 import { createManifest } from "../include/manifest.js";
 import { XanixClientEntry } from "../types.js";
 import generateClientEntries from "./generateClientEntries.js";
@@ -53,14 +54,7 @@ const BuildServer = async ({ rootEntry, onBuildEnd }: WatcherOptions) => {
     ],
 
     external(id) {
-      if (
-        id.startsWith(".") ||
-        path.isAbsolute(id) ||
-        id === "@" ||
-        id.startsWith("@/") ||
-        id.startsWith("xanix") ||
-        id === "virtual:xanix-document"
-      ) {
+      if (!external(id)) {
         return false;
       }
       return true;

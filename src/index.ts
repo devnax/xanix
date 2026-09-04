@@ -20,7 +20,7 @@ import usePage from "./hooks/usePage.js";
 import useRequest from "./hooks/useRequest.js";
 import useResponse from "./hooks/useResponse.js";
 import useHeaders from "./hooks/useHeaders.js";
-import useCookies from "./hooks/useCookies.js";
+import useCookies, { CookieOptions } from "./hooks/useCookies.js";
 import useData from "./hooks/useData.js";
 
 export * from "./utils.js";
@@ -28,7 +28,6 @@ export * from "./utils.js";
 // navigate
 import {
   navigate,
-  redirect,
   back,
   forward,
   preload,
@@ -58,9 +57,8 @@ export {
   useCookies,
   useData,
 
-  // navigate
+  // navigation
   navigate,
-  redirect,
   back,
   forward,
   preload,
@@ -68,6 +66,8 @@ export {
   onNavigateEnd,
   reload,
 };
+
+export type { CookieOptions };
 
 export type XanixDocumentProps = DocumentProps & {
   request?: Request;

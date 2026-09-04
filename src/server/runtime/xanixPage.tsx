@@ -76,6 +76,10 @@ export default async function xanixPage({
     name: entry.name,
   });
 
+  // path with search/query parameters included
+  const url = new URL(req.url, `http://${req.headers.host}`);
+  const path = url.pathname + url.search;
+
   if (!dataLoader.isInit(pageId)) {
     try {
       renderToString(
@@ -91,9 +95,10 @@ export default async function xanixPage({
             pageId,
             props,
             params: req.params,
+            path,
             metadata: _metadata,
             request: req,
-            response: res,
+            // response: res,
             usedata: {},
           }}
         >
@@ -109,21 +114,23 @@ export default async function xanixPage({
     }
   }
 
-  const usedata = await dataLoader.results(pageId);
-
-  if ("x-navigation" in req.headers) {
+  if (
+    "x-xanix-page" in req.headers &&
+    req.headers["x-xanix-page"] === __XANIX_PAGE_NAVIGATION_HEADER__VALUE__
+  ) {
     res.setHeader("Content-Type", "application/json");
     return JSON.stringify({
       pageId,
       props,
       params: req.params,
+      path,
       metadata: _metadata,
-      usedata,
+      usedata: {},
     });
   }
 
   try {
-    const html = await renderPage(
+    let html = await renderPage(
       <Document
         metadata={_metadata}
         request={req}
@@ -136,15 +143,21 @@ export default async function xanixPage({
           pageId,
           props,
           params: req.params,
+          path,
           metadata: _metadata,
           request: req,
           response: res,
-          usedata,
+          usedata: {},
         }}
       >
         <Component {...props} />
       </Document>,
     );
+    const usedata = await dataLoader.results(pageId);
+    const str = JSON.stringify(usedata);
+    const script = `<script>window.__XANIX_USEDATA__ = ${str}</script>`;
+
+    html = html.replace(`"usedata": {}`, `"usedata": ${str};\n`);
     return `<!DOCTYPE html>${html}`;
   } catch (error) {
     if (error instanceof XanixRedirect) {

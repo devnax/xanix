@@ -5,6 +5,7 @@ export type DocumentContextData = {
   props: Record<string, any>;
   metadata: Record<string, any>;
   params: Record<string, string>;
+  path: string;
   request?: Request;
   response?: Response;
   usedata: Record<string, any>;

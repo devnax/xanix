@@ -1,5 +1,6 @@
 declare global {
   const __XANIX_CLIENT_RUNTIME_FILE_NAME__: string;
+  const __XANIX_PAGE_NAVIGATION_HEADER__VALUE__: string;
   const __XANIX_CLIENT__: boolean;
   const __XANIX_SERVER__: boolean;
   const __XANIX_DEV__: boolean;

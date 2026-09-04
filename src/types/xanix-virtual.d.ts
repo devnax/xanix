@@ -6,6 +6,7 @@ declare module "virtual:xanix-document" {
     pageId: string;
     props: Record<string, any>;
     params: Record<string, string>;
+    path: string;
     metadata: Record<string, any>;
     request?: Request;
     response?: Response;

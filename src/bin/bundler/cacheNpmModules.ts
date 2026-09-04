@@ -7,6 +7,8 @@ import { getClientRuntimeFile } from "../include/utils.js";
 import outdirs from "../../outdirs.js";
 import { xanixDefaultPlugins } from "./plugins/plugins.js";
 import defines from "./config/defines.js";
+import { pathToFileURL } from "node:url";
+import external from "./config/external.js";
 
 const require = createRequire(import.meta.url);
 
@@ -43,13 +45,7 @@ const GenerateGraph = async (entries: XanixClientEntry[]) => {
       }),
     ],
     external(id) {
-      if (
-        id.startsWith(".") ||
-        path.isAbsolute(id) ||
-        id === "@" ||
-        id.startsWith("@/") ||
-        id === "virtual:xanix-document"
-      ) {
+      if (!external(id)) {
         return false;
       }
       collector.set(id, {
@@ -82,12 +78,12 @@ const makeCjsWrapperPlugin = (wrappers: Map<string, string>): Plugin => ({
   },
 });
 
-const buildWrappers = (
+const buildWrappers = async (
   input: Record<string, string>,
-): {
+): Promise<{
   wrappers: Map<string, string>;
   wrappedInput: Record<string, string>;
-} => {
+}> => {
   const wrappers = new Map<string, string>();
   const wrappedInput: Record<string, string> = {};
 
@@ -98,7 +94,8 @@ const buildWrappers = (
     let hasDefault = false;
 
     try {
-      const mod = require(resolved);
+      // Node: inspect the actual module
+      const mod = await import(pathToFileURL(resolved).href);
 
       hasDefault =
         mod &&
@@ -108,17 +105,19 @@ const buildWrappers = (
       namedExports = Object.keys(mod).filter(
         (key) => key !== "__esModule" && key !== "default",
       );
-    } catch (err: any) {
-      console.log(err);
+    } catch (err) {
+      console.log(`Failed to inspect ${name}:`, err);
     }
 
+    // esbuild: use a normal filesystem path
     const lines = [`import * as __mod from ${JSON.stringify(resolved)};`];
+
     if (hasDefault) {
       lines.push(`export default __mod.default;`);
     } else {
       lines.push(`export default __mod;`);
     }
-    lines.push("");
+
     for (const exportName of namedExports) {
       if (/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(exportName)) {
         lines.push(
@@ -138,7 +137,7 @@ const buildWrappers = (
 };
 
 const bundleDeps = async (input: Record<string, string>, outdir: string) => {
-  const { wrappers, wrappedInput } = buildWrappers(input);
+  const { wrappers, wrappedInput } = await buildWrappers(input);
 
   await build({
     entryPoints: wrappedInput,
