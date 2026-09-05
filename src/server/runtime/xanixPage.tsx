@@ -1,14 +1,16 @@
 import { renderToPipeableStream, renderToString } from "react-dom/server";
 import readManifest from "./readManifest.js";
 import { PassThrough } from "node:stream";
-import dataLoader from "../../dataLoader.js";
 import XanixRedirect from "../../classes/XanixRedirect.js";
+import UseServerRegistry from "../../hooks/useServer/state.js";
 
 interface XanixPageProps {
+  component: () => Promise<{
+    default: (props: Record<string, any>) => React.ReactElement;
+  }>;
   pageId: string;
   req: any;
   res: any;
-  Component: (props: Record<string, any>) => React.ReactElement;
   props: Record<string, any>;
 }
 
@@ -51,7 +53,7 @@ export default async function xanixPage({
   pageId,
   req,
   res,
-  Component,
+  component,
   props,
 }: XanixPageProps) {
   const manifest = await readManifest();
@@ -76,48 +78,13 @@ export default async function xanixPage({
     name: entry.name,
   });
 
+  const Component = (await component()).default;
+
   // path with search/query parameters included
   const url = new URL(req.url, `http://${req.headers.host}`);
   const path = url.pathname + url.search;
 
-  if (!dataLoader.isInit(pageId)) {
-    try {
-      renderToString(
-        <Document
-          metadata={_metadata}
-          request={req}
-          response={res}
-          page={{
-            id: pageId,
-            props,
-          }}
-          document={{
-            pageId,
-            props,
-            params: req.params,
-            path,
-            metadata: _metadata,
-            request: req,
-            // response: res,
-            usedata: {},
-          }}
-        >
-          <Component {...props} />
-        </Document>,
-      );
-    } catch (error) {
-      if (error instanceof XanixRedirect) {
-        res.redirect(error.status, error.location);
-        return;
-      }
-      throw error;
-    }
-  }
-
-  if (
-    "x-xanix-page" in req.headers &&
-    req.headers["x-xanix-page"] === __XANIX_PAGE_NAVIGATION_HEADER__VALUE__
-  ) {
+  if (req.headers["x-xanix-page"] === __XANIX_PAGE_NAVIGATION_HEADER__VALUE__) {
     res.setHeader("Content-Type", "application/json");
     return JSON.stringify({
       pageId,
@@ -125,7 +92,6 @@ export default async function xanixPage({
       params: req.params,
       path,
       metadata: _metadata,
-      usedata: {},
     });
   }
 
@@ -147,17 +113,19 @@ export default async function xanixPage({
           metadata: _metadata,
           request: req,
           response: res,
-          usedata: {},
         }}
       >
         <Component {...props} />
       </Document>,
     );
-    const usedata = await dataLoader.results(pageId);
-    const str = JSON.stringify(usedata);
-    const script = `<script>window.__XANIX_USEDATA__ = ${str}</script>`;
+    const serverData = UseServerRegistry.getAllData(pageId);
+    UseServerRegistry.clearAll(pageId);
 
-    html = html.replace(`"usedata": {}`, `"usedata": ${str};\n`);
+    const scriptTag = `<script id="__USE_SERVER_DATA__">window.__USE_SERVER_DATA__ = ${JSON.stringify(
+      serverData,
+    )}</script>`;
+    html = html.replace("<head>", `<head>${scriptTag}`);
+
     return `<!DOCTYPE html>${html}`;
   } catch (error) {
     if (error instanceof XanixRedirect) {

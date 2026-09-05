@@ -11,7 +11,11 @@ import XanixPageTransform from "./XanixPageTransform/index.js";
 import xanixReactRefresh from "./XanixReactRefresh.js";
 import XanixEnvPlugin from "./XanixEnv.js";
 import xanixUseDataId from "./xanixUseDataId.js";
+import XanixUseServer from "./XanixUseServer.js";
 import XanixServerTransform from "./XanixServerTransform.js";
+import defines from "../config/defines.js";
+import { XanixClientEntry } from "../../types.js";
+import { XanixEntryFinder } from "./XanixEntryFinder/index.js";
 
 export interface XanixRollupOptions {
   target?: "client" | "server";
@@ -85,6 +89,7 @@ export function xanixDefaultPlugins(options: XanixRollupOptions): Plugin[] {
     json(),
     xanixUseDataId(),
     XanixDocument(),
+    XanixUseServer({ isClient }),
     ..._plugins,
 
     esbuild({
@@ -92,12 +97,125 @@ export function xanixDefaultPlugins(options: XanixRollupOptions): Plugin[] {
       jsx: "automatic",
       tsconfig: false,
       minify: !development,
-      define: {
-        __XANIX_CLIENT__: JSON.stringify(isClient),
-        __XANIX_SERVER__: JSON.stringify(isServer),
-        __XANIX_DEV__: JSON.stringify(development),
-        __XANIX_PROD__: JSON.stringify(!development),
-      },
+      define: defines({
+        mode: development ? "development" : "production",
+        isClient,
+      }),
+    }),
+  ];
+}
+
+export function xanixCachePlugins(): Plugin[] {
+  const isClient = true;
+  const development = true;
+  return [
+    XanixTsconfigAlias(),
+
+    url({
+      include: [
+        "**/*.jpg",
+        "**/*.jpeg",
+        "**/*.png",
+        "**/*.gif",
+        "**/*.webp",
+        "**/*.svg",
+        "**/*.ico",
+        "**/*.woff",
+        "**/*.woff2",
+        "**/*.ttf",
+        "**/*.eot",
+        "**/*.css",
+      ],
+      limit: 0,
+      fileName: "assets/[name]-[hash][extname]",
+      emitFiles: false,
+    }),
+
+    XanixEnvPlugin({
+      mode: development ? "development" : "production",
+      isClient,
+    }),
+
+    nodeResolve({
+      browser: isClient,
+      preferBuiltins: !isClient,
+      extensions: [".mjs", ".js", ".jsx", ".json", ".ts", ".tsx"],
+    }),
+
+    commonjs(),
+    json(),
+    XanixDocument(),
+
+    esbuild({
+      target: "es2022",
+      jsx: "automatic",
+      tsconfig: false,
+      minify: false,
+      define: defines({
+        mode: development ? "development" : "production",
+        isClient,
+      }),
+    }),
+  ];
+}
+
+export function xanixGenerateClientEntryPlugins({
+  entries,
+}: {
+  entries: Map<string, XanixClientEntry>;
+}): Plugin[] {
+  const isClient = false;
+  const development = true;
+  return [
+    XanixTsconfigAlias(),
+    XanixEntryFinder({
+      entries,
+    }),
+
+    url({
+      include: [
+        "**/*.jpg",
+        "**/*.jpeg",
+        "**/*.png",
+        "**/*.gif",
+        "**/*.webp",
+        "**/*.svg",
+        "**/*.ico",
+        "**/*.woff",
+        "**/*.woff2",
+        "**/*.ttf",
+        "**/*.eot",
+        "**/*.css",
+      ],
+      limit: 0,
+      fileName: "assets/[name]-[hash][extname]",
+      emitFiles: false,
+    }),
+
+    XanixEnvPlugin({
+      mode: development ? "development" : "production",
+      isClient,
+    }),
+
+    nodeResolve({
+      browser: isClient,
+      preferBuiltins: !isClient,
+      extensions: [".mjs", ".js", ".jsx", ".json", ".ts", ".tsx"],
+    }),
+
+    commonjs(),
+    json(),
+    XanixDocument(),
+
+    esbuild({
+      target: "es2022",
+      jsx: "automatic",
+      tsconfig: false,
+      minify: false,
+      define: defines({
+        mode: development ? "development" : "production",
+        isClient,
+      }),
     }),
   ];
 }

@@ -1,6 +1,6 @@
 import express from "express";
-import dataLoader from "../../dataLoader.js";
 import outdirs from "../../outdirs.js";
+import registry from "../../hooks/useServer/registry.js";
 
 export interface XanixProps {
   clientId: string;
@@ -39,13 +39,18 @@ function createXanixServer({ mode }: Options): express.Express {
   }
 
   app.post(
-    `/${outdirs.root}/__data__/:xanixId`,
+    `/${outdirs.root}/__server_data__/:uid`,
     express.json(),
     async (req, res) => {
-      const { xanixId } = req.params;
+      const { uid } = req.params;
       const args = req.body;
-      const data = await dataLoader.result(xanixId, args);
-      res.json({ data });
+      const callback = registry.get(uid);
+      if (callback) {
+        const data = await callback(args);
+        res.json({ data });
+      } else {
+        res.status(404).json({ error: "Invalid id" });
+      }
     },
   );
 

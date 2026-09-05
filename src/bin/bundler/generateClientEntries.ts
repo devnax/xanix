@@ -2,7 +2,10 @@ import { rollup } from "rollup";
 import path from "node:path";
 import { type XanixClientEntry } from "../types.js";
 import { XanixEntryFinder } from "./plugins/XanixEntryFinder/index.js";
-import { xanixDefaultPlugins } from "./plugins/plugins.js";
+import {
+  xanixDefaultPlugins,
+  xanixGenerateClientEntryPlugins,
+} from "./plugins/plugins.js";
 import external from "./config/external.js";
 
 const root = process.cwd();
@@ -15,13 +18,8 @@ const generateClientEntries = async ({
   const bundle = await rollup({
     input: path.resolve(root, rootEntry),
     plugins: [
-      XanixEntryFinder({
+      ...xanixGenerateClientEntryPlugins({
         entries,
-      }),
-      ...xanixDefaultPlugins({
-        target: "server",
-        development: true,
-        assetExternal: true,
       }),
     ],
 

@@ -1,5 +1,5 @@
-import React, { useMemo } from "react";
-import { navigate, useSearchParams, useCookies, useData } from "xanix";
+import React, { Suspense, useMemo } from "react";
+import { navigate, useSearchParams, useCookies, useServer } from "xanix";
 
 const Show = () => {
   const params = useSearchParams();
@@ -13,12 +13,20 @@ const Show = () => {
   );
 };
 
-const HomePage = () => {
-  const { data } = useData(async () => {
-    return {
-      name: "Nax",
-    };
-  });
+const sleep = (ms: number) =>
+  new Promise((resolve) => setTimeout(() => resolve({ name: "Nax" }), ms));
+
+const HomePage = ({ another, category }: any) => {
+  const d = useServer(
+    async () => {
+      return {
+        name: "Nax",
+      };
+    },
+    { category },
+  );
+  console.log(d);
+
   const params = useSearchParams();
   const cookie = useCookies();
   const name = cookie.get("name");
@@ -28,7 +36,7 @@ const HomePage = () => {
   }, []);
   return (
     <div>
-      Data: {data?.name}
+      another: {another}
       <Show />
       Home Page {params.toString()} Name: {name}
       <input

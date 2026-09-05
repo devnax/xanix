@@ -1,7 +1,3 @@
-/// <reference path="./types/globals.d.ts" />
-/// <reference path="./types/express.d.ts" />
-/// <reference path="./types/xanix-virtual.d.ts" />
-/// <reference path="./types/assets.d.ts" />
 import type { Request } from "express";
 import Link from "./components/Link.js";
 import Document, { DocumentProps } from "./components/Document.js";
@@ -21,7 +17,7 @@ import useRequest from "./hooks/useRequest.js";
 import useResponse from "./hooks/useResponse.js";
 import useHeaders from "./hooks/useHeaders.js";
 import useCookies, { CookieOptions } from "./hooks/useCookies.js";
-import useData from "./hooks/useData.js";
+import useServer, { registerUseServer } from "./hooks/useServer/index.js";
 
 export * from "./utils.js";
 
@@ -55,7 +51,8 @@ export {
   useResponse,
   useHeaders,
   useCookies,
-  useData,
+  useServer,
+  registerUseServer,
 
   // navigation
   navigate,

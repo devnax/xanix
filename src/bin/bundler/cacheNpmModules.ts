@@ -5,7 +5,7 @@ import { XanixClientEntry } from "../types";
 import { createRequire } from "node:module";
 import { getClientRuntimeFile } from "../include/utils.js";
 import outdirs from "../../outdirs.js";
-import { xanixDefaultPlugins } from "./plugins/plugins.js";
+import { xanixCachePlugins, xanixDefaultPlugins } from "./plugins/plugins.js";
 import defines from "./config/defines.js";
 import { pathToFileURL } from "node:url";
 import external from "./config/external.js";
@@ -37,13 +37,7 @@ const GenerateGraph = async (entries: XanixClientEntry[]) => {
 
   const bundle = await rollup({
     input,
-    plugins: [
-      ...xanixDefaultPlugins({
-        target: "client",
-        development: true,
-        assetExternal: true,
-      }),
-    ],
+    plugins: [...xanixCachePlugins()],
     external(id) {
       if (!external(id)) {
         return false;

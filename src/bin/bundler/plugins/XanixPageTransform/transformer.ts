@@ -1,6 +1,7 @@
 import path from "node:path";
 import fs from "node:fs";
 import crypto from "node:crypto";
+
 import { parse } from "@babel/parser";
 import traverse from "@babel/traverse";
 import generate from "@babel/generator";
@@ -12,6 +13,7 @@ export interface XanixTransformResult {
 }
 
 const RUNTIME_IMPORT = "xanix/runtime";
+
 const SOURCE_EXTENSIONS = [".tsx", ".ts", ".jsx", ".js", ".mjs", ".cjs"];
 
 function normalizeFilePath(file: string): string {
@@ -20,6 +22,7 @@ function normalizeFilePath(file: string): string {
 
 export function resolveFile(file: string): string {
   const absolute = path.resolve(file);
+
   if (fs.existsSync(absolute)) {
     const stat = fs.statSync(absolute);
 
@@ -30,6 +33,7 @@ export function resolveFile(file: string): string {
 
   for (const ext of SOURCE_EXTENSIONS) {
     const candidate = `${absolute}${ext}`;
+
     if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
       return path.resolve(candidate);
     }
@@ -38,6 +42,7 @@ export function resolveFile(file: string): string {
   if (fs.existsSync(absolute) && fs.statSync(absolute).isDirectory()) {
     for (const ext of SOURCE_EXTENSIONS) {
       const candidate = path.join(absolute, `index${ext}`);
+
       if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
         return path.resolve(candidate);
       }
@@ -56,6 +61,7 @@ export function resolveComponentFile(
   }
 
   const base = path.resolve(path.dirname(importer), importPath);
+
   return resolveFile(base);
 }
 
@@ -129,23 +135,13 @@ export function findComponentImport(
   return null;
 }
 
-/**
- * Remove a specific component from:
- *
- * import Home from "./Home";
- *
- * or:
- *
- * import Home, { foo } from "./Home";
- *
- * or:
- *
- * import { Home, foo } from "./Home";
- */
-function removeComponentImport(componentImport: {
-  declaration: t.ImportDeclaration;
-  specifier: t.ImportSpecifier | t.ImportDefaultSpecifier;
-}): void {
+function removeComponentImport(
+  ast: t.File,
+  componentImport: {
+    declaration: t.ImportDeclaration;
+    specifier: t.ImportSpecifier | t.ImportDefaultSpecifier;
+  },
+): void {
   const { declaration, specifier } = componentImport;
 
   const index = declaration.specifiers.indexOf(specifier);
@@ -153,63 +149,24 @@ function removeComponentImport(componentImport: {
   if (index !== -1) {
     declaration.specifiers.splice(index, 1);
   }
-}
 
-function removeEmptyImportDeclarations(ast: t.File): void {
-  ast.program.body = ast.program.body.filter((statement) => {
-    if (!t.isImportDeclaration(statement)) {
-      return true;
+  /*
+   * Only remove the declaration if it became empty.
+   *
+   * This prevents accidentally removing unrelated
+   * side-effect imports such as:
+   *
+   * import "./styles.css";
+   */
+  if (declaration.specifiers.length === 0) {
+    const bodyIndex = ast.program.body.indexOf(declaration);
+
+    if (bodyIndex !== -1) {
+      ast.program.body.splice(bodyIndex, 1);
     }
-
-    return statement.specifiers.length > 0;
-  });
+  }
 }
 
-/**
- * Create:
- *
- * const Home =
- *   (await import("./Home")).default;
- *
- * or:
- *
- * const Home =
- *   (await import("./Home")).Home;
- */
-function createDynamicComponentImport(
-  componentName: string,
-  importPath: string,
-  exportName: string,
-): t.VariableDeclaration {
-  const importCall = t.callExpression(t.import(), [
-    t.stringLiteral(importPath),
-  ]);
-
-  const awaitedImport = t.awaitExpression(importCall);
-
-  const property =
-    exportName === "default"
-      ? t.identifier("default")
-      : t.identifier(exportName);
-
-  const value = t.memberExpression(awaitedImport, property);
-
-  return t.variableDeclaration("const", [
-    t.variableDeclarator(t.identifier(componentName), value),
-  ]);
-}
-
-/**
- * Convert a JSX name into an expression.
- *
- * Example:
- *
- * <Home />
- *
- * becomes:
- *
- * Home
- */
 function jsxNameToExpression(
   name: t.JSXElement["openingElement"]["name"],
 ): t.Expression | null {
@@ -254,49 +211,16 @@ function jsxNameToExpressionFromJSXName(
   return null;
 }
 
-/**
- * Convert JSX attributes into an object expression.
- *
- * Example:
- *
- * <Home
- *   name="Naxrul"
- *   age={30}
- *   active
- *   {...user}
- * />
- *
- * becomes:
- *
- * {
- *   name: "Naxrul",
- *   age: 30,
- *   active: true,
- *   ...user
- * }
- */
 function jsxAttributesToProps(jsx: t.JSXElement): t.ObjectExpression {
   const properties: (t.ObjectProperty | t.SpreadElement)[] = [];
 
   for (const attribute of jsx.openingElement.attributes) {
-    /**
-     * Handle:
-     *
-     * {...props}
-     */
     if (t.isJSXSpreadAttribute(attribute)) {
       properties.push(t.spreadElement(attribute.argument as t.Expression));
 
       continue;
     }
 
-    /**
-     * Normal JSX attribute:
-     *
-     * name="value"
-     * name={value}
-     * active
-     */
     if (!t.isJSXAttribute(attribute)) {
       continue;
     }
@@ -312,14 +236,13 @@ function jsxAttributesToProps(jsx: t.JSXElement): t.ObjectExpression {
     }
 
     const key = jsxAttributeNameToExpression(attribute.name);
-    /**
-     * Boolean JSX prop:
-     *
-     * <Home active />
+
+    /*
+     * <Home foo />
      *
      * becomes:
      *
-     * active: true
+     * foo: true
      */
     if (!attribute.value) {
       properties.push(t.objectProperty(key, t.booleanLiteral(true)));
@@ -327,14 +250,12 @@ function jsxAttributesToProps(jsx: t.JSXElement): t.ObjectExpression {
       continue;
     }
 
-    /**
-     * String prop:
-     *
-     * name="Naxrul"
+    /*
+     * <Home foo="bar" />
      *
      * becomes:
      *
-     * name: "Naxrul"
+     * foo: "bar"
      */
     if (t.isStringLiteral(attribute.value)) {
       properties.push(
@@ -344,12 +265,12 @@ function jsxAttributesToProps(jsx: t.JSXElement): t.ObjectExpression {
       continue;
     }
 
-    /**
-     * Expression prop:
+    /*
+     * <Home foo={bar} />
      *
-     * age={30}
-     * user={user}
-     * items={items.map(...)}
+     * becomes:
+     *
+     * foo: bar
      */
     if (t.isJSXExpressionContainer(attribute.value)) {
       const expression = attribute.value.expression;
@@ -363,10 +284,8 @@ function jsxAttributesToProps(jsx: t.JSXElement): t.ObjectExpression {
       continue;
     }
 
-    /**
-     * JSX element as a prop:
-     *
-     * content={<div>Hello</div>}
+    /*
+     * <Home foo={<Component />} />
      */
     if (t.isJSXElement(attribute.value)) {
       properties.push(t.objectProperty(key, attribute.value));
@@ -378,21 +297,6 @@ function jsxAttributesToProps(jsx: t.JSXElement): t.ObjectExpression {
   return t.objectExpression(properties);
 }
 
-/**
- * Convert:
- *
- * <Home name="Naxrul" age={30} />
- *
- * into:
- *
- * {
- *   component: Home,
- *   props: {
- *     name: "Naxrul",
- *     age: 30
- *   }
- * }
- */
 function jsxToComponentAndProps(jsx: t.JSXElement): {
   component: t.Expression;
   props: t.ObjectExpression;
@@ -409,6 +313,25 @@ function jsxToComponentAndProps(jsx: t.JSXElement): {
     component,
     props,
   };
+}
+
+/**
+ * Creates:
+ *
+ * component: async () => await import("./Home")
+ */
+function createDynamicComponentProperty(importPath: string): t.ObjectProperty {
+  const importCall = t.callExpression(t.import(), [
+    t.stringLiteral(importPath),
+  ]);
+
+  const awaitedImport = t.awaitExpression(importCall);
+
+  const arrowFunction = t.arrowFunctionExpression([], awaitedImport);
+
+  arrowFunction.async = true;
+
+  return t.objectProperty(t.identifier("component"), arrowFunction);
 }
 
 function hasRuntimeImport(ast: t.File, name: string): boolean {
@@ -440,8 +363,6 @@ function injectRuntimeImport(ast: t.File, name: string): void {
     return;
   }
 
-  // Find existing:
-  // import { ... } from "xanix/runtime";
   for (const statement of ast.program.body) {
     if (!t.isImportDeclaration(statement)) {
       continue;
@@ -458,7 +379,6 @@ function injectRuntimeImport(ast: t.File, name: string): void {
     return;
   }
 
-  // No runtime import exists yet
   ast.program.body.unshift(
     t.importDeclaration(
       [t.importSpecifier(t.identifier(name), t.identifier(name))],
@@ -473,6 +393,7 @@ export function transformer(
 ): XanixTransformResult | null {
   const ast = parse(code, {
     sourceType: "module",
+
     plugins: ["typescript", "jsx"],
   });
 
@@ -482,10 +403,10 @@ export function transformer(
     CallExpression(callPath) {
       const call = callPath.node;
 
-      /**
+      /*
        * Find:
        *
-       * res.send(<Home />);
+       * res.send(...)
        */
       if (!t.isMemberExpression(call.callee)) {
         return;
@@ -501,10 +422,20 @@ export function transformer(
 
       const argument = call.arguments[0];
 
+      /*
+       * We only transform:
+       *
+       * res.send(<Home />)
+       */
       if (!argument || !t.isJSXElement(argument)) {
         return;
       }
 
+      /*
+       * Find:
+       *
+       * (req, res) => {}
+       */
       const functionPath = callPath.getFunctionParent();
 
       if (!functionPath) {
@@ -518,18 +449,29 @@ export function transformer(
       }
 
       const requestParam = params[0];
+
       const responseParam = params[1];
 
       if (!t.isIdentifier(requestParam) || !t.isIdentifier(responseParam)) {
         return;
       }
 
+      /*
+       * Find Home from:
+       *
+       * <Home />
+       */
       const componentName = getJSXComponentName(argument);
 
       if (!componentName) {
         return;
       }
 
+      /*
+       * Find:
+       *
+       * import Home from "./Home";
+       */
       const componentImport = findComponentImport(ast, componentName);
 
       if (!componentImport) {
@@ -538,28 +480,31 @@ export function transformer(
 
       const componentImportPath = componentImport.file;
 
+      /*
+       * Resolve component file.
+       */
       const componentFile = resolveComponentFile(id, componentImportPath);
 
       if (!path.isAbsolute(componentFile)) {
         return;
       }
 
+      /*
+       * Create stable page ID.
+       */
       const normalizedFile = normalizeFilePath(componentFile);
 
       const pageId = createPageId(normalizedFile);
 
-      /**
-       * Convert:
+      /*
+       * Extract JSX props.
        *
-       * <Home name="Naxrul" age={30} />
+       * <Home title="Hello" />
        *
-       * into:
+       * becomes:
        *
-       * component: Home
-       *
-       * props: {
-       *   name: "Naxrul",
-       *   age: 30
+       * {
+       *   title: "Hello"
        * }
        */
       const componentAndProps = jsxToComponentAndProps(argument);
@@ -568,38 +513,31 @@ export function transformer(
         return;
       }
 
-      /**
+      /*
        * Remove:
        *
        * import Home from "./Home";
-       */
-      removeComponentImport(componentImport);
-
-      /**
-       * Add:
        *
-       * const Home =
-       *   (await import("./Home")).default;
+       * because Home will now be loaded
+       * dynamically by xanixPage().
        */
-      const dynamicImport = createDynamicComponentImport(
-        componentName,
-        componentImportPath,
-        componentImport.export,
-      );
+      removeComponentImport(ast, componentImport);
 
-      /**
-       * Insert immediately before:
+      /*
+       * Create:
        *
-       * res.send(<Home />);
+       * component: async () =>
+       *   await import("./Home")
        */
-      const statementPath = callPath.getStatementParent();
+      const componentProperty =
+        createDynamicComponentProperty(componentImportPath);
 
-      if (statementPath) {
-        statementPath.insertBefore(dynamicImport);
-      }
-
-      /**
-       * Route becomes:
+      /*
+       * Make the route handler async.
+       *
+       * (req, res) => {}
+       *
+       * becomes:
        *
        * async (req, res) => {}
        */
@@ -607,7 +545,35 @@ export function transformer(
         functionPath.node.async = true;
       }
 
-      /**
+      /*
+       * Create:
+       *
+       * await xanixPage({
+       *   component: async () =>
+       *     await import("./Home"),
+       *   pageId: "...",
+       *   req,
+       *   res,
+       *   props: {}
+       * })
+       */
+      const pageOptions = t.objectExpression([
+        componentProperty,
+
+        t.objectProperty(t.identifier("pageId"), t.stringLiteral(pageId)),
+
+        t.objectProperty(t.identifier("req"), t.identifier(requestParam.name)),
+
+        t.objectProperty(t.identifier("res"), t.identifier(responseParam.name)),
+
+        t.objectProperty(t.identifier("props"), componentAndProps.props),
+      ]);
+
+      const pageCall = t.awaitExpression(
+        t.callExpression(t.identifier("xanixPage"), [pageOptions]),
+      );
+
+      /*
        * Replace:
        *
        * res.send(<Home />);
@@ -615,42 +581,9 @@ export function transformer(
        * with:
        *
        * res.send(
-       *   await xanixPage({
-       *     clientId,
-       *     req,
-       *     res,
-       *     component: Home,
-       *     props: {
-       *       ...
-       *     }
-       *   })
+       *   await xanixPage({...})
        * );
        */
-      const pageCall = t.awaitExpression(
-        t.callExpression(t.identifier("xanixPage"), [
-          t.objectExpression([
-            t.objectProperty(t.identifier("pageId"), t.stringLiteral(pageId)),
-
-            t.objectProperty(
-              t.identifier("req"),
-              t.identifier(requestParam.name),
-            ),
-
-            t.objectProperty(
-              t.identifier("res"),
-              t.identifier(responseParam.name),
-            ),
-
-            t.objectProperty(
-              t.identifier("Component"),
-              componentAndProps.component,
-            ),
-
-            t.objectProperty(t.identifier("props"), componentAndProps.props),
-          ]),
-        ]),
-      );
-
       call.arguments[0] = pageCall;
 
       changed = true;
@@ -661,18 +594,16 @@ export function transformer(
     return null;
   }
 
-  /**
+  /*
    * Add:
    *
-   * import xanixPage from "xanix/page";
+   * import { xanixPage } from "xanix/runtime";
    */
   injectRuntimeImport(ast, "xanixPage");
 
-  /**
-   * Remove empty imports.
+  /*
+   * Generate final code.
    */
-  removeEmptyImportDeclarations(ast);
-
   const output = generate(ast, {}, code);
 
   return {

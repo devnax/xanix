@@ -10,7 +10,6 @@ declare module "virtual:xanix-document" {
     metadata: Record<string, any>;
     request?: Request;
     response?: Response;
-    usedata: Record<string, any>;
   };
 
   export type XanixDocumentProps = {
