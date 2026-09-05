@@ -1,14 +1,6 @@
 import { XanixClientEntry } from "../types";
 import { readManifest } from "./manifest.js";
 
-export const getEntries = async (): Promise<XanixClientEntry[]> => {
-  const manifest = await readManifest();
-  if (!manifest) {
-    return [];
-  }
-  return manifest.entries;
-};
-
 export const entriesEqual = async (entries: XanixClientEntry[]) => {
   const manifest = await readManifest();
   if (!manifest) {

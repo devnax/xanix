@@ -7,13 +7,15 @@ import XanixResolveCacheDeps from "./plugins/XanixResolveCacheDeps/index.js";
 import {
   getClientRuntimeFile,
   getClientRuntimeFileName,
+  normalizePath,
 } from "../include/utils.js";
 import { xanixDefaultPlugins } from "./plugins/plugins.js";
 import outdirs from "../../outdirs.js";
 
 type Option = {
-  onChange?: (entry: string, event?: string) => void;
+  onChange?: (files: string[]) => void;
   onBuildEnd?: () => void;
+  onReady?: () => Promise<void>;
   WebSocketPort: number;
 };
 
@@ -54,7 +56,6 @@ const WatchClient = async (
         target: "client",
         development: true,
         assetExternal: true,
-        onChange: options.onChange,
       }),
     ],
     output: bundlerOutput.client(entries, { isDev: true }),
@@ -63,12 +64,45 @@ const WatchClient = async (
     },
   });
 
-  watcher.on("event", (event) => {
+  let isReady = false;
+
+  const changedFiles = new Set<string>();
+
+  watcher.on("change", (entry) => {
+    entry = normalizePath(entry);
+    const root = process.cwd();
+    const _entry = entries.find((e) => e.file === entry);
+    // if (_entry) {
+    //   entry = _entry.file;
+    // }
+
+    // entry = entry.replace(normalizePath(root), "");
+
+    let buildFile = _entry
+      ? `${_entry.id}.js`
+      : entry
+          .replace(normalizePath(root), "")
+          .replace(/\.(ts|tsx|jsx)$/, ".js")
+          .replace(/^\\/, "");
+    changedFiles.add(buildFile);
+  });
+
+  watcher.on("event", async (event) => {
     switch (event.code) {
       case "BUNDLE_START":
         break;
       case "BUNDLE_END":
         options.onBuildEnd?.();
+        break;
+      case "END":
+        if (changedFiles.size && options.onChange) {
+          options.onChange(Array.from(changedFiles));
+          changedFiles.clear();
+        }
+        if (!isReady) {
+          isReady = true;
+          await options.onReady?.();
+        }
         break;
 
       case "ERROR":

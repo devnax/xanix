@@ -1,6 +1,10 @@
 import express from "express";
 import outdirs from "../../outdirs.js";
-import registry from "../../hooks/useServer/registry.js";
+import {
+  ServerRegistry,
+  clearExpiredUseServerResources,
+  getServerResource,
+} from "../../hooks/useServer/core.js";
 
 export interface XanixProps {
   clientId: string;
@@ -15,6 +19,16 @@ type Options = {
 
 function createXanixServer({ mode }: Options): express.Express {
   const app = express();
+  const originalListener = app.listen;
+
+  app.listen = (...args: any) => {
+    process.send?.({
+      type: "xanix:ready",
+    });
+
+    return originalListener.apply(app, args);
+  };
+
   if (mode === "watch") {
     app.use(`/${outdirs.client}`, express.static(`${outdirs.client}`));
     app.use(`/assets`, express.static(outdirs.assets));
@@ -39,17 +53,25 @@ function createXanixServer({ mode }: Options): express.Express {
   }
 
   app.post(
-    `/${outdirs.root}/__server_data__/:uid`,
+    `/${outdirs.root}/__server_data__/:pageId/:uid`,
     express.json(),
     async (req, res) => {
-      const { uid } = req.params;
+      const { pageId, uid } = req.params;
       const args = req.body;
-      const callback = registry.get(uid);
-      if (callback) {
-        const data = await callback(args);
-        res.json({ data });
-      } else {
-        res.status(404).json({ error: "Invalid id" });
+
+      clearExpiredUseServerResources();
+
+      try {
+        const resource = getServerResource(pageId, uid, args);
+        const data = await resource.promise;
+        res.json({
+          data,
+        });
+      } catch (error) {
+        console.error("useServer error:", error);
+        res.status(500).json({
+          error: "Failed to execute useServer",
+        });
       }
     },
   );

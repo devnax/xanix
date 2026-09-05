@@ -1,8 +1,11 @@
-import { renderToPipeableStream, renderToString } from "react-dom/server";
+import { renderToPipeableStream } from "react-dom/server";
 import readManifest from "./readManifest.js";
 import { PassThrough } from "node:stream";
 import XanixRedirect from "../../classes/XanixRedirect.js";
-import UseServerRegistry from "../../hooks/useServer/state.js";
+import {
+  clearExpiredUseServerResources,
+  getPageResources,
+} from "../../hooks/useServer/core.js";
 
 interface XanixPageProps {
   component: () => Promise<{
@@ -77,14 +80,13 @@ export default async function xanixPage({
     pageId,
     name: entry.name,
   });
-
   const Component = (await component()).default;
 
-  // path with search/query parameters included
   const url = new URL(req.url, `http://${req.headers.host}`);
   const path = url.pathname + url.search;
+  clearExpiredUseServerResources();
 
-  if (req.headers["x-xanix-page"] === __XANIX_PAGE_NAVIGATION_HEADER__VALUE__) {
+  if (req.headers["x-xanix-page"] === __XANIX_PAGE_NAVIGATION_HEADER_VALUE__) {
     res.setHeader("Content-Type", "application/json");
     return JSON.stringify({
       pageId,
@@ -118,8 +120,14 @@ export default async function xanixPage({
         <Component {...props} />
       </Document>,
     );
-    const serverData = UseServerRegistry.getAllData(pageId);
-    UseServerRegistry.clearAll(pageId);
+
+    const pageResources = getPageResources(pageId);
+    const serverData: Record<string, any> = {};
+    if (pageResources) {
+      for (const [key, resource] of pageResources) {
+        serverData[resource.uid] = resource.read();
+      }
+    }
 
     const scriptTag = `<script id="__USE_SERVER_DATA__">window.__USE_SERVER_DATA__ = ${JSON.stringify(
       serverData,
@@ -135,5 +143,3 @@ export default async function xanixPage({
     throw error;
   }
 }
-
-const page = async () => {};

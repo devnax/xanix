@@ -1,5 +1,6 @@
-import React, { Suspense, useMemo } from "react";
+import React, { Suspense, useMemo, useState } from "react";
 import { navigate, useSearchParams, useCookies, useServer } from "xanix";
+import Chunk from "./Chunk";
 
 const Show = () => {
   const params = useSearchParams();
@@ -16,16 +17,36 @@ const Show = () => {
 const sleep = (ms: number) =>
   new Promise((resolve) => setTimeout(() => resolve({ name: "Nax" }), ms));
 
+// const Data = ({ name }: any) => {
+//   const d = useServer(
+//     async ({ name }) => {
+//       console.log(name);
+
+//       return {
+//         name,
+//       };
+//     },
+//     { name },
+//   );
+//   return <div>data: {d.data.name}</div>;
+// };
+
 const HomePage = ({ another, category }: any) => {
+  const [n, setN] = useState("Nax");
+
   const d = useServer(
-    async () => {
+    async ({ name }) => {
       return {
-        name: "Nax",
+        name,
       };
     },
-    { category },
+    {
+      name: n,
+      cache: {
+        ttl: 5000, // example TTL value in milliseconds
+      },
+    },
   );
-  console.log(d);
 
   const params = useSearchParams();
   const cookie = useCookies();
@@ -34,9 +55,18 @@ const HomePage = ({ another, category }: any) => {
   useMemo(() => {
     cookie.set("name", "John Doe");
   }, []);
+  if (d.loading) return <div>Loading...</div>;
   return (
     <div>
-      another: {another}
+      <Chunk />
+      <div>Server Data: {d.data.name}</div>
+      <button
+        onClick={() => {
+          setN(Math.random().toString());
+        }}
+      >
+        change name
+      </button>
       <Show />
       Home Page {params.toString()} Name: {name}
       <input

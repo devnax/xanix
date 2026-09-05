@@ -36,17 +36,19 @@ export function XanixEntryFinder({ entries }: XanixPluginOptions): Plugin {
       return null;
     },
 
-    generateBundle() {
-      const manifest = {
-        version: 1,
-        entries: [...entries.values()],
-      };
+    // generateBundle() {
+    //   const manifest = {
+    //     version: 1,
+    //     entries: [...entries.values()],
+    //   };
 
-      this.emitFile({
-        type: "asset",
-        fileName: "client-manifest.json",
-        source: JSON.stringify(manifest, null, 2),
-      });
-    },
+    //   console.log(manifest);
+
+    //   this.emitFile({
+    //     type: "asset",
+    //     fileName: "client-manifest.json",
+    //     source: JSON.stringify(manifest, null, 2),
+    //   });
+    // },
   };
 }

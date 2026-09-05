@@ -23,3 +23,7 @@ export const getClientRuntimeFileName = (
 export function getWebSocketPort() {
   return Math.floor(Math.random() * (65535 - 49152 + 1)) + 49152;
 }
+
+export function normalizePath(file: string) {
+  return path.resolve(file).split(path.sep).join("/");
+}

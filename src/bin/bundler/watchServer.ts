@@ -2,24 +2,25 @@ import { watch } from "rollup";
 import path from "node:path";
 import fs from "node:fs";
 import external from "./config/external.js";
-import { createManifest, readManifest } from "../include/manifest.js";
+import { getEntries } from "../include/manifest.js";
 import { XanixClientEntry } from "../types.js";
-import generateClientEntries from "./generateClientEntries.js";
 import bundlerOutput from "./config/output.js";
 import { entriesEqual } from "../include/entry.js";
 import { xanixDefaultPlugins } from "./plugins/plugins.js";
 import outdirs from "../../outdirs.js";
+import { normalizePath } from "../include/utils.js";
 const root = process.cwd();
 
 export type WatcherOptions = {
   rootEntry: string;
-  onChange?: (id: string) => Promise<void>;
+  onChange?: (files: string[], entries: XanixClientEntry[]) => Promise<void>;
   onBuildEnd?: (entries: XanixClientEntry[]) => Promise<void>;
   onClientEntryChange: (
     id: string,
     entries: XanixClientEntry[],
   ) => Promise<void>;
   onServerChange?: (id: string, entries: XanixClientEntry[]) => Promise<void>;
+  onReady?: (entries: XanixClientEntry[]) => Promise<void>;
 };
 
 const watchServer = async ({
@@ -28,6 +29,7 @@ const watchServer = async ({
   onBuildEnd,
   onServerChange,
   onClientEntryChange,
+  onReady,
 }: WatcherOptions) => {
   fs.rmSync(outdirs.server, {
     recursive: true,
@@ -38,12 +40,10 @@ const watchServer = async ({
     recursive: true,
   });
 
-  const entries = await generateClientEntries({ rootEntry });
-  await createManifest(entries);
   const input = {
     index: path.resolve(root, rootEntry),
   };
-  const changedFiles = new Set<string>();
+  // const changedFiles = new Set<string>();
   const watcher = watch({
     input,
     treeshake: true,
@@ -52,9 +52,9 @@ const watchServer = async ({
         target: "server",
         development: true,
         assetExternal: false,
-        onChange: (entry) => {
-          changedFiles.add(entry);
-        },
+        // onChange: (entry) => {
+        //   changedFiles.add(entry);
+        // },
       }),
     ],
 
@@ -72,35 +72,46 @@ const watchServer = async ({
     },
   });
 
+  let isReady = false;
+
+  const changedFiles = new Set<string>();
+  watcher.on("change", async (id) => {
+    changedFiles.add(normalizePath(id));
+  });
+
   watcher.on("event", async (event) => {
     switch (event.code) {
       case "BUNDLE_START":
         break;
-      case "BUNDLE_END":
+      case "END":
+        const entries = await getEntries();
         if (changedFiles.size) {
-          const manifest = await readManifest();
-
-          if (manifest) {
+          if (entries.length) {
+            const clientEntries = Array.from(entries);
             for (const entry of changedFiles) {
-              const isClientEntry = Array.from(manifest.entries.values()).find(
-                (e) => e.file === entry,
-              );
-
+              const isClientEntry = clientEntries.find((e) => e.file === entry);
               if (!isClientEntry) {
-                const entries = await generateClientEntries({ rootEntry });
+                const entries = await getEntries();
                 const isEqual = await entriesEqual(entries);
                 if (!isEqual) {
-                  await createManifest(entries);
                   await onClientEntryChange?.(entry, entries);
                 }
-                await onServerChange?.(entry, entries);
               }
-              await onChange?.(entry);
             }
           }
+          await onChange?.(
+            Array.from(changedFiles).map((file) =>
+              file.replace(normalizePath(root), ""),
+            ),
+            entries,
+          );
           changedFiles.clear();
         }
         await onBuildEnd?.(entries);
+        if (!isReady) {
+          isReady = true;
+          await onReady?.(entries);
+        }
         break;
       case "ERROR":
         console.error("[server]", event.error);

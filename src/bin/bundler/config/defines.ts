@@ -11,7 +11,7 @@ const defines = ({
 }) => {
   return {
     "process.env.NODE_ENV": JSON.stringify(mode),
-    __XANIX_PAGE_NAVIGATION_HEADER__VALUE__: JSON.stringify(HEARDER_VALUE),
+    __XANIX_PAGE_NAVIGATION_HEADER_VALUE__: JSON.stringify(HEARDER_VALUE),
     __XANIX_CLIENT_RUNTIME_FILE_NAME__: JSON.stringify(
       getClientRuntimeFileName(mode),
     ),

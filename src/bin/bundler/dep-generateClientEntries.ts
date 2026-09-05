@@ -1,11 +1,7 @@
 import { rollup } from "rollup";
 import path from "node:path";
 import { type XanixClientEntry } from "../types.js";
-import { XanixEntryFinder } from "./plugins/XanixEntryFinder/index.js";
-import {
-  xanixDefaultPlugins,
-  xanixGenerateClientEntryPlugins,
-} from "./plugins/plugins.js";
+import { xanixGenerateClientEntryPlugins } from "./plugins/plugins.js";
 import external from "./config/external.js";
 
 const root = process.cwd();

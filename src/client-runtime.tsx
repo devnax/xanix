@@ -32,7 +32,7 @@ const getPage = async (path: string) => {
   if (page) return page;
   const response = await fetch(path, {
     headers: {
-      "x-xanix-page": __XANIX_PAGE_NAVIGATION_HEADER__VALUE__,
+      "x-xanix-page": __XANIX_PAGE_NAVIGATION_HEADER_VALUE__,
     },
   });
   try {

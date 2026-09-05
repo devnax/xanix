@@ -3,25 +3,40 @@ import { spawn } from "node:child_process";
 import watchServer from "../bundler/watchServer.js";
 import { RollupWatcher } from "rollup";
 import watchClient from "../bundler/watchClient.js";
+import { getEntries } from "../include/manifest.js";
 import pc from "picocolors";
 import logger from "../include/logger.js";
-import { getEntries } from "../include/entry.js";
 import { WebSocketServer } from "ws";
 import { XanixClientEntry } from "../types.js";
 import outdirs from "../../outdirs.js";
 import { getWebSocketPort } from "../include/utils.js";
 
-const root = process.cwd();
 let child: any;
-
-function start(): Promise<any> {
-  child?.kill();
-  return new Promise((resolve) => {
+function start(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    child?.kill();
     const filePath = path.join(outdirs.server, "index.js");
     child = spawn(process.execPath, [filePath], {
-      stdio: !child ? "inherit" : "pipe",
+      stdio: ["inherit", "inherit", "inherit", "ipc"],
     });
-    resolve(child);
+
+    child.on("message", (message: any) => {
+      console.log(message);
+
+      if (message.type === "xanix:ready") {
+        resolve();
+      }
+    });
+
+    child.on("error", reject);
+
+    // child.on("exit", (code, signal) => {
+    //   if (code !== 0) {
+    //     reject(
+    //       new Error(`Xanix server exited with code ${code}, signal ${signal}`),
+    //     );
+    //   }
+    // });
   });
 }
 
@@ -48,63 +63,56 @@ const dev = async (rootEntry: string) => {
 
     ws.on("message", (message) => {
       if (message.toString() === "reload") {
-        start();
+        // start();
       }
     });
   });
 
-  let firstBuild = true;
+  let reloadedClient = false;
+  let clientChangeFiles: string[] = [];
+  let serverChangeFiles: string[] = [];
   let _clientWatcher: RollupWatcher | null = null;
 
   const clientWatcher = async (entries: XanixClientEntry[]) => {
-    if (!entries.length) {
-      return;
-    }
-    let changedFiles = new Set<string>();
     _clientWatcher?.close();
     _clientWatcher = await watchClient(entries, {
       WebSocketPort,
-      onChange: (entry) => {
-        const _entry = entries.find((e) => e.file === entry);
-        let buildFile = _entry
-          ? `${_entry.id}.js`
-          : entry
-              .replace(root.replaceAll("\\", "/"), "")
-              .replace(/\.(ts|tsx|jsx)$/, ".js")
-              // replace / from first character if exists
-              .replace(/^\//, "");
-        changedFiles.add(buildFile);
+      onReady: async () => {
+        await start();
       },
-      onBuildEnd: () => {
-        if (changedFiles.size) {
-          broadcast(JSON.stringify(Array.from(changedFiles)));
-          changedFiles.clear();
+      onChange: async (files) => {
+        if (!serverChangeFiles.length) {
+          clientChangeFiles = files;
+          await start();
+          broadcast(JSON.stringify(files));
+          logger.info(
+            `Reloaded files: ${pc.yellow(files.join(", "))}`,
+            "update",
+          );
         }
+        serverChangeFiles = [];
       },
     });
   };
 
   const watch = await watchServer({
     rootEntry,
-    onChange: async (entry) => {
-      logger.info(
-        `reload server ${pc.yellow(entry.replace(root.replaceAll("\\", "/"), ""))}`,
-        "update",
-      );
-    },
-    async onClientEntryChange(_entry: string, entries: XanixClientEntry[]) {
+    onReady: async (entries: XanixClientEntry[]) => {
       await clientWatcher(entries);
     },
-    onServerChange: async (_entry: string, _entries: XanixClientEntry[]) => {
-      await start();
-    },
-    onBuildEnd: async () => {
-      if (firstBuild) {
-        firstBuild = false;
-        const entries = await getEntries();
-        await clientWatcher(entries);
+    onChange: async (files, entries) => {
+      if (!clientChangeFiles.length) {
+        serverChangeFiles = files;
         await start();
+        logger.info(`reload server ${pc.yellow(files.join(", "))}`, "update");
       }
+      clientChangeFiles = [];
+    },
+    onClientEntryChange: async (
+      _entry: string,
+      entries: XanixClientEntry[],
+    ) => {
+      await clientWatcher(entries);
     },
   });
 

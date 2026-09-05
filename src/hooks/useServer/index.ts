@@ -1,76 +1,126 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import usePage from "../usePage.js";
-import UseServerRegistry from "./state.js";
-import registry from "./registry.js";
 import outdirs from "../../outdirs.js";
+import {
+  getServerResource,
+  ServerRegistry,
+  ServerResources,
+  UseServerCallback,
+} from "./core.js";
 
-type UseServerCallback<T = any> = (args: Record<string, any>) => Promise<T>;
-type UseServerResult<T = any> = {
-  data: T;
-  loading: boolean;
-  reload: () => Promise<void>;
+export type UseServerArgs = {
+  uid: string;
+  args?: Record<string, any>;
 };
 
-let useServer: <T = any>(
-  callback: UseServerCallback<T>,
-  args?: Record<string, any>,
-) => Promise<UseServerResult<T>>;
+export type UseServerReturn<T = any> = {
+  data: T | null;
+  reload: () => Promise<void>;
+  loading: boolean;
+};
 
-if (__XANIX_SERVER__) {
-  const useInServer = async <T = any>(
-    args: Record<string, any>,
-  ): Promise<UseServerResult<T>> => {
-    const uid = args.uid;
-    const callback = registry.get(uid);
-    if (typeof callback !== "function") {
-      throw new Error("useServer() on the server requires a callback.");
-    }
-    const page = usePage();
-    const data = await callback(args);
-    UseServerRegistry.setData(page.pageId, uid, data);
+export const registerUseServer = (
+  uid: string,
+  callback: UseServerCallback,
+): void => {
+  ServerRegistry.set(uid, callback);
+};
 
-    return { data, loading: false, reload: async () => {} };
+function useServerOnServer<T = any>({
+  uid,
+  args = {},
+}: UseServerArgs): UseServerReturn<T> {
+  const page = usePage();
+  const resource = getServerResource<T>(page.pageId, uid, args);
+  return {
+    data: resource.read(),
+    reload: async () => {},
+    loading: false,
   };
-  useServer = useInServer as any;
-} else {
-  const useInClient = <T = any>({
-    uid,
-    ...args
-  }: Record<string, any>): UseServerResult<T> => {
-    const [data, setData] = useState<T>(() => {
-      const winData = (window as any).__USE_SERVER_DATA__?.[uid];
-      return winData ?? null;
-    });
+}
 
-    const [loading, setLoading] = useState(!data);
-    const reload = async () => {
-      setLoading(true);
-      const res = await fetch(`/${outdirs.root}/__server_data__/${uid}`, {
+function useServerOnClient<T = any>({
+  uid,
+  args = {},
+}: UseServerArgs): UseServerReturn<T> {
+  const initialData = (window as any).__USE_SERVER_DATA__?.[uid];
+  const page = usePage();
+  const [data, setData] = useState<T>(initialData);
+  const [loading, setLoading] = useState(!initialData);
+  const init = useRef(false);
+  const body = JSON.stringify(args);
+
+  const reload = async (): Promise<void> => {
+    setLoading(true);
+    const response = await fetch(
+      `/${outdirs.root}/__server_data__/${page.pageId}/${uid}`,
+      {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(args ?? {}),
-      });
-      try {
-        const result = await res.json();
-        setData(result.data);
-      } catch (error) {
-        console.error(error);
-      }
+        body,
+      },
+    );
+
+    try {
+      const result = await response.json();
+      setData(result.data);
+    } catch (error) {
+      console.error(error);
+    } finally {
       setLoading(false);
-    };
-    return {
-      data,
-      loading,
-      reload,
-    };
+    }
   };
-  useServer = useInClient as any;
+
+  useEffect(() => {
+    if (data === undefined && !init.current) {
+      reload();
+    } else if (init.current) {
+      reload();
+    }
+    init.current = true;
+  }, [body]);
+
+  return { data, reload, loading };
 }
 
-export const registerUseServer = (uid: string, callback: UseServerCallback) => {
-  registry.set(uid, callback);
+type Args = {
+  cache?:
+    | boolean
+    | {
+        ttl?: number; // time to live in milliseconds for the cache
+      };
+
+  [key: string]: any;
+};
+
+let useServer: <T = any>(
+  callback: UseServerCallback,
+  args?: Args,
+) => UseServerReturn<T>;
+
+if (__XANIX_SERVER__) {
+  useServer = useServerOnServer as any;
+} else {
+  useServer = useServerOnClient as any;
+}
+
+export const getUseServerData = (pageId: string): Record<string, any> => {
+  const resources = ServerResources.get(pageId);
+  if (!resources) {
+    return {};
+  }
+
+  const data: Record<string, any> = {};
+  for (const resource of resources.values()) {
+    if (resource.status !== "success") {
+      continue;
+    }
+    data[resource.uid] = resource.value;
+  }
+
+  return data;
 };
 
 export default useServer;

@@ -6,12 +6,9 @@ import traverse from "@babel/traverse";
 import * as t from "@babel/types";
 import { XanixClientEntry } from "../../../types";
 import outdirs from "../../../../outdirs.js";
+import { normalizePath } from "../../../include/utils.js";
 
 const SOURCE_EXTENSIONS = [".tsx", ".ts", ".jsx", ".js", ".mjs", ".cjs"];
-
-function normalizeFilePath(file: string): string {
-  return path.resolve(file).split(path.sep).join("/");
-}
 
 export function resolveFile(file: string): string {
   const absolute = path.resolve(file);
@@ -188,12 +185,12 @@ export function entryFinder(code: string, id: string): XanixClientEntry[] {
         return;
       }
 
-      const normalizedFile = normalizeFilePath(componentFile);
+      const normalizedFile = normalizePath(componentFile);
       const clientId = createClientId(normalizedFile);
       const root = process.cwd();
       const relativeSource = path.relative(root, componentFile);
       const parsed = path.parse(relativeSource);
-      const buildPath = normalizeFilePath(
+      const buildPath = normalizePath(
         path.resolve(root, outdirs.root, parsed.dir, `${parsed.name}.js`),
       );
 

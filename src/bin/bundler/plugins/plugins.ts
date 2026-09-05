@@ -10,7 +10,6 @@ import path from "path";
 import XanixPageTransform from "./XanixPageTransform/index.js";
 import xanixReactRefresh from "./XanixReactRefresh.js";
 import XanixEnvPlugin from "./XanixEnv.js";
-import xanixUseDataId from "./xanixUseDataId.js";
 import XanixUseServer from "./XanixUseServer.js";
 import XanixServerTransform from "./XanixServerTransform.js";
 import defines from "../config/defines.js";
@@ -21,7 +20,7 @@ export interface XanixRollupOptions {
   target?: "client" | "server";
   development?: boolean;
   assetExternal?: boolean;
-  onChange?: (entry: string, event?: string) => void;
+  // onChange?: (entry: string, event?: string) => void;
   WebSocketPort?: number;
 }
 
@@ -47,13 +46,13 @@ export function xanixDefaultPlugins(options: XanixRollupOptions): Plugin[] {
   return [
     XanixTsconfigAlias(),
 
-    {
-      name: "watch",
-      async watchChange(id, change) {
-        const entry = path.resolve(id).replaceAll("\\", "/");
-        options.onChange?.(entry, change?.event);
-      },
-    },
+    // {
+    //   name: "watch",
+    //   async watchChange(id, change) {
+    //     const entry = path.resolve(id).replaceAll("\\", "/");
+    //     options.onChange?.(entry, change?.event);
+    //   },
+    // },
 
     url({
       include: [
@@ -87,7 +86,6 @@ export function xanixDefaultPlugins(options: XanixRollupOptions): Plugin[] {
 
     commonjs(),
     json(),
-    xanixUseDataId(),
     XanixDocument(),
     XanixUseServer({ isClient }),
     ..._plugins,
