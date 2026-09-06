@@ -23,19 +23,18 @@ function createXanixServer({ mode }: Options): express.Express {
 
   app.listen = (...args: any) => {
     const server = originalListener.apply(app, args);
-    if (__XANIX_DEV__) {
-      const address = server.address();
-      if (typeof address === "object" && address) {
-        const host =
-          address.address === "::" || address.address === "0.0.0.0"
-            ? "localhost"
-            : address.address;
-        const port = address.port;
-        process.send?.({
-          type: "xanix:server:info",
-          host: `http://${host}:${port}`,
-        });
-      }
+    const address = server.address();
+    if (typeof address === "object" && address) {
+      const host =
+        address.address === "::" || address.address === "0.0.0.0"
+          ? "localhost"
+          : address.address;
+      const port = address.port;
+      process.send?.({
+        type: "xanix:ready",
+        port,
+        url: `http://${host}:${port}`,
+      });
     }
 
     return server;

@@ -41,6 +41,7 @@ const watchServer = async ({
   const input = {
     index: path.resolve(root, rootEntry),
   };
+
   const watcher = watch({
     input,
     treeshake: true,
@@ -76,7 +77,7 @@ const watchServer = async ({
   watcher.on("event", async (event) => {
     switch (event.code) {
       case "BUNDLE_END":
-        await onBuildEnd?.(event.duration);
+        onBuildEnd?.(event.duration);
         break;
       case "END":
         const entries = await getEntries();
