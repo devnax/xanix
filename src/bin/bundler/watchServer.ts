@@ -14,12 +14,11 @@ const root = process.cwd();
 export type WatcherOptions = {
   rootEntry: string;
   onChange?: (files: string[], entries: XanixClientEntry[]) => Promise<void>;
-  onBuildEnd?: (entries: XanixClientEntry[]) => Promise<void>;
+  onBuildEnd?: (duration: number) => void;
   onClientEntryChange: (
     id: string,
     entries: XanixClientEntry[],
   ) => Promise<void>;
-  onServerChange?: (id: string, entries: XanixClientEntry[]) => Promise<void>;
   onReady?: (entries: XanixClientEntry[]) => Promise<void>;
 };
 
@@ -27,7 +26,6 @@ const watchServer = async ({
   rootEntry,
   onChange,
   onBuildEnd,
-  onServerChange,
   onClientEntryChange,
   onReady,
 }: WatcherOptions) => {
@@ -81,7 +79,8 @@ const watchServer = async ({
 
   watcher.on("event", async (event) => {
     switch (event.code) {
-      case "BUNDLE_START":
+      case "BUNDLE_END":
+        await onBuildEnd?.(event.duration);
         break;
       case "END":
         const entries = await getEntries();
@@ -107,7 +106,6 @@ const watchServer = async ({
           );
           changedFiles.clear();
         }
-        await onBuildEnd?.(entries);
         if (!isReady) {
           isReady = true;
           await onReady?.(entries);

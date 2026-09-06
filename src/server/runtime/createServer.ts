@@ -22,11 +22,23 @@ function createXanixServer({ mode }: Options): express.Express {
   const originalListener = app.listen;
 
   app.listen = (...args: any) => {
-    process.send?.({
-      type: "xanix:ready",
-    });
+    const server = originalListener.apply(app, args);
+    if (__XANIX_DEV__) {
+      const address = server.address();
+      if (typeof address === "object" && address) {
+        const host =
+          address.address === "::" || address.address === "0.0.0.0"
+            ? "localhost"
+            : address.address;
+        const port = address.port;
+        process.send?.({
+          type: "xanix:server:info",
+          host: `http://${host}:${port}`,
+        });
+      }
+    }
 
-    return originalListener.apply(app, args);
+    return server;
   };
 
   if (mode === "watch") {
@@ -68,7 +80,7 @@ function createXanixServer({ mode }: Options): express.Express {
           data,
         });
       } catch (error) {
-        console.error("useServer error:", error);
+        console.error(error);
         res.status(500).json({
           error: "Failed to execute useServer",
         });

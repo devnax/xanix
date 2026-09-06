@@ -14,7 +14,7 @@ import outdirs from "../../outdirs.js";
 
 type Option = {
   onChange?: (files: string[]) => void;
-  onBuildEnd?: () => void;
+  onBuildEnd?: (duration: number) => void;
   onReady?: () => Promise<void>;
   WebSocketPort: number;
 };
@@ -92,7 +92,7 @@ const WatchClient = async (
       case "BUNDLE_START":
         break;
       case "BUNDLE_END":
-        options.onBuildEnd?.();
+        options.onBuildEnd?.(event.duration);
         break;
       case "END":
         if (changedFiles.size && options.onChange) {

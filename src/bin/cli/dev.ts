@@ -3,16 +3,36 @@ import { spawn } from "node:child_process";
 import watchServer from "../bundler/watchServer.js";
 import { RollupWatcher } from "rollup";
 import watchClient from "../bundler/watchClient.js";
-import { getEntries } from "../include/manifest.js";
 import pc from "picocolors";
 import logger from "../include/logger.js";
 import { WebSocketServer } from "ws";
 import { XanixClientEntry } from "../types.js";
 import outdirs from "../../outdirs.js";
 import { getWebSocketPort } from "../include/utils.js";
+import { readFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const packageJson = JSON.parse(
+  await readFile(path.join(__dirname, "../../../package.json"), "utf8"),
+);
+
+let host: string;
 let child: any;
-function start(): Promise<void> {
+let firstStart = false;
+let startDuration = 0;
+
+const curl = () => {
+  return new Promise<void>((resolve, reject) => {
+    const child = spawn("curl", [host], {
+      stdio: "pipe",
+    });
+    child.on("error", reject);
+    child.on("close", () => resolve());
+  });
+};
+
+function runStart(): Promise<void> {
   return new Promise((resolve, reject) => {
     child?.kill();
     const filePath = path.join(outdirs.server, "index.js");
@@ -21,23 +41,29 @@ function start(): Promise<void> {
     });
 
     child.on("message", (message: any) => {
-      console.log(message);
-
-      if (message.type === "xanix:ready") {
+      if (message.type === "xanix:server:info") {
+        host = message.host;
+        if (!firstStart) {
+          firstStart = true;
+          console.log("");
+          console.log(pc.blue(`Xanix ${packageJson.version}`));
+          console.log("");
+          console.log(`${pc.blue("- Local:")} ${pc.yellow(host)}`);
+          console.log("");
+          console.log(pc.green(`✓ Ready in ${startDuration}ms`));
+          console.log("");
+        }
         resolve();
       }
     });
 
     child.on("error", reject);
-
-    // child.on("exit", (code, signal) => {
-    //   if (code !== 0) {
-    //     reject(
-    //       new Error(`Xanix server exited with code ${code}, signal ${signal}`),
-    //     );
-    //   }
-    // });
   });
+}
+
+async function startServer() {
+  await runStart();
+  await curl();
 }
 
 const dev = async (rootEntry: string) => {
@@ -60,17 +86,9 @@ const dev = async (rootEntry: string) => {
     ws.on("close", () => {
       sockets.delete(ws);
     });
-
-    ws.on("message", (message) => {
-      if (message.toString() === "reload") {
-        // start();
-      }
-    });
   });
 
-  let reloadedClient = false;
   let clientChangeFiles: string[] = [];
-  let serverChangeFiles: string[] = [];
   let _clientWatcher: RollupWatcher | null = null;
 
   const clientWatcher = async (entries: XanixClientEntry[]) => {
@@ -78,19 +96,16 @@ const dev = async (rootEntry: string) => {
     _clientWatcher = await watchClient(entries, {
       WebSocketPort,
       onReady: async () => {
-        await start();
+        await startServer();
       },
       onChange: async (files) => {
-        if (!serverChangeFiles.length) {
-          clientChangeFiles = files;
-          await start();
-          broadcast(JSON.stringify(files));
-          logger.info(
-            `Reloaded files: ${pc.yellow(files.join(", "))}`,
-            "update",
-          );
-        }
-        serverChangeFiles = [];
+        clientChangeFiles = files;
+        await startServer();
+        broadcast(JSON.stringify(files));
+        logger.info(`Client ${pc.yellow(files.join(", "))}`, "update");
+      },
+      onBuildEnd(duration) {
+        startDuration += duration;
       },
     });
   };
@@ -102,9 +117,8 @@ const dev = async (rootEntry: string) => {
     },
     onChange: async (files, entries) => {
       if (!clientChangeFiles.length) {
-        serverChangeFiles = files;
-        await start();
-        logger.info(`reload server ${pc.yellow(files.join(", "))}`, "update");
+        await startServer();
+        logger.info(`Server ${pc.yellow(files.join(", "))}`, "update");
       }
       clientChangeFiles = [];
     },
@@ -113,6 +127,9 @@ const dev = async (rootEntry: string) => {
       entries: XanixClientEntry[],
     ) => {
       await clientWatcher(entries);
+    },
+    onBuildEnd(duration) {
+      startDuration += duration;
     },
   });
 
