@@ -75,7 +75,7 @@ export function resolveComponentFile(
 }
 
 export function createPageId(file: string): string {
-  return `c_${crypto
+  return `${crypto
     .createHash("sha256")
     .update(path.normalize(file))
     .digest("hex")

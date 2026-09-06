@@ -32,10 +32,15 @@ declare module "virtual:xanix-document" {
   /**
    * Generates document metadata for the current request.
    */
-  export const metadata: (
-    request: Request,
-    context: { pageId: string; name: string },
-  ) => Promise<Record<string, any>>;
+  export const metadata: (context: {
+    request: Request;
+    response: Response;
+    page: {
+      id: string;
+      name: string;
+      props: Record<string, any>;
+    };
+  }) => Promise<Record<string, any>>;
 
   export default Document;
 }

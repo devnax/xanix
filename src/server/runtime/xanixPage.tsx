@@ -76,9 +76,14 @@ export default async function xanixPage({
   const { default: Document, metadata } =
     await import("virtual:xanix-document");
 
-  const _metadata = await metadata(req, {
-    pageId,
-    name: entry.name,
+  const _metadata = await metadata({
+    request: req,
+    response: res,
+    page: {
+      id: pageId,
+      name: entry.name,
+      props,
+    },
   });
   const Component = (await component()).default;
 

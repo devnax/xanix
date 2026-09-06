@@ -1,4 +1,4 @@
-import type { Request } from "express";
+import type { Request, Response } from "express";
 import Link from "./components/Link.js";
 import Document, { DocumentProps } from "./components/Document.js";
 import Head from "./components/Head.js";
@@ -71,6 +71,16 @@ export type XanixDocumentProps = DocumentProps & {
   metadata: Record<string, any>;
   page: {
     id: string;
+    props: Record<string, any>;
+  };
+};
+
+export type DocumentMetadata = {
+  request: Request;
+  response: Response;
+  page: {
+    id: string;
+    name: string;
     props: Record<string, any>;
   };
 };
