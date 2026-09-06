@@ -2,7 +2,7 @@ import { watch, type InputOption, type RollupWatcher } from "rollup";
 import bundlerOutput from "./config/output.js";
 import fs from "node:fs";
 import { XanixClientEntry } from "../types.js";
-import BuildCache from "./cacheNpmModules.js";
+import BuildClientCache from "./BuildClientCache.js";
 import XanixResolveCacheDeps from "./plugins/XanixResolveCacheDeps/index.js";
 import {
   getClientRuntimeFile,
@@ -16,6 +16,8 @@ type Option = {
   onChange?: (files: string[]) => void;
   onBuildEnd?: (duration: number) => void;
   onReady?: () => Promise<void>;
+  onCachedStart?: () => void;
+  onCachedEnd?: () => void;
   WebSocketPort: number;
 };
 
@@ -24,7 +26,6 @@ const WatchClient = async (
   options: Option,
 ): Promise<RollupWatcher> => {
   const input: InputOption = {};
-
   for (const entry of entries) {
     input[entry.name] = entry.file;
   }
@@ -40,17 +41,15 @@ const WatchClient = async (
     recursive: true,
   });
 
-  let buildCache: Map<string, any> = new Map();
-  if (entries.length > 0) {
-    buildCache = await BuildCache(entries);
-  } else {
-    buildCache = new Map();
-  }
+  options.onCachedStart?.();
+  let clientCache = await BuildClientCache(entries);
+  options.onCachedEnd?.();
+
   const watcher = watch({
     input,
     treeshake: true,
     plugins: [
-      XanixResolveCacheDeps(buildCache, entries),
+      XanixResolveCacheDeps(clientCache, entries),
       ...xanixDefaultPlugins({
         WebSocketPort: options.WebSocketPort,
         target: "client",
@@ -72,18 +71,13 @@ const WatchClient = async (
     entry = normalizePath(entry);
     const root = process.cwd();
     const _entry = entries.find((e) => e.file === entry);
-    // if (_entry) {
-    //   entry = _entry.file;
-    // }
-
-    // entry = entry.replace(normalizePath(root), "");
-
     let buildFile = _entry
       ? `${_entry.id}.js`
       : entry
           .replace(normalizePath(root), "")
           .replace(/\.(ts|tsx|jsx)$/, ".js")
           .replace(/^\\/, "");
+
     changedFiles.add(buildFile);
   });
 
