@@ -100,9 +100,6 @@ const dev = async (rootEntry: string) => {
       },
       onChange: async (files) => {
         clientChangeFiles = files;
-        await startServer();
-        broadcast(JSON.stringify(files));
-        logger.info(`Client ${pc.yellow(files.join(", "))}`, "update");
       },
       onBuildEnd(duration) {
         startDuration += duration;
@@ -119,6 +116,10 @@ const dev = async (rootEntry: string) => {
       if (!clientChangeFiles.length) {
         await startServer();
         logger.info(`Server ${pc.yellow(files.join(", "))}`, "update");
+      } else {
+        await startServer();
+        broadcast(JSON.stringify(clientChangeFiles));
+        logger.info(`Client ${pc.yellow(files.join(", "))}`, "update");
       }
       clientChangeFiles = [];
     },

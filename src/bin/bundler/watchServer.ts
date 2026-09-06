@@ -41,7 +41,6 @@ const watchServer = async ({
   const input = {
     index: path.resolve(root, rootEntry),
   };
-  // const changedFiles = new Set<string>();
   const watcher = watch({
     input,
     treeshake: true,
@@ -50,9 +49,6 @@ const watchServer = async ({
         target: "server",
         development: true,
         assetExternal: false,
-        // onChange: (entry) => {
-        //   changedFiles.add(entry);
-        // },
       }),
     ],
 
