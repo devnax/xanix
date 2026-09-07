@@ -100,7 +100,7 @@ let useServer: <T = any>(
   args?: Args,
 ) => UseServerReturn<T>;
 
-if (__XANIX_SERVER__) {
+if (typeof __XANIX_SERVER__ !== "undefined" && __XANIX_SERVER__) {
   useServer = useServerOnServer as any;
 } else {
   useServer = useServerOnClient as any;

@@ -1,14 +1,14 @@
 import path from "node:path";
 import { rollup } from "rollup";
 import { build, type Plugin } from "esbuild";
-import { XanixClientEntry } from "../types";
+import { XanixClientEntry } from "../../../types";
 import { builtinModules, createRequire } from "node:module";
-import { getClientRuntimeFile } from "../include/utils.js";
-import outdirs from "../../outdirs.js";
-import { xanixCachePlugins } from "./plugins/plugins.js";
-import defines from "./config/defines.js";
+import { getClientRuntimeFile } from "../../../include/utils.js";
+import outdirs from "../../../../outdirs.js";
+import { xanixCachePlugins } from "../plugins.js";
+import defines from "../../config/defines.js";
 import { pathToFileURL } from "node:url";
-import external from "./config/external.js";
+import external from "../../config/external.js";
 
 const require = createRequire(import.meta.url);
 const nodeBuiltins = new Set(
@@ -155,9 +155,12 @@ const bundleDeps = async (input: Record<string, string>, outdir: string) => {
   });
 };
 
-const metadata: CacheMetadata = new Map();
+// const metadata: CacheMetadata = new Map();
 
-const BuildClientCache = async (entries: XanixClientEntry[]) => {
+const BuildClientCache = async (
+  entries: XanixClientEntry[],
+  metadata: CacheMetadata = new Map(),
+) => {
   const input: Record<string, string> = {};
   const dependencies = await GenerateGraph(entries);
   for (const dependency of dependencies.values()) {

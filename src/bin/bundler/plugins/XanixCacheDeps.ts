@@ -28,12 +28,13 @@ async function getRealExportedKeys(
 ): Promise<{ modules: string[]; hasDefault: boolean }> {
   try {
     const mod = await import(pathToFileURL(resolvedEntry).href);
+
     const hasDefault =
       mod &&
       (typeof mod === "object" || typeof mod === "function") &&
       "default" in mod;
     const names = Object.keys(mod).filter(
-      (k) => k !== "default" && /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(k), // valid JS identifier only
+      (key) => key !== "__esModule" && key !== "default",
     );
     return { modules: names, hasDefault };
   } catch {
@@ -124,16 +125,25 @@ const bundleCache = (source: string, resolvedEntry?: string): Promise<void> => {
       resolvedEntry ?? input,
     );
 
-    const wrapperLines = [
-      `import * as mod from './${file}.internal.js';`,
-      hasDefault ? `export default mod.default;` : "",
-      `export * from './${file}.internal.js';`,
-      ...modules.map((key) => `export const ${key} = mod.${key};`),
-    ];
+    const lines = [`import __mod from './${file}.internal.js';`];
+
+    if (hasDefault) {
+      lines.push(`export default __mod.default;`);
+    } else {
+      lines.push(`export default __mod;`);
+    }
+
+    for (const exportName of modules) {
+      if (/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(exportName)) {
+        lines.push(
+          `export const ${exportName} = __mod[${JSON.stringify(exportName)}] || __mod.default[${JSON.stringify(exportName)}]`,
+        );
+      }
+    }
 
     await fs.promises.writeFile(
       path.join(cacheDir, `${file}.js`),
-      wrapperLines.join("\n") + "\n",
+      lines.join("\n") + "\n",
       "utf8",
     );
   })();

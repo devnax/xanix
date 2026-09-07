@@ -1,18 +1,13 @@
 import path from "node:path";
 import { XanixClientEntry } from "../../../types";
 import type { Plugin } from "rollup";
-import BuildCache, { CacheMetadata } from "../../BuildClientCache.js";
+import BuildCache, { CacheMetadata } from "./BuildClientCache.js";
 import outdirs from "../../../../outdirs.js";
 
 function XanixResolveCacheDeps(
   metadata: CacheMetadata,
   entries: XanixClientEntry[],
 ): Plugin {
-  if (!entries.length) {
-    return {
-      name: "xanix:cached-deps",
-    };
-  }
   return {
     name: "xanix:cached-deps",
 

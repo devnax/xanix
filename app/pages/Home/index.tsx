@@ -36,13 +36,8 @@ const HomePage = ({ another, category }: any) => {
 
   const d = useServer(
     async ({ name }) => {
-      const fs = await import("fs");
-      const path = await import("path");
-      const filePath = path.join(process.cwd(), "package.json");
-      const content = await fs.promises.readFile(filePath, "utf8");
       return {
         name,
-        content,
       };
     },
     {

@@ -23,6 +23,8 @@ export default function xanixReactRefresh(webSocketPort: number): Plugin {
       const code = fs.readFileSync(id, "utf8");
 
       const refreshCode = `
+
+${code}
 import * as RefreshRuntime from "react-refresh/runtime";
 
 RefreshRuntime.injectIntoGlobalHook(window);
@@ -33,7 +35,6 @@ window.$RefreshReg$ = (type, id) => {
 
 window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
 
-${code}
 
 const ws = new WebSocket(
   ${JSON.stringify(`ws://localhost:${webSocketPort}`)}
