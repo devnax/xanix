@@ -1,17 +1,14 @@
 import type { Plugin } from "rollup";
 import path from "node:path";
 import fs from "node:fs";
-
 import { parse } from "@babel/parser";
 import traverse from "@babel/traverse";
 import generate from "@babel/generator";
 import * as t from "@babel/types";
-
 import { getClientRuntimeFile } from "../../include/utils.js";
-
 const root = process.cwd();
 
-export default function xanixReactRefresh(webSocketPort: number): Plugin {
+export default function xanixReactRefresh(WebSocketPort: number): Plugin {
   return {
     name: "xanix-react-refresh",
 
@@ -19,46 +16,38 @@ export default function xanixReactRefresh(webSocketPort: number): Plugin {
       if (path.resolve(id) !== getClientRuntimeFile()) {
         return null;
       }
-
       const code = fs.readFileSync(id, "utf8");
 
       const refreshCode = `
 import * as RefreshRuntime from "react-refresh/runtime";
 
-RefreshRuntime.injectIntoGlobalHook(window);
-
-window.$RefreshReg$ = (type, id) => {
-  RefreshRuntime.register(type, id);
-};
-
-window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
-
 ${code}
 
-const ws = new WebSocket(
-  ${JSON.stringify(`ws://localhost:${webSocketPort}`)}
-);
+  RefreshRuntime.injectIntoGlobalHook(window);
+  window.$RefreshReg$ = RefreshRuntime.register;
+  window.$RefreshSig$ = () => (type) => type;
+  const ws = new WebSocket("ws://localhost:" + ${WebSocketPort});
 
-ws.onmessage = async (event) => {
-  const files = JSON.parse(event.data);
+  
+  ws.onmessage = async (event) => {
+    const files = JSON.parse(event.data);
 
-  for (const file of files) {
-    if (!file.endsWith(".js")) {
-      continue;
+    for (const file of files) {
+      if (!file.endsWith(".js")) {
+        continue;
+      }
+
+      const url =
+        getImportUrl(file.replace(/\\.js$/, "")) +
+        "?t=" +
+        Date.now();
+
+      await import(url);
     }
 
-    const url =
-      getImportUrl(file.replace(/\\.js$/, "")) +
-      "?t=" +
-      Date.now();
-
-    await import(url);
-  }
-
-  RefreshRuntime.performReactRefresh();
-
-  ws.send("reload");
-};
+    RefreshRuntime.performReactRefresh();
+    ws.send("reload")
+  };
 `;
 
       return {
@@ -68,12 +57,9 @@ ws.onmessage = async (event) => {
     },
 
     transform(code, id) {
-      const resolvedId = path.resolve(id);
-
-      if (resolvedId === getClientRuntimeFile()) {
+      if (path.resolve(id) === getClientRuntimeFile()) {
         return null;
       }
-
       if (id.includes("node_modules")) {
         return null;
       }
@@ -92,13 +78,11 @@ ws.onmessage = async (event) => {
       traverse(ast, {
         FunctionDeclaration(path) {
           const node = path.node;
-
           if (!node.id) {
             return;
           }
 
           const name = node.id.name;
-
           if (!isReactComponent(name)) {
             return;
           }
@@ -108,13 +92,11 @@ ws.onmessage = async (event) => {
 
         VariableDeclarator(path) {
           const node = path.node;
-
           if (!t.isIdentifier(node.id)) {
             return;
           }
 
           const name = node.id.name;
-
           if (!isReactComponent(name)) {
             return;
           }
@@ -154,7 +136,7 @@ ws.onmessage = async (event) => {
 }
 
 function isReactComponent(name: string): boolean {
-  return /^[A-Z][A-Za-z0-9_$]*$/.test(name);
+  return /^[A-Z]/.test(name);
 }
 
 function createRegistration(

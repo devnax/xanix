@@ -46,14 +46,6 @@ export function xanixDefaultPlugins(options: XanixRollupOptions): Plugin[] {
   return [
     XanixTsconfigAlias(),
 
-    // {
-    //   name: "watch",
-    //   async watchChange(id, change) {
-    //     const entry = path.resolve(id).replaceAll("\\", "/");
-    //     options.onChange?.(entry, change?.event);
-    //   },
-    // },
-
     url({
       include: [
         "**/*.jpg",

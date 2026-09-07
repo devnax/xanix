@@ -13,7 +13,7 @@ let child: any;
 
 const start = async () => {
   console.log("");
-  console.log(pc.bold(`Xanix ${packageJson.version}`));
+  console.log(pc.cyan(pc.bold(`Xanix ${packageJson.version}`)));
   console.log("");
 
   const filePath = path.join(outdirs.server, "index.js");

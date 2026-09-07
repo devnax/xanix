@@ -13,7 +13,7 @@ const packageJson = JSON.parse(
 
 const build = async (rootEntry: string) => {
   console.log("");
-  console.log(pc.bold(`Xanix ${packageJson.version}`));
+  console.log(pc.cyan(pc.bold(`Xanix ${packageJson.version}`)));
   console.log("");
   spinner.start(`Building server...`);
   const st = Date.now();

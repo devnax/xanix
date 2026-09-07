@@ -115,7 +115,7 @@ const dev = async (rootEntry: string) => {
     });
   };
   console.log("");
-  console.log(pc.bold(`Xanix ${packageJson.version}`));
+  console.log(pc.cyan(pc.bold(`Xanix ${packageJson.version}`)));
   console.log("");
 
   spinner.start("Compiling Server...");

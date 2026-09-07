@@ -11,6 +11,8 @@ import {
 } from "../include/utils.js";
 import { xanixDefaultPlugins } from "./plugins/plugins.js";
 import outdirs from "../../outdirs.js";
+import XanixCachedDeps from "./plugins/XanixCachedDeps.js";
+import XanixReactRefresh from "./plugins/XanixReactRefresh.js";
 
 type Option = {
   onChange?: (files: string[]) => void;
@@ -41,15 +43,18 @@ const WatchClient = async (
     recursive: true,
   });
 
-  options.onCachedStart?.();
-  let clientCache = await BuildClientCache(entries);
-  options.onCachedEnd?.();
+  // options.onCachedStart?.();
+  // let clientCache = await BuildClientCache(entries);
+  // options.onCachedEnd?.();
 
   const watcher = watch({
     input,
     treeshake: true,
     plugins: [
-      XanixResolveCacheDeps(clientCache, entries),
+      XanixReactRefresh(options.WebSocketPort),
+      XanixCachedDeps(),
+      // vendorRedirectPlugin(map),
+      // XanixResolveCacheDeps(clientCache, entries),
       ...xanixDefaultPlugins({
         WebSocketPort: options.WebSocketPort,
         target: "client",
@@ -86,6 +91,8 @@ const WatchClient = async (
       case "BUNDLE_START":
         break;
       case "BUNDLE_END":
+        console.log(event.duration);
+
         options.onBuildEnd?.(event.duration);
         break;
       case "END":
