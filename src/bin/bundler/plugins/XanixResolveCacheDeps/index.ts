@@ -3,8 +3,8 @@ import { type Plugin, rolldown } from "rolldown";
 import { createRequire } from "node:module";
 import { tsconfigPathsMatcher } from "../XanixTsconfigAlias.js";
 import { esmExternalRequirePlugin } from "rolldown/plugins";
-import { pathToFileURL } from "node:url";
 import fs from "node:fs";
+import loadEnv from "../../config/loadEnv.js";
 
 const require = createRequire(import.meta.url);
 const cacheDir = path.join(process.cwd(), ".xanix/cache");
@@ -37,11 +37,14 @@ const build = async ({ id, define }: BuildOptions) => {
   });
 
   // make a cache file first
-  const cacheFile = path.join(cacheDir, `${makeFilename(id)}.cache.js`);
+  const tmpFile = `${makeFilename(id)}.temp.js`;
+  const cacheFile = path.join(cacheDir, tmpFile);
+  // make sure the cache directory exists
+  fs.mkdirSync(cacheDir, { recursive: true });
   fs.writeFileSync(
     cacheFile,
     `
-      import * as __mod from "${resolved}";
+      import * as __mod from "${id}";
       export default __mod;
     `,
   );
@@ -51,49 +54,58 @@ const build = async ({ id, define }: BuildOptions) => {
 
   const bundle = await rolldown({
     input: resolved,
-    platform: "browser",
-    cwd: process.cwd(),
+    treeshake: true,
+    tsconfig: true,
     resolve: {
+      extensions: [".mjs", ".js", ".jsx", ".json", ".ts", ".tsx"],
       conditionNames: ["browser", "import", "module", "default"],
     },
     transform: {
-      target: "esnext",
-      define: define,
-
+      target: "es2022",
       jsx: {
         runtime: "automatic",
       },
+      define: await loadEnv({
+        mode: "development",
+        isClient: true,
+      }),
     },
     plugins: [
+      esmExternalRequirePlugin({
+        external: [barePackagePattern, /^node:/],
+      }),
       {
         name: "XanixResolveCacheDeps",
         async resolveId(_id) {
+          console.log(_id);
+
           if (_id.startsWith(".") || path.isAbsolute(_id)) {
             return null;
           }
 
+          if (id === _id) {
+            return null;
+          }
+
           return {
-            id: id,
+            id: `${id}.internal.js`,
             external: true,
           };
 
           return null;
         },
       },
-      esmExternalRequirePlugin({
-        external: [barePackagePattern, /^node:/],
-      }),
     ],
   });
 
   await bundle.write({
-    file: path.join(cacheDir, `${filename}.internal.js`),
+    file: path.join(cacheDir, `${filename}.js`),
     format: "esm",
     exports: "auto",
     sourcemap: true,
     codeSplitting: false,
     polyfillRequire: false,
-    entryFileNames: `${filename}.internal.js`,
+    entryFileNames: `${filename}.js`,
     chunkFileNames: `${filename}-[hash].js`,
     assetFileNames: `${filename}-[hash][extname]`,
   });
@@ -101,8 +113,8 @@ const build = async ({ id, define }: BuildOptions) => {
   await bundle.close();
 
   const cache = {
-    file: path.join(cacheDir, `${filename}.internal.js`),
-    filename: `${filename}.internal.js`,
+    file: path.join(cacheDir, `${filename}.js`),
+    filename: `${filename}.js`,
     id,
   };
 
@@ -159,7 +171,7 @@ const XanixCache = ({
       }
       if (cached.has(id)) {
         return {
-          id: `${id}.internal.js`,
+          id: id,
           external: true,
         };
       }
@@ -170,7 +182,7 @@ const XanixCache = ({
       });
 
       return {
-        id: `${id}.internal.js`,
+        id: id,
         external: true,
       };
     },
