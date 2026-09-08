@@ -1,4 +1,4 @@
-import { rollup } from "rollup";
+import { rolldown } from "rolldown";
 import path from "node:path";
 import bundlerOutput from "./config/output.js";
 import fs from "node:fs";
@@ -29,7 +29,7 @@ const BuildServer = async ({ rootEntry, onBuildEnd }: WatcherOptions) => {
     index: path.resolve(root, rootEntry),
   };
 
-  const build = await rollup({
+  const build = await rolldown({
     input,
     treeshake: true,
     onwarn(warning, warn) {

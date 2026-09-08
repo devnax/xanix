@@ -1,109 +1,229 @@
-import { parse } from "@babel/parser";
-import traverse from "@babel/traverse";
-import generate from "@babel/generator";
-import * as t from "@babel/types";
-
-import type { Plugin } from "rollup";
+import type { Plugin } from "rolldown";
 
 const RUNTIME_IMPORT = "xanix/runtime";
 
-function findExpressServer(ast: t.File): string | null {
-  let appName: string | null = null;
-
-  traverse(ast, {
-    CallExpression(path) {
-      const node = path.node;
-
-      // Find:
-      // app.listen(...)
-      if (
-        !t.isMemberExpression(node.callee) ||
-        !t.isIdentifier(node.callee.property, {
-          name: "listen",
-        }) ||
-        !t.isIdentifier(node.callee.object)
-      ) {
-        return;
-      }
-
-      const variableName = node.callee.object.name;
-
-      // Find the binding of `app`
-      const binding = path.scope.getBinding(variableName);
-
-      if (!binding || !binding.path.isVariableDeclarator()) {
-        return;
-      }
-
-      const init = binding.path.node.init;
-
-      // Confirm:
-      // const app = express();
-      if (
-        t.isCallExpression(init) &&
-        t.isIdentifier(init.callee, {
-          name: "express",
-        })
-      ) {
-        appName = variableName;
-
-        path.stop();
-      }
-    },
-  });
-
-  return appName;
-}
-
-function injectRuntimeImport(ast: t.File): void {
-  let runtimeImport: t.ImportDeclaration | null = null;
-
-  for (const statement of ast.program.body) {
-    if (
-      t.isImportDeclaration(statement) &&
-      statement.source.value === RUNTIME_IMPORT
-    ) {
-      runtimeImport = statement;
-      break;
-    }
-  }
-
-  if (runtimeImport) {
-    const exists = runtimeImport.specifiers.some(
-      (specifier) =>
-        t.isImportSpecifier(specifier) &&
-        t.isIdentifier(specifier.imported, {
-          name: "createXanixServer",
-        }),
-    );
-
-    if (!exists) {
-      runtimeImport.specifiers.push(
-        t.importSpecifier(
-          t.identifier("createXanixServer"),
-          t.identifier("createXanixServer"),
-        ),
-      );
-    }
-
-    return;
-  }
-
-  ast.program.body.unshift(
-    t.importDeclaration(
-      [
-        t.importSpecifier(
-          t.identifier("createXanixServer"),
-          t.identifier("createXanixServer"),
-        ),
-      ],
-      t.stringLiteral(RUNTIME_IMPORT),
-    ),
-  );
+interface AstNode {
+  type: string;
+  start?: number;
+  end?: number;
+  [key: string]: any;
 }
 
 export interface XanixServerTransformOptions {
   mode: "watch" | "start";
+}
+
+function isIdentifier(node: AstNode | undefined, name?: string): boolean {
+  if (!node || node.type !== "Identifier") {
+    return false;
+  }
+
+  return name === undefined || node.name === name;
+}
+
+function isCallExpression(node: AstNode | undefined): boolean {
+  return node?.type === "CallExpression";
+}
+
+function isMemberExpression(node: AstNode | undefined): boolean {
+  return (
+    node?.type === "MemberExpression" ||
+    node?.type === "OptionalMemberExpression"
+  );
+}
+
+function getMemberPropertyName(node: AstNode): string | null {
+  if (!isMemberExpression(node)) {
+    return null;
+  }
+
+  if (node.computed) {
+    if (
+      node.property?.type === "Literal" &&
+      typeof node.property.value === "string"
+    ) {
+      return node.property.value;
+    }
+
+    return null;
+  }
+
+  if (node.property?.type === "Identifier") {
+    return node.property.name;
+  }
+
+  return null;
+}
+
+function walk(
+  node: AstNode,
+  callback: (node: AstNode, parent: AstNode | null) => void,
+  parent: AstNode | null = null,
+): void {
+  callback(node, parent);
+
+  for (const key of Object.keys(node)) {
+    if (
+      key === "parent" ||
+      key === "loc" ||
+      key === "range" ||
+      key === "tokens" ||
+      key === "comments"
+    ) {
+      continue;
+    }
+
+    const value = node[key];
+
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        if (item && typeof item === "object") {
+          if (typeof item.type === "string") {
+            walk(item, callback, node);
+          }
+        }
+      }
+
+      continue;
+    }
+
+    if (value && typeof value === "object" && typeof value.type === "string") {
+      walk(value, callback, node);
+    }
+  }
+}
+
+function findExpressServer(ast: AstNode): {
+  appName: string;
+  declarator: AstNode;
+} | null {
+  const expressApps = new Map<string, AstNode>();
+
+  /*
+   * Find:
+   *
+   * const app = express();
+   */
+  walk(ast, (node) => {
+    if (node.type !== "VariableDeclarator") {
+      return;
+    }
+
+    if (!isIdentifier(node.id)) {
+      return;
+    }
+
+    if (!isCallExpression(node.init)) {
+      return;
+    }
+
+    if (!isIdentifier(node.init.callee, "express")) {
+      return;
+    }
+
+    expressApps.set(node.id.name, node);
+  });
+
+  if (!expressApps.size) {
+    return null;
+  }
+
+  /*
+   * Find:
+   *
+   * app.listen(...)
+   */
+  let result: {
+    appName: string;
+    declarator: AstNode;
+  } | null = null;
+
+  walk(ast, (node) => {
+    if (result) {
+      return;
+    }
+
+    if (node.type !== "CallExpression") {
+      return;
+    }
+
+    const callee = node.callee;
+
+    if (!isMemberExpression(callee)) {
+      return;
+    }
+
+    if (getMemberPropertyName(callee) !== "listen") {
+      return;
+    }
+
+    if (!isIdentifier(callee.object)) {
+      return;
+    }
+
+    const declarator = expressApps.get(callee.object.name);
+
+    if (!declarator) {
+      return;
+    }
+
+    result = {
+      appName: callee.object.name,
+      declarator,
+    };
+  });
+
+  return result;
+}
+
+function hasRuntimeImport(ast: AstNode): boolean {
+  for (const statement of ast.body ?? []) {
+    if (statement.type !== "ImportDeclaration") {
+      continue;
+    }
+
+    if (statement.source?.value !== RUNTIME_IMPORT) {
+      continue;
+    }
+
+    for (const specifier of statement.specifiers ?? []) {
+      if (
+        specifier.type === "ImportSpecifier" &&
+        specifier.imported?.type === "Identifier" &&
+        specifier.imported.name === "createXanixServer"
+      ) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+function createRuntimeImport(ast: AstNode): string {
+  if (hasRuntimeImport(ast)) {
+    return "";
+  }
+
+  return `import { createXanixServer } from "${RUNTIME_IMPORT}";\n`;
+}
+
+function getLanguage(id: string): "js" | "jsx" | "ts" | "tsx" {
+  const file = id.split("?")[0];
+
+  if (file.endsWith(".tsx")) {
+    return "tsx";
+  }
+
+  if (file.endsWith(".ts")) {
+    return "ts";
+  }
+
+  if (file.endsWith(".jsx")) {
+    return "jsx";
+  }
+
+  return "js";
 }
 
 export default function XanixServerTransform(
@@ -112,94 +232,69 @@ export default function XanixServerTransform(
   return {
     name: "xanix-server-transform",
 
-    transform(code, id) {
-      // Ignore node_modules
-      if (id.includes("node_modules")) {
-        return null;
-      }
+    transform: {
+      filter: {
+        id: /^(?!.*(?:node_modules[\\/])).*\.[cm]?[jt]sx?$/,
+      },
 
-      // Only process JS/TS files
-      if (!/\.[cm]?[jt]sx?$/.test(id)) {
-        return null;
-      }
+      handler(code, id) {
+        /*
+         * IMPORTANT:
+         *
+         * This is Rolldown's parser.
+         * No Babel parser.
+         */
+        let ast: AstNode;
 
-      let ast: t.File;
+        try {
+          ast = this.parse(code, {
+            lang: getLanguage(id),
+          }) as AstNode;
+        } catch {
+          return null;
+        }
 
-      try {
-        ast = parse(code, {
-          sourceType: "module",
-          plugins: ["typescript", "jsx"],
-        });
-      } catch {
-        return null;
-      }
+        const server = findExpressServer(ast);
 
-      // Find the REAL server app
-      const appName = findExpressServer(ast);
+        if (!server) {
+          return null;
+        }
 
-      if (!appName) {
-        return null;
-      }
+        const init = server.declarator.init;
 
-      let changed = false;
+        if (
+          !init ||
+          !isCallExpression(init) ||
+          !isIdentifier(init.callee, "express")
+        ) {
+          return null;
+        }
 
-      traverse(ast, {
-        VariableDeclarator(path) {
-          const node = path.node;
+        if (init.start == null || init.end == null) {
+          return null;
+        }
 
-          // Only transform:
-          // const app = express()
-          if (
-            !t.isIdentifier(node.id, {
-              name: appName,
-            })
-          ) {
-            return;
-          }
+        const replacement = `createXanixServer({ mode: ${JSON.stringify(options.mode)} })`;
 
-          if (
-            !t.isCallExpression(node.init) ||
-            !t.isIdentifier(node.init.callee, {
-              name: "express",
-            })
-          ) {
-            return;
-          }
+        /*
+         * We only need one source replacement.
+         *
+         * If you're using Rolldown native MagicString,
+         * perform the overwrite there.
+         */
+        const importCode = createRuntimeImport(ast);
 
-          node.init = t.callExpression(t.identifier("createXanixServer"), [
-            t.objectExpression([
-              t.objectProperty(
-                t.identifier("mode"),
-                t.stringLiteral(options.mode),
-              ),
-            ]),
-          ]);
+        const before = code.slice(0, init.start);
 
-          changed = true;
+        const after = code.slice(init.end);
 
-          path.stop();
-        },
-      });
+        const transformed = importCode + before + replacement + after;
 
-      if (!changed) {
-        return null;
-      }
-
-      injectRuntimeImport(ast);
-
-      const output = generate(
-        ast,
-        {
-          sourceMaps: true,
-          sourceFileName: id,
-        },
-        code,
-      );
-
-      return {
-        code: output.code,
-        map: output.map,
-      } as any;
+        return {
+          code: transformed,
+          map: null,
+        };
+      },
     },
   };
 }

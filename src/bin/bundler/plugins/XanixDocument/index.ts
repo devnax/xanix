@@ -1,7 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
-import type { Plugin } from "rollup";
+
+import type { Plugin } from "rolldown";
 
 const require = createRequire(import.meta.url);
 
@@ -32,31 +33,42 @@ export default function xanixDocument(): Plugin {
         return null;
       }
 
-      const document = fs.existsSync(userDocument)
+      const documentFile = fs.existsSync(userDocument)
         ? userDocument
         : baseDocument;
 
-      const source = fs.readFileSync(document, "utf8");
+      const source = fs.readFileSync(documentFile, "utf8");
 
-      // Detect common metadata export forms.
       const hasMetadata =
         /\bexport\s+(?:const|let|var|function|class)\s+metadata\b/.test(
           source,
-        ) || /\bexport\s*\{\s*[^}]*\bmetadata\b[^}]*\}/.test(source);
+        ) || /\bexport\s*\{[^}]*\bmetadata\b[^}]*\}/.test(source);
+
+      const importPath = path.resolve(documentFile).replaceAll("\\", "/");
 
       if (hasMetadata) {
-        return `
-import Document, * as DocumentModule from ${JSON.stringify(document)};
+        return {
+          code: `
+import Document, * as DocumentModule from ${JSON.stringify(importPath)};
+
 export const metadata = DocumentModule.metadata;
+
 export default Document;
-`;
+`,
+          map: null,
+        };
       }
 
-      return `
-import Document from ${JSON.stringify(document)};
+      return {
+        code: `
+import Document from ${JSON.stringify(importPath)};
+
 export const metadata = async () => ({});
+
 export default Document;
-`;
+`,
+        map: null,
+      };
     },
   };
 }

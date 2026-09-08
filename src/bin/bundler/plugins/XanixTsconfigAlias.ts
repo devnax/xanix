@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import type { Plugin } from "rollup";
+import type { Plugin } from "rolldown";
 import ts from "typescript";
 
 type TsconfigPathAlias = {

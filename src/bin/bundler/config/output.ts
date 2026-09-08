@@ -1,4 +1,4 @@
-import { OutputOptions } from "rollup";
+import { OutputOptions } from "rolldown";
 import { XanixClientEntry } from "../../types";
 import outdirs from "../../../outdirs.js";
 
@@ -32,7 +32,7 @@ const client = (
     opt.preserveModulesRoot = process.cwd();
   } else {
     opt.chunkFileNames = "chunks/[hash].js";
-    opt.assetFileNames = "assets/[name]-[hash][extname]";
+    opt.assetFileNames = "assets/[name][extname]";
   }
   return opt;
 };
@@ -44,7 +44,7 @@ const server = (opt: Options): OutputOptions => {
     sourcemap: opt.isDev ?? true,
     entryFileNames: "[name].js",
     chunkFileNames: "chunks/[name].js",
-    assetFileNames: "assets/[hash][extname]",
+    assetFileNames: "assets/[name][extname]",
     // manualChunks(id) {
     //   const filename = path.basename(id);
     //   return filename.split(".")[0];

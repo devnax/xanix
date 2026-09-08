@@ -15,8 +15,7 @@ export const getPath = () => {
   return search ? `${pathname}${search}` : pathname;
 };
 
-export const getImportUrl = (pageId: string) =>
-  `/${outdirs.client}/${pageId}.js`;
+export const getImportUrl = (file: string) => `/${outdirs.client}/${file}.js`;
 
 function getRoot(): Root {
   let ele: any = document.body;

@@ -1,4 +1,4 @@
-import { rollup, type InputOption } from "rollup";
+import { rolldown, type InputOption } from "rolldown";
 import fs from "node:fs";
 import { XanixClientEntry } from "../types";
 import bundlerOutput from "./config/output.js";
@@ -27,7 +27,7 @@ const buildClient = async (entries: XanixClientEntry[]) => {
     recursive: true,
   });
 
-  const build = await rollup({
+  const build = await rolldown({
     input,
     treeshake: true,
     onwarn(warning, warn) {

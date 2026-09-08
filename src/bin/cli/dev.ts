@@ -1,7 +1,7 @@
 import path from "node:path";
 import { spawn } from "node:child_process";
 import watchServer from "../bundler/watchServer.js";
-import { RollupWatcher } from "rollup";
+import { RolldownWatcher } from "rolldown";
 import watchClient from "../bundler/watchClient.js";
 import pc from "picocolors";
 import logger from "../include/logger.js";
@@ -92,7 +92,7 @@ const dev = async (rootEntry: string) => {
   });
 
   let clientChangeFiles: string[] = [];
-  let _clientWatcher: RollupWatcher | null = null;
+  let _clientWatcher: RolldownWatcher | null = null;
 
   const clientWatcher = async (entries: XanixClientEntry[]) => {
     spinner.start("Compiling Client...");

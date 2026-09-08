@@ -1,4 +1,4 @@
-import { watch } from "rollup";
+import { watch } from "rolldown";
 import path from "node:path";
 import fs from "node:fs";
 import external from "./config/external.js";
@@ -9,6 +9,7 @@ import { entriesEqual } from "../include/entry.js";
 import { xanixDefaultPlugins } from "./plugins/plugins.js";
 import outdirs from "../../outdirs.js";
 import { normalizePath } from "../include/utils.js";
+import loadEnv from "./config/loadEnv.js";
 const root = process.cwd();
 
 export type WatcherOptions = {
@@ -45,6 +46,24 @@ const watchServer = async ({
   const watcher = watch({
     input,
     treeshake: true,
+    tsconfig: true,
+
+    resolve: {
+      extensions: [".mjs", ".js", ".jsx", ".json", ".ts", ".tsx"],
+      conditionNames: ["node", "import", "module", "default"],
+    },
+    transform: {
+      target: "node20",
+
+      jsx: {
+        runtime: "automatic",
+      },
+
+      define: await loadEnv({
+        mode: "development",
+        isClient: false,
+      }),
+    },
     plugins: [
       ...xanixDefaultPlugins({
         target: "server",

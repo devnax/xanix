@@ -1,9 +1,12 @@
-import { watch, type InputOption, type RollupWatcher } from "rollup";
+import {
+  rolldown,
+  watch,
+  type InputOption,
+  type RolldownWatcher,
+} from "rolldown";
 import bundlerOutput from "./config/output.js";
 import fs from "node:fs";
 import { XanixClientEntry } from "../types.js";
-import BuildClientCache from "./plugins/XanixResolveCacheDeps/BuildClientCache.js";
-import XanixResolveCacheDeps from "./plugins/XanixResolveCacheDeps/index.js";
 import {
   getClientRuntimeFile,
   getClientRuntimeFileName,
@@ -11,8 +14,8 @@ import {
 } from "../include/utils.js";
 import { xanixDefaultPlugins } from "./plugins/plugins.js";
 import outdirs from "../../outdirs.js";
-import XanixCachedDeps from "./plugins/XanixCacheDeps.js";
-// import XanixCachedDeps from "./plugins/XanixCachedDeps.js";
+import loadEnv from "./config/loadEnv.js";
+import XanixCache from "./plugins/XanixResolveCacheDeps/index.js";
 
 type Option = {
   onChange?: (files: string[]) => void;
@@ -26,7 +29,7 @@ type Option = {
 const WatchClient = async (
   entries: XanixClientEntry[],
   options: Option,
-): Promise<RollupWatcher> => {
+): Promise<RolldownWatcher> => {
   const input: InputOption = {};
   for (const entry of entries) {
     input[entry.name] = entry.file;
@@ -50,16 +53,52 @@ const WatchClient = async (
   const watcher = watch({
     input,
     treeshake: true,
+    tsconfig: true,
+    resolve: {
+      extensions: [".mjs", ".js", ".jsx", ".json", ".ts", ".tsx"],
+      conditionNames: ["browser", "import", "module", "default"],
+    },
+    transform: {
+      target: "es2022",
+      jsx: {
+        runtime: "automatic",
+      },
+      define: await loadEnv({
+        mode: "development",
+        isClient: true,
+      }),
+    },
     plugins: [
+      XanixCache({
+        cacheDir: ".xanix/cache",
+        define: await loadEnv({
+          mode: "development",
+          isClient: true,
+        }),
+
+        // debug: true,
+      }),
       // vendorRedirectPlugin(map),
-      // XanixResolveCacheDeps(clientCache, entries),
+      // XanixResolveCacheDeps({
+      //   // debug: true,
+      //   define: await loadEnv({
+      //     mode: "development",
+      //     isClient: true,
+      //   }),
+      //   isExternal: (id: string) => {
+      //     const neverCache = new Set<string>([]);
+      //     return !neverCache.has(id);
+      //   },
+      //   cacheDir: path.resolve(outdirs.server, "cache"),
+      //   publicPath: "/.xanix/cache/",
+      // }),
+
       ...xanixDefaultPlugins({
         WebSocketPort: options.WebSocketPort,
         target: "client",
         development: true,
         assetExternal: true,
       }),
-      XanixCachedDeps(),
     ],
     output: bundlerOutput.client(entries, { isDev: true }),
     watch: {
@@ -90,8 +129,7 @@ const WatchClient = async (
       case "BUNDLE_START":
         break;
       case "BUNDLE_END":
-        console.log(event.duration);
-
+        console.log("[client] build ended in", event.duration, "ms");
         options.onBuildEnd?.(event.duration);
         break;
       case "END":

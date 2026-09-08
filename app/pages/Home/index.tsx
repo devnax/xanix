@@ -1,6 +1,7 @@
 import React, { Suspense, useMemo, useState } from "react";
 import { navigate, useSearchParams, useCookies, useServer } from "xanix";
 import Chunk from "./Chunk";
+import Button from "@xanui/ui/Button";
 
 const Show = () => {
   const params = useSearchParams();
@@ -59,14 +60,13 @@ const HomePage = ({ another, category }: any) => {
   return (
     <div>
       <Chunk />
+      <Button>Nice</Button>
       <div>Server Data: {d.data.name}</div>
       <button
         onClick={() => {
           setN(Math.random().toString());
         }}
-      >
-        change name
-      </button>
+      ></button>
       <Show />
       Home Page {params.toString()} Name: {name}
       <input

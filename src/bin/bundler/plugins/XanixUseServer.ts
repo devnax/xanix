@@ -1,10 +1,4 @@
-import type { Plugin } from "rollup";
-
-import { parse } from "@babel/parser";
-import traverse from "@babel/traverse";
-import generate from "@babel/generator";
-import * as t from "@babel/types";
-
+import type { Plugin } from "rolldown";
 import crypto from "node:crypto";
 import path from "node:path";
 
@@ -12,6 +6,21 @@ type Options = {
   isClient: boolean;
   root?: string;
 };
+
+const XANIX_PACKAGE = "xanix";
+
+interface AstNode {
+  type: string;
+  start?: number;
+  end?: number;
+  [key: string]: any;
+}
+
+interface TransformEdit {
+  start: number;
+  end: number;
+  content: string;
+}
 
 /* ============================================================
    Utils
@@ -26,15 +35,55 @@ const createUID = (file: string, index: number): string =>
     .digest("hex")
     .slice(0, 16);
 
-const getExpression = (
-  value: t.CallExpression["arguments"][number] | undefined,
-): t.Expression | undefined => {
-  if (!value) {
-    return undefined;
-  }
+const source = (code: string, node: AstNode): string =>
+  code.slice(node.start!, node.end!);
 
-  return t.isExpression(value) ? value : undefined;
-};
+/* ============================================================
+   AST walker
+   ============================================================ */
+
+function walk(
+  node: AstNode,
+  visitor: (
+    node: AstNode,
+    parent: AstNode | null,
+    ancestors: AstNode[],
+  ) => void,
+  parent: AstNode | null = null,
+  ancestors: AstNode[] = [],
+): void {
+  visitor(node, parent, ancestors);
+
+  const nextAncestors = [...ancestors, node];
+
+  for (const key of Object.keys(node)) {
+    if (
+      key === "parent" ||
+      key === "loc" ||
+      key === "range" ||
+      key === "tokens" ||
+      key === "comments"
+    ) {
+      continue;
+    }
+
+    const value = node[key];
+
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        if (item && typeof item === "object" && typeof item.type === "string") {
+          walk(item, visitor, node, nextAncestors);
+        }
+      }
+
+      continue;
+    }
+
+    if (value && typeof value === "object" && typeof value.type === "string") {
+      walk(value, visitor, node, nextAncestors);
+    }
+  }
+}
 
 /* ============================================================
    Find local useServer name
@@ -46,39 +95,35 @@ const getExpression = (
    } from "xanix";
    ============================================================ */
 
-const getUseServerName = (ast: t.File): string | null => {
-  for (const statement of ast.program.body) {
-    if (!t.isImportDeclaration(statement)) {
+function getUseServerName(ast: AstNode): string | null {
+  for (const statement of ast.body ?? []) {
+    if (statement.type !== "ImportDeclaration") {
       continue;
     }
 
-    if (statement.source.value !== "xanix") {
+    if (statement.source?.value !== XANIX_PACKAGE) {
       continue;
     }
 
-    for (const specifier of statement.specifiers) {
-      if (!t.isImportSpecifier(specifier)) {
+    for (const specifier of statement.specifiers ?? []) {
+      if (specifier.type !== "ImportSpecifier") {
         continue;
       }
 
-      if (
-        t.isIdentifier(specifier.imported) &&
-        specifier.imported.name === "useServer"
-      ) {
+      const imported = specifier.imported;
+
+      if (imported?.type === "Identifier" && imported.name === "useServer") {
         return specifier.local.name;
       }
 
-      if (
-        t.isStringLiteral(specifier.imported) &&
-        specifier.imported.value === "useServer"
-      ) {
+      if (imported?.type === "Literal" && imported.value === "useServer") {
         return specifier.local.name;
       }
     }
   }
 
   return null;
-};
+}
 
 /* ============================================================
    Detect:
@@ -86,8 +131,13 @@ const getUseServerName = (ast: t.File): string | null => {
    useServer(...)
    ============================================================ */
 
-const isUseServer = (node: t.CallExpression, localName: string): boolean =>
-  t.isIdentifier(node.callee) && node.callee.name === localName;
+function isUseServer(node: AstNode, localName: string): boolean {
+  return (
+    node.type === "CallExpression" &&
+    node.callee?.type === "Identifier" &&
+    node.callee.name === localName
+  );
+}
 
 /* ============================================================
    Create:
@@ -99,7 +149,7 @@ const isUseServer = (node: t.CallExpression, localName: string): boolean =>
      }
    }
 
-   OR, if args itself is an object:
+   OR:
 
    {
      uid: "abc",
@@ -107,39 +157,75 @@ const isUseServer = (node: t.CallExpression, localName: string): boolean =>
        ...args
      }
    }
-
-   IMPORTANT:
-
-   New runtime API:
-
-   useServer({
-     uid,
-     args
-   })
-
    ============================================================ */
 
 function createServerRequest(
-  props: t.Expression | undefined,
+  code: string,
+  props: AstNode | undefined,
   uid: string,
-): t.ObjectExpression {
-  let args: t.Expression;
+): string {
+  const args = props ? source(code, props) : "{}";
 
-  if (!props) {
-    args = t.objectExpression([]);
-  } else {
-    args = t.cloneNode(props, true);
-  }
-
-  return t.objectExpression([
-    t.objectProperty(t.identifier("uid"), t.stringLiteral(uid)),
-
-    t.objectProperty(t.identifier("args"), args),
-  ]);
+  return ["{", `uid: ${JSON.stringify(uid)},`, `args: ${args},`, "}"].join(
+    "\n",
+  );
 }
 
 /* ============================================================
-   Add registerUseServer import
+   Find Xanix import
+   ============================================================ */
+
+function findXanixImport(ast: AstNode): AstNode | null {
+  for (const statement of ast.body ?? []) {
+    if (
+      statement.type === "ImportDeclaration" &&
+      statement.source?.value === XANIX_PACKAGE
+    ) {
+      return statement;
+    }
+  }
+
+  return null;
+}
+
+/* ============================================================
+   Check registerUseServer import
+   ============================================================ */
+
+function hasRegisterUseServerImport(ast: AstNode): boolean {
+  const xanixImport = findXanixImport(ast);
+
+  if (!xanixImport) {
+    return false;
+  }
+
+  for (const specifier of xanixImport.specifiers ?? []) {
+    if (specifier.type !== "ImportSpecifier") {
+      continue;
+    }
+
+    const imported = specifier.imported;
+
+    if (
+      imported?.type === "Identifier" &&
+      imported.name === "registerUseServer"
+    ) {
+      return true;
+    }
+
+    if (
+      imported?.type === "Literal" &&
+      imported.value === "registerUseServer"
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/* ============================================================
+   Create import edit
 
    Existing:
 
@@ -151,62 +237,78 @@ function createServerRequest(
      useServer,
      registerUseServer
    } from "xanix";
-
    ============================================================ */
 
-function addRegisterUseServerImport(ast: t.File): void {
-  let xanixImport: t.ImportDeclaration | undefined;
+function createRegisterImportEdit(
+  code: string,
+  ast: AstNode,
+): TransformEdit | null {
+  if (hasRegisterUseServerImport(ast)) {
+    return null;
+  }
 
-  for (const statement of ast.program.body) {
-    if (
-      t.isImportDeclaration(statement) &&
-      statement.source.value === "xanix"
-    ) {
-      xanixImport = statement;
+  const xanixImport = findXanixImport(ast);
+
+  if (!xanixImport) {
+    return {
+      start: 0,
+      end: 0,
+      content: `import { registerUseServer } from "xanix";\n`,
+    };
+  }
+
+  const specifiers = xanixImport.specifiers ?? [];
+
+  /*
+   * import "xanix";
+   */
+  if (!specifiers.length) {
+    return {
+      start: xanixImport.start!,
+      end: xanixImport.end!,
+      content: `import { registerUseServer } from "xanix";`,
+    };
+  }
+
+  /*
+   * Insert before the closing "}".
+   *
+   * We don't regenerate the import.
+   * We simply append a named specifier.
+   */
+  const lastSpecifier = specifiers[specifiers.length - 1];
+
+  if (lastSpecifier?.end == null) {
+    return null;
+  }
+
+  return {
+    start: lastSpecifier.end,
+    end: lastSpecifier.end,
+    content: ", registerUseServer",
+  };
+}
+
+/* ============================================================
+   Insert registrations after imports
+   ============================================================ */
+
+function getImportInsertionPosition(ast: AstNode): number {
+  const body = ast.body ?? [];
+
+  let position = 0;
+
+  for (const statement of body) {
+    if (statement.type !== "ImportDeclaration") {
       break;
     }
-  }
 
-  if (xanixImport) {
-    const exists = xanixImport.specifiers.some((specifier) => {
-      if (!t.isImportSpecifier(specifier)) {
-        return false;
-      }
-
-      if (t.isIdentifier(specifier.imported)) {
-        return specifier.imported.name === "registerUseServer";
-      }
-
-      if (t.isStringLiteral(specifier.imported)) {
-        return specifier.imported.value === "registerUseServer";
-      }
-
-      return false;
-    });
-
-    if (!exists) {
-      xanixImport.specifiers.push(
-        t.importSpecifier(
-          t.identifier("registerUseServer"),
-          t.identifier("registerUseServer"),
-        ),
-      );
+    if (statement.end != null) {
+      position = statement.end;
     }
-
-    return;
   }
 
-  ast.program.body.unshift(
-    t.importDeclaration(
-      [
-        t.importSpecifier(
-          t.identifier("registerUseServer"),
-          t.identifier("registerUseServer"),
-        ),
-      ],
-      t.stringLiteral("xanix"),
-    ),
-  );
+  return position;
 }
 
 /* ============================================================
@@ -227,55 +329,53 @@ function addRegisterUseServerImport(ast: t.File): void {
        id
      }
    })
-
    ============================================================ */
 
-function transformClient(ast: t.File, filePath: string, useServerName: string) {
+function transformClient(
+  code: string,
+  ast: AstNode,
+  filePath: string,
+  useServerName: string,
+) {
   let index = 0;
-  let changed = false;
 
-  traverse(ast, {
-    CallExpression(callPath) {
-      const node = callPath.node;
+  const edits: TransformEdit[] = [];
 
-      if (!isUseServer(node, useServerName)) {
-        return;
-      }
+  walk(ast, (node) => {
+    if (!isUseServer(node, useServerName)) {
+      return;
+    }
 
-      const callback = node.arguments[0];
+    const callback = node.arguments?.[0];
 
-      if (!callback || !t.isFunction(callback)) {
-        return;
-      }
+    if (
+      !callback ||
+      !(
+        callback.type === "ArrowFunctionExpression" ||
+        callback.type === "FunctionExpression"
+      )
+    ) {
+      return;
+    }
 
-      const props = getExpression(node.arguments[1]);
+    const props = node.arguments?.[1];
 
-      const uid = createUID(filePath, index);
+    const uid = createUID(filePath, index++);
 
-      index++;
+    const request = createServerRequest(code, props, uid);
 
-      const request = createServerRequest(props, uid);
-
-      node.arguments = [request];
-
-      changed = true;
-
-      callPath.skip();
-    },
+    edits.push({
+      start: node.start!,
+      end: node.end!,
+      content: `${useServerName}(${request})`,
+    });
   });
 
-  if (!changed) {
+  if (!edits.length) {
     return null;
   }
 
-  const output = generate(ast, {
-    comments: true,
-  });
-
-  return {
-    code: output.code,
-    map: output.map,
-  };
+  return applyEdits(code, edits, filePath);
 }
 
 /* ============================================================
@@ -283,182 +383,159 @@ function transformClient(ast: t.File, filePath: string, useServerName: string) {
 
    Source:
 
-   const App = ({ id }) => {
-
-     const user = useServer(
-       async ({ id }) => getUser(id),
-       { id }
-     );
-
-     return <h1>{user.name}</h1>;
-   };
+   useServer(
+     async ({ id }) => getUser(id),
+     { id }
+   )
 
    becomes:
-
-   import {
-     useServer,
-     registerUseServer
-   } from "xanix";
 
    registerUseServer(
      "abc123",
      async ({ id }) => getUser(id)
    );
 
-   const App = ({ id }) => {
-
-     const user = useServer({
-       uid: "abc123",
-       args: { id }
-     });
-
-     return <h1>{user.name}</h1>;
-   };
-
-   IMPORTANT:
-
-   App stays synchronous.
-
-   No:
-
-     async function App()
-
-   No:
-
-     DynamicName
-
-   No:
-
-     Suspense
-
-   No:
-
-     await useServer()
-
+   useServer({
+     uid: "abc123",
+     args: { id }
+   })
    ============================================================ */
 
-function transformServer(ast: t.File, filePath: string, useServerName: string) {
+function transformServer(
+  code: string,
+  ast: AstNode,
+  filePath: string,
+  useServerName: string,
+) {
   let index = 0;
-  let changed = false;
 
-  const registrations: t.Statement[] = [];
+  const edits: TransformEdit[] = [];
+  const registrations: string[] = [];
 
-  traverse(ast, {
-    CallExpression(callPath) {
-      const node = callPath.node;
+  walk(ast, (node) => {
+    if (!isUseServer(node, useServerName)) {
+      return;
+    }
 
-      if (!isUseServer(node, useServerName)) {
-        return;
-      }
+    const callback = node.arguments?.[0];
 
-      const callback = node.arguments[0];
+    if (
+      !callback ||
+      !(
+        callback.type === "ArrowFunctionExpression" ||
+        callback.type === "FunctionExpression"
+      )
+    ) {
+      return;
+    }
 
-      if (!callback || !t.isFunction(callback)) {
-        return;
-      }
+    const props = node.arguments?.[1];
 
-      const props = getExpression(node.arguments[1]);
+    const uid = createUID(filePath, index++);
 
-      const uid = createUID(filePath, index);
+    /*
+     * registerUseServer(
+     *   "abc123",
+     *   async ({ id }) => getUser(id)
+     * );
+     */
+    registrations.push(
+      [
+        "registerUseServer(",
+        `${JSON.stringify(uid)},`,
+        `${source(code, callback)}`,
+        ");",
+      ].join("\n"),
+    );
 
-      index++;
+    /*
+     * Replace:
+     *
+     * useServer(callback, props)
+     *
+     * with:
+     *
+     * useServer({
+     *   uid,
+     *   args
+     * })
+     */
+    const request = createServerRequest(code, props, uid);
 
-      /* ======================================================
-         Register server callback
-
-         registerUseServer(
-           "abc123",
-           async ({ id }) => getUser(id)
-         );
-         ====================================================== */
-
-      registrations.push(
-        t.expressionStatement(
-          t.callExpression(t.identifier("registerUseServer"), [
-            t.stringLiteral(uid),
-
-            t.cloneNode(callback, true),
-          ]),
-        ),
-      );
-
-      /* ======================================================
-         Replace component call
-
-         BEFORE:
-
-         useServer(
-           async ({ id }) => getUser(id),
-           { id }
-         )
-
-         AFTER:
-
-         useServer({
-           uid: "abc123",
-           args: { id }
-         })
-         ====================================================== */
-
-      const request = createServerRequest(props, uid);
-
-      const call = t.callExpression(t.identifier(useServerName), [request]);
-
-      callPath.replaceWith(call);
-
-      changed = true;
-
-      callPath.skip();
-    },
+    edits.push({
+      start: node.start!,
+      end: node.end!,
+      content: `${useServerName}(${request})`,
+    });
   });
 
-  if (!changed) {
+  if (!edits.length) {
     return null;
   }
 
-  /* ==========================================================
-     Add registerUseServer import
-     ========================================================== */
+  /*
+   * Add registerUseServer import.
+   */
+  const importEdit = createRegisterImportEdit(code, ast);
 
-  addRegisterUseServerImport(ast);
+  if (importEdit) {
+    edits.push(importEdit);
+  }
 
-  /* ==========================================================
-     Insert registrations after imports
+  /*
+   * Insert registrations after imports.
+   */
+  const importPosition = getImportInsertionPosition(ast);
 
-     import ...
+  if (registrations.length) {
+    edits.push({
+      start: importPosition,
+      end: importPosition,
+      content: `\n\n${registrations.join("\n\n")}\n`,
+    });
+  }
 
-     import ...
+  return applyEdits(code, edits, filePath);
+}
 
-     registerUseServer(...);
-     registerUseServer(...);
+/* ============================================================
+   Apply edits
+   ============================================================ */
 
-     const App = ...
-     ========================================================== */
+function applyEdits(code: string, edits: TransformEdit[], filePath: string) {
+  /*
+   * Sort backwards so source offsets
+   * remain valid.
+   */
+  edits.sort((a, b) => b.start - a.start);
 
-  let insertIndex = 0;
+  let result = code;
 
-  for (const statement of ast.program.body) {
-    if (t.isImportDeclaration(statement)) {
-      insertIndex++;
+  let lastStart = Number.POSITIVE_INFINITY;
+
+  for (const edit of edits) {
+    /*
+     * Ignore overlapping edits.
+     */
+    if (edit.end > lastStart) {
       continue;
     }
 
-    break;
+    result =
+      result.slice(0, edit.start) + edit.content + result.slice(edit.end);
+
+    lastStart = edit.start;
   }
 
-  ast.program.body.splice(insertIndex, 0, ...registrations);
-
-  /* ==========================================================
-     Generate
-     ========================================================== */
-
-  const output = generate(ast, {
-    comments: true,
-  });
-
+  /*
+   * We deliberately don't fabricate
+   * a sourcemap here.
+   *
+   * The plugin returns null below.
+   */
   return {
-    code: output.code,
-    map: output.map,
+    code: result,
+    map: null,
   };
 }
 
@@ -472,36 +549,73 @@ export default function XanixUseServer(options: Options): Plugin {
   return {
     name: "xanix-use-server",
 
-    transform(code: string, id: string) {
-      if (!/\.(js|jsx|ts|tsx)$/.test(id)) {
-        return null;
-      }
+    transform: {
+      filter: {
+        id: /^(?!.*(?:node_modules[\\/])).*\.[cm]?[jt]sx?$/,
+      },
 
-      if (id.includes("node_modules")) {
-        return null;
-      }
+      handler(code, id) {
+        const filename = id.split("?")[0];
 
-      const filename = id.split("?")[0];
+        const relativePath = normalizePath(path.relative(root, filename));
 
-      const relativePath = normalizePath(path.relative(root, filename));
+        let ast: AstNode;
 
-      const ast = parse(code, {
-        sourceType: "module",
+        try {
+          /*
+           * Rolldown/Oxc parser.
+           *
+           * This parses the original
+           * TypeScript / TSX / JSX source.
+           */
+          ast = this.parse(code, {
+            lang: getLanguage(filename),
+          }) as AstNode;
+        } catch {
+          return null;
+        }
 
-        plugins: ["typescript", "jsx", "importMeta"],
-      });
+        const useServerName = getUseServerName(ast);
 
-      const useServerName = getUseServerName(ast);
+        if (!useServerName) {
+          return null;
+        }
 
-      if (!useServerName) {
-        return null;
-      }
+        const result = options.isClient
+          ? transformClient(code, ast, relativePath, useServerName)
+          : transformServer(code, ast, relativePath, useServerName);
 
-      if (options.isClient) {
-        return transformClient(ast, relativePath, useServerName);
-      }
+        if (!result) {
+          return null;
+        }
 
-      return transformServer(ast, relativePath, useServerName) as any;
+        return {
+          code: result.code,
+          map: result.map,
+        };
+      },
     },
   };
+}
+
+/* ============================================================
+   Language
+   ============================================================ */
+
+function getLanguage(id: string): "js" | "jsx" | "ts" | "tsx" {
+  const file = id.split("?")[0];
+
+  if (file.endsWith(".tsx")) {
+    return "tsx";
+  }
+
+  if (file.endsWith(".ts")) {
+    return "ts";
+  }
+
+  if (file.endsWith(".jsx")) {
+    return "jsx";
+  }
+
+  return "js";
 }

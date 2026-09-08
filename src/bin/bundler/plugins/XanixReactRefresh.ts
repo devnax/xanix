@@ -1,15 +1,145 @@
-import type { Plugin } from "rollup";
+import type { Plugin } from "rolldown";
+
 import path from "node:path";
 import fs from "node:fs";
-
-import { parse } from "@babel/parser";
-import traverse from "@babel/traverse";
-import generate from "@babel/generator";
-import * as t from "@babel/types";
 
 import { getClientRuntimeFile } from "../../include/utils.js";
 
 const root = process.cwd();
+
+type AstNode = {
+  type?: string;
+  start?: number;
+  end?: number;
+  id?: AstNode | null;
+  name?: string;
+  init?: AstNode | null;
+  [key: string]: unknown;
+};
+
+function getLanguage(id: string): "js" | "jsx" | "ts" | "tsx" {
+  const filename = id.split("?")[0];
+
+  if (filename.endsWith(".tsx")) {
+    return "tsx";
+  }
+
+  if (filename.endsWith(".ts")) {
+    return "ts";
+  }
+
+  if (filename.endsWith(".jsx")) {
+    return "jsx";
+  }
+
+  return "js";
+}
+
+function isReactComponent(name: string): boolean {
+  return /^[A-Z][A-Za-z0-9_$]*$/.test(name);
+}
+
+function walk(node: unknown, callback: (node: AstNode) => void): void {
+  if (!node || typeof node !== "object") {
+    return;
+  }
+
+  if (Array.isArray(node)) {
+    for (const child of node) {
+      walk(child, callback);
+    }
+
+    return;
+  }
+
+  const current = node as AstNode;
+
+  callback(current);
+
+  for (const key of Object.keys(current)) {
+    if (
+      key === "parent" ||
+      key === "loc" ||
+      key === "range" ||
+      key === "tokens" ||
+      key === "comments"
+    ) {
+      continue;
+    }
+
+    const value = current[key];
+
+    if (value && typeof value === "object") {
+      walk(value, callback);
+    }
+  }
+}
+
+function collectRegistrations(program: unknown, filename: string): string[] {
+  const registrations: string[] = [];
+
+  walk(program, (node) => {
+    if (node.type === "FunctionDeclaration") {
+      const id = node.id;
+
+      if (!id || id.type !== "Identifier" || !id.name) {
+        return;
+      }
+
+      const name = id.name;
+
+      if (!isReactComponent(name)) {
+        return;
+      }
+
+      registrations.push(createRegistration(name, filename));
+
+      return;
+    }
+
+    if (node.type !== "VariableDeclarator") {
+      return;
+    }
+
+    const id = node.id;
+    const init = node.init;
+
+    if (!id || id.type !== "Identifier" || !id.name) {
+      return;
+    }
+
+    if (!init) {
+      return;
+    }
+
+    if (
+      init.type !== "ArrowFunctionExpression" &&
+      init.type !== "FunctionExpression"
+    ) {
+      return;
+    }
+
+    const name = id.name;
+
+    if (!isReactComponent(name)) {
+      return;
+    }
+
+    registrations.push(createRegistration(name, filename));
+  });
+
+  return registrations;
+}
+
+function createRegistration(name: string, filename: string): string {
+  const relative = path
+    .relative(root, filename.split("?")[0])
+    .replaceAll("\\", "/");
+
+  const componentId = `${relative}:${name}`;
+
+  return `$RefreshReg$(${name}, ${JSON.stringify(componentId)});`;
+}
 
 export default function xanixReactRefresh(webSocketPort: number): Plugin {
   return {
@@ -23,8 +153,8 @@ export default function xanixReactRefresh(webSocketPort: number): Plugin {
       const code = fs.readFileSync(id, "utf8");
 
       const refreshCode = `
-
 ${code}
+
 import * as RefreshRuntime from "react-refresh/runtime";
 
 RefreshRuntime.injectIntoGlobalHook(window);
@@ -33,8 +163,8 @@ window.$RefreshReg$ = (type, id) => {
   RefreshRuntime.register(type, id);
 };
 
-window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
-
+window.$RefreshSig$ =
+  RefreshRuntime.createSignatureFunctionForTransform;
 
 const ws = new WebSocket(
   ${JSON.stringify(`ws://localhost:${webSocketPort}`)}
@@ -47,9 +177,10 @@ ws.onmessage = async (event) => {
     if (!file.endsWith(".js")) {
       continue;
     }
-
     const url =
-      getImportUrl(file.replace(/\\.js$/, "")) +
+      getImportUrl(
+        file.replace(/\.js$/, "")
+      ) +
       "?t=" +
       Date.now();
 
@@ -68,108 +199,41 @@ ws.onmessage = async (event) => {
       };
     },
 
-    transform(code, id) {
-      const resolvedId = path.resolve(id);
+    transform: {
+      filter: {
+        id: /^(?!.*node_modules[\\/]).*\.[cm]?[jt]sx?$/,
+      },
 
-      if (resolvedId === getClientRuntimeFile()) {
-        return null;
-      }
+      handler(code, id) {
+        const resolvedId = path.resolve(id);
 
-      if (id.includes("node_modules")) {
-        return null;
-      }
+        if (resolvedId === getClientRuntimeFile()) {
+          return null;
+        }
 
-      if (!/\.(tsx?|jsx?)$/.test(id)) {
-        return null;
-      }
+        const filename = id.split("?")[0];
 
-      const ast = parse(code, {
-        sourceType: "module",
-        plugins: ["typescript", "jsx"],
-      });
+        if (!/\.(tsx?|jsx?)$/.test(filename)) {
+          return null;
+        }
 
-      const registrations: t.Statement[] = [];
+        const program = this.parse(code, {
+          lang: getLanguage(filename),
+        });
 
-      traverse(ast, {
-        FunctionDeclaration(path) {
-          const node = path.node;
+        const registrations = collectRegistrations(program, filename);
 
-          if (!node.id) {
-            return;
-          }
+        if (registrations.length === 0) {
+          return null;
+        }
 
-          const name = node.id.name;
+        const registrationCode = `\n\n${registrations.join("\n")}\n`;
 
-          if (!isReactComponent(name)) {
-            return;
-          }
-
-          registrations.push(createRegistration(name, id));
-        },
-
-        VariableDeclarator(path) {
-          const node = path.node;
-
-          if (!t.isIdentifier(node.id)) {
-            return;
-          }
-
-          const name = node.id.name;
-
-          if (!isReactComponent(name)) {
-            return;
-          }
-
-          if (
-            !t.isArrowFunctionExpression(node.init) &&
-            !t.isFunctionExpression(node.init)
-          ) {
-            return;
-          }
-
-          registrations.push(createRegistration(name, id));
-        },
-      });
-
-      if (registrations.length === 0) {
-        return null;
-      }
-
-      ast.program.body.push(...registrations);
-
-      const result = generate(
-        ast,
-        {
-          sourceMaps: true,
-          sourceFileName: id,
-        },
-        code,
-      );
-
-      return {
-        code: result.code,
-        map: result.map,
-      } as any;
+        return {
+          code: code + registrationCode,
+          map: null,
+        };
+      },
     },
   };
-}
-
-function isReactComponent(name: string): boolean {
-  return /^[A-Z][A-Za-z0-9_$]*$/.test(name);
-}
-
-function createRegistration(
-  name: string,
-  filename: string,
-): t.ExpressionStatement {
-  const relative = path.relative(root, filename).replaceAll("\\", "/");
-
-  const componentId = `${relative}:${name}`;
-
-  return t.expressionStatement(
-    t.callExpression(t.identifier("$RefreshReg$"), [
-      t.identifier(name),
-      t.stringLiteral(componentId),
-    ]),
-  );
 }
