@@ -2,6 +2,10 @@ import React, { Suspense, useMemo, useState } from "react";
 import { navigate, useSearchParams, useCookies, useServer } from "xanix";
 import Chunk from "./Chunk";
 import Button from "@xanui/ui/Button";
+import IconButton from "@xanui/ui/IconButton";
+import Avatar from "@xanui/ui/Avatar";
+import Person from "@xanui/icons/Person";
+import BaselineAddChartIcon from "@iconify-react/ic/baseline-add-chart";
 
 const Show = () => {
   const params = useSearchParams();
@@ -14,23 +18,6 @@ const Show = () => {
     </div>
   );
 };
-
-const sleep = (ms: number) =>
-  new Promise((resolve) => setTimeout(() => resolve({ name: "Nax" }), ms));
-
-// const Data = ({ name }: any) => {
-//   const d = useServer(
-//     async ({ name }) => {
-//       console.log(name);
-
-//       return {
-//         name,
-//       };
-//     },
-//     { name },
-//   );
-//   return <div>data: {d.data.name}</div>;
-// };
 
 const HomePage = ({ another, category }: any) => {
   const [n, setN] = useState("Nax");
@@ -60,7 +47,10 @@ const HomePage = ({ another, category }: any) => {
   return (
     <div>
       <Chunk />
-      <Button>Nice</Button>
+      <Avatar src="" />
+      <BaselineAddChartIcon height="1em" />
+      {/* <Button>Nice</Button> */}
+      {/* <IconButton /> */}
       <div>Server Data: {d.data.name}</div>
       <button
         onClick={() => {

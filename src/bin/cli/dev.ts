@@ -66,7 +66,7 @@ function runStart(): Promise<void> {
 
 async function startServer() {
   await runStart();
-  await curl();
+  // await curl();
 }
 
 const dev = async (rootEntry: string) => {
@@ -128,12 +128,16 @@ const dev = async (rootEntry: string) => {
       );
       await clientWatcher(entries);
     },
-    onChange: async (files) => {
+    onChange: async (files, duration) => {
+      logger.info(
+        `${pc.yellow(files.join(", "))} ${pc.green(duration + "ms")}`,
+        "[update]",
+      );
+
       await startServer();
       if (clientChangeFiles.length) {
         broadcast(JSON.stringify(clientChangeFiles));
       }
-      logger.info(`${pc.yellow(files.join(", "))}`, "[update]");
 
       clientChangeFiles = [];
     },

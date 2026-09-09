@@ -38,24 +38,25 @@ const client = (
 };
 
 const server = (opt: Options): OutputOptions => {
-  return {
+  const options: OutputOptions = {
     dir: outdirs.server,
     format: "esm",
-    sourcemap: opt.isDev ?? true,
+
     entryFileNames: "[name].js",
     chunkFileNames: "chunks/[name].js",
     assetFileNames: "assets/[name][extname]",
-    // manualChunks(id) {
-    //   const filename = path.basename(id);
-    //   return filename.split(".")[0];
-
-    //   return "vendor";
-
-    //   if (id.includes("virtual:xanix-document")) {
-    //     return "vendor";
-    //   }
-    // },
   };
+
+  if (opt.isDev) {
+    options.sourcemap = true;
+    options.preserveModules = true;
+    options.preserveModulesRoot = process.cwd();
+  } else {
+    options.chunkFileNames = "chunks/[hash].js";
+    options.assetFileNames = "assets/[name][extname]";
+  }
+
+  return options;
 };
 
 const bundlerOutput = {

@@ -49,6 +49,7 @@
     "ws": "^8.21.3"
   },
   "devDependencies": {
+    "@iconify-react/ic": "^1.0.2",
     "@types/express": "^5.0.6",
     "@types/node": "^26.2.0",
     "@types/prompts": "^2.4.9",

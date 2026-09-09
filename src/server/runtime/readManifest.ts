@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import outdirs from "../../outdirs";
+import outdirs from "../../outdirs.js";
 
 interface XanixManifestEntry {
   id: string;

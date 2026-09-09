@@ -16,9 +16,11 @@ import { xanixDefaultPlugins } from "./plugins/plugins.js";
 import outdirs from "../../outdirs.js";
 import loadEnv from "./config/loadEnv.js";
 import XanixCache from "./plugins/XanixResolveCacheDeps/index.js";
+import path from "node:path";
+import { tsconfigPathsMatcher } from "./plugins/XanixTsconfigAlias.js";
 
 type Option = {
-  onChange?: (files: string[]) => void;
+  onChange?: (files: string[], duration: number) => void;
   onBuildEnd?: (duration: number) => void;
   onReady?: () => Promise<void>;
   onCachedStart?: () => void;
@@ -50,6 +52,8 @@ const WatchClient = async (
   // let clientCache = await BuildClientCache(entries);
   // options.onCachedEnd?.();
 
+  let watchingMode = false;
+
   const watcher = watch({
     input,
     treeshake: true,
@@ -69,28 +73,14 @@ const WatchClient = async (
       }),
     },
     plugins: [
-      XanixCache({
-        cacheDir: ".xanix/cache",
-        define: await loadEnv({
-          mode: "development",
-          isClient: true,
-        }),
-
-        // debug: true,
-      }),
-      // vendorRedirectPlugin(map),
-      // XanixResolveCacheDeps({
-      //   // debug: true,
+      // XanixCache({
+      //   cacheDir: ".xanix/cache",
       //   define: await loadEnv({
       //     mode: "development",
       //     isClient: true,
       //   }),
-      //   isExternal: (id: string) => {
-      //     const neverCache = new Set<string>([]);
-      //     return !neverCache.has(id);
-      //   },
-      //   cacheDir: path.resolve(outdirs.server, "cache"),
-      //   publicPath: "/.xanix/cache/",
+
+      //   // debug: true,
       // }),
 
       ...xanixDefaultPlugins({
@@ -124,17 +114,18 @@ const WatchClient = async (
     changedFiles.add(buildFile);
   });
 
+  let duration = 0;
   watcher.on("event", async (event) => {
     switch (event.code) {
       case "BUNDLE_START":
         break;
       case "BUNDLE_END":
-        console.log("[client] build ended in", event.duration, "ms");
+        duration = event.duration;
         options.onBuildEnd?.(event.duration);
         break;
       case "END":
         if (changedFiles.size && options.onChange) {
-          options.onChange(Array.from(changedFiles));
+          options.onChange(Array.from(changedFiles), duration);
           changedFiles.clear();
         }
         if (!isReady) {
