@@ -44,7 +44,6 @@ function createXanixServer({ mode }: Options): express.Express {
     app.use(`/${outdirs.client}`, express.static(`${outdirs.client}`));
     app.use(`/assets`, express.static(outdirs.assets));
     app.use(`/${outdirs.cache}`, express.static(`${outdirs.cache}`));
-    // app.use(`/.xanix/cached`, express.static(`${outdirs.cache}`));
   } else {
     app.use(
       `/${outdirs.client}`,

@@ -48,7 +48,7 @@ const HomePage = ({ another, category }: any) => {
     <div>
       <Chunk />
       <Avatar src="" />
-      <BaselineAddChartIcon height="1em" />
+      {/* <BaselineAddChartIcon height="1em" /> */}
       {/* <Button>Nice</Button> */}
       {/* <IconButton /> */}
       <div>Server Data: {d.data.name}</div>
