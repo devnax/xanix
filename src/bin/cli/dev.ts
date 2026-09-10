@@ -126,7 +126,7 @@ const dev = async (rootEntry: string) => {
       spinner.stop(
         `${pc.green("✓")} Server compiled in ${pc.dim(serverDuration + "ms")}`,
       );
-      await clientWatcher(entries);
+      // await clientWatcher(entries);
     },
     onChange: async (files) => {
       await startServer();

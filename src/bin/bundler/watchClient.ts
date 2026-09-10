@@ -12,6 +12,7 @@ import {
 import { xanixDefaultPlugins } from "./plugins/plugins.js";
 import outdirs from "../../outdirs.js";
 import XanixCachedDeps from "./plugins/XanixCacheDeps.js";
+import XanixCache from "./cache.js";
 // import XanixCachedDeps from "./plugins/XanixCachedDeps.js";
 
 type Option = {
@@ -53,13 +54,17 @@ const WatchClient = async (
     plugins: [
       // vendorRedirectPlugin(map),
       // XanixResolveCacheDeps(clientCache, entries),
+      // XanixCache({
+      //   cacheDir: "./.xanix/cache",
+      //   define: {},
+      // }),
       ...xanixDefaultPlugins({
         WebSocketPort: options.WebSocketPort,
         target: "client",
         development: true,
         assetExternal: true,
       }),
-      XanixCachedDeps(),
+      // XanixCachedDeps(),
     ],
     output: bundlerOutput.client(entries, { isDev: true }),
     watch: {

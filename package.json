@@ -48,14 +48,15 @@
     "express": "^5.2.1",
     "picocolors": "^1.1.1",
     "react-refresh": "^0.18.0",
-    "rollup": "^4.62.5",
+    "rollup": "^4.63.1",
     "rollup-plugin-esbuild": "^6.2.1",
     "tslib": "^2.8.1",
     "typescript": "^5.9.3",
     "ws": "^8.21.3"
   },
   "devDependencies": {
-    "@rolldown/binding-darwin-arm64": "^1.2.7",
+    "@iconify-react/ant-design": "^1.0.6",
+    "@iconify-react/ic": "^1.0.2",
     "@types/babel__core": "^7.20.5",
     "@types/express": "^5.0.6",
     "@types/node": "^26.2.0",

@@ -9,7 +9,53 @@ import { entriesEqual } from "../include/entry.js";
 import { xanixDefaultPlugins } from "./plugins/plugins.js";
 import outdirs from "../../outdirs.js";
 import { normalizePath } from "../include/utils.js";
+import { builtinModules } from "node:module";
+import { tsconfigPathsMatcher } from "./plugins/XanixTsconfigAlias.js";
 const root = process.cwd();
+const nodeBuiltins = new Set(builtinModules);
+
+function isNodeBuiltin(id: string): boolean {
+  const normalized = id.startsWith("node:") ? id.slice(5) : id;
+  return nodeBuiltins.has(normalized);
+}
+
+const forcedExternalPackages = new Set(["express"]);
+
+function packageNameOf(id: string): string {
+  const parts = id.split("/");
+
+  if (id.startsWith("@")) {
+    return parts.slice(0, 2).join("/");
+  }
+
+  return parts[0];
+}
+
+function shouldExternal(id: string): boolean {
+  if (
+    id.startsWith(".") ||
+    path.isAbsolute(id) ||
+    id.startsWith("xanix") ||
+    id === "virtual:xanix-document" ||
+    tsconfigPathsMatcher(id)
+  ) {
+    return false;
+  }
+
+  if (id.startsWith("\0")) {
+    return false;
+  }
+
+  if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(id) && !id.startsWith("node:")) {
+    return false;
+  }
+
+  if (isNodeBuiltin(id)) {
+    return true;
+  }
+
+  return forcedExternalPackages.has(packageNameOf(id));
+}
 
 export type WatcherOptions = {
   rootEntry: string;

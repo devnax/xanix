@@ -83,6 +83,7 @@ export function xanixDefaultPlugins(options: XanixRollupOptions): Plugin[] {
     ..._plugins,
 
     esbuild({
+      include: /\.(?:js|jsx|ts|tsx|mjs|cjs|mts|cts)$/,
       target: isClient ? "es2022" : "node20",
       jsx: "automatic",
       tsconfig: false,

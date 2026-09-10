@@ -1,6 +1,8 @@
 import React, { Suspense, useMemo, useState } from "react";
 import { navigate, useSearchParams, useCookies, useServer } from "xanix";
 import Chunk from "./Chunk";
+import HomeFilledIcon from "@iconify-react/ant-design/home-filled";
+import BaselineAddChartIcon from "@iconify-react/ic/baseline-add-chart";
 
 const Show = () => {
   const params = useSearchParams();
@@ -55,9 +57,12 @@ const HomePage = ({ another, category }: any) => {
   useMemo(() => {
     cookie.set("name", "John Doe");
   }, []);
+
   if (d.loading) return <div>Loading...</div>;
   return (
     <div>
+      {/* <HomeFilledIcon /> */}
+      {/* <BaselineAddChartIcon /> */}
       <Chunk />
       <div>Server Data: {d.data.name}</div>
       <button
