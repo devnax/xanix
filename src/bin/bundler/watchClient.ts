@@ -12,7 +12,7 @@ import {
 import { xanixDefaultPlugins } from "./plugins/plugins.js";
 import outdirs from "../../outdirs.js";
 import XanixCachedDeps from "./plugins/XanixCacheDeps.js";
-import XanixCache from "./cache.js";
+import XanixCache from "./Cache.js";
 // import XanixCachedDeps from "./plugins/XanixCachedDeps.js";
 
 type Option = {
