@@ -49,8 +49,8 @@ const server = (opt: Options): OutputOptions => {
 
   if (opt.isDev) {
     options.sourcemap = true;
-    options.preserveModules = true;
-    options.preserveModulesRoot = process.cwd();
+    // options.preserveModules = true;
+    // options.preserveModulesRoot = process.cwd();
   } else {
     options.chunkFileNames = "chunks/[hash].js";
     options.assetFileNames = "assets/[name][extname]";
