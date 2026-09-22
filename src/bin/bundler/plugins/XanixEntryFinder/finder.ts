@@ -187,19 +187,12 @@ export function entryFinder(code: string, id: string): XanixClientEntry[] {
 
       const normalizedFile = normalizePath(componentFile);
       const clientId = createClientId(normalizedFile);
-      const root = process.cwd();
-      const relativeSource = path.relative(root, componentFile);
-      const parsed = path.parse(relativeSource);
-      const buildPath = normalizePath(
-        path.resolve(root, outdirs.root, parsed.dir, `${parsed.name}.js`),
-      );
 
       const entry: XanixClientEntry = {
         id: clientId,
         name: componentName,
         file: normalizedFile,
         path: componentImportPath,
-        // build: buildPath,
         export: componentImport.export,
       };
 

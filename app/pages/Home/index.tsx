@@ -3,6 +3,9 @@ import { navigate, useSearchParams, useCookies, useServer } from "xanix";
 import Chunk from "./Chunk";
 import HomeFilledIcon from "@iconify-react/ant-design/home-filled";
 import BaselineAddChartIcon from "@iconify-react/ic/baseline-add-chart";
+import Wellcome from "./Wellcome";
+import Button from "@xanui/ui/Button";
+import Avatar from "@xanui/ui/Avatar";
 
 const Show = () => {
   const params = useSearchParams();
@@ -33,6 +36,8 @@ const sleep = (ms: number) =>
 //   return <div>data: {d.data.name}</div>;
 // };
 
+const wellcome = new Wellcome();
+
 const HomePage = ({ another, category }: any) => {
   const [n, setN] = useState("Nax");
 
@@ -45,7 +50,7 @@ const HomePage = ({ another, category }: any) => {
     {
       name: n,
       cache: {
-        ttl: 5000, // example TTL value in milliseconds
+        ttl: 5000,
       },
     },
   );
@@ -61,16 +66,18 @@ const HomePage = ({ another, category }: any) => {
   if (d.loading) return <div>Loading...</div>;
   return (
     <div>
+      <div>{wellcome.message()} ho</div>
       {/* <HomeFilledIcon /> */}
-      {/* <BaselineAddChartIcon /> */}
+      <Avatar />
+      <BaselineAddChartIcon />
       <Chunk />
-      <div>Server Data: {d.data.name}</div>
+      <div>Server Data: {d.data.name} </div>
       <button
         onClick={() => {
           setN(Math.random().toString());
         }}
       >
-        change name
+        change namex
       </button>
       <Show />
       Home Page {params.toString()} Name: {name}
@@ -88,13 +95,13 @@ const HomePage = ({ another, category }: any) => {
       >
         About Page
       </button>
-      <button
+      <Button
         onClick={() => {
           cookie.set("name", "Well");
         }}
       >
         Set Cookie
-      </button>
+      </Button>
     </div>
   );
 };

@@ -1,8 +1,5 @@
 import type { Plugin } from "rollup";
-import fs from "node:fs";
 import { transformer } from "./transformer.js";
-import path from "node:path";
-import outdirs from "../../../../outdirs.js";
 
 export default function XanixPageTransform(): Plugin {
   const entries = new Map();

@@ -1,80 +1,195 @@
 import { Plugin, rollup } from "rollup";
 import { xanixDefaultPlugins } from "./plugins/plugins.js";
-import { pathToFileURL } from "node:url";
 import path from "path";
+import fs from "fs";
 
 const makeFilename = (id: string) => {
   let root = process.cwd().replace(/\\/g, "/").replace(/\/+/g, "/");
   id = id
     .trim()
     .replace(/\\/g, "/")
-    .replace(/\/+/g, "/")
+    .replace(/\/+/g, "-")
     .replace(`${root}/`, "")
     .replace("node_modules/", "")
     .toLowerCase()
-    // .replace(/\/index\.(js|ts|tsx)$/, "")
-    .replace(/\.(js|ts|tsx)$/, "");
-  // .replace(/[^a-zA-Z0-9_$]/g, "-");
+    .split("?")[0];
   return id;
 };
 
-const makeEsmShim = async (resolved: string): Promise<string> => {
-  let namedExports: string[] = [];
-  let hasDefault = false;
-  try {
-    const mod = await import(pathToFileURL(resolved).href);
-    hasDefault =
-      mod &&
-      (typeof mod === "object" || typeof mod === "function") &&
-      "default" in mod;
-    namedExports = Object.keys(mod).filter(
-      (key) => key !== "__esModule" && key !== "default",
-    );
-  } catch (err) {
-    console.warn(`[cache-deps] failed to inspect ${resolved}:`, err);
+function isPackageImport(source: string) {
+  // Relative import
+  if (source.startsWith("./") || source.startsWith("../")) {
+    return false;
   }
-
-  const lines = [`import * as __mod from ${JSON.stringify(resolved)};`];
-  lines.push(
-    hasDefault ? `export default __mod.default;` : `export default __mod;`,
-  );
-
-  for (const exportName of namedExports) {
-    if (/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(exportName)) {
-      lines.push(
-        `export const ${exportName} = __mod[${JSON.stringify(exportName)}];`,
-      );
-    }
+  // Absolute filesystem path
+  if (source.startsWith("/") || /^[A-Za-z]:[\\/]/.test(source)) {
+    return false;
   }
+  // URL / virtual module
+  if (
+    source.startsWith("node:") ||
+    source.includes(":") ||
+    source.startsWith("\0")
+  ) {
+    return false;
+  }
+  // Everything else is a bare package specifier
+  return true;
+}
 
-  return lines.join("\n");
+const writeManifest = async (cached: Map<string, string>) => {
+  const file = path.resolve("node_modules/xanix-cache/manifest.json");
+  let manifest: any = {};
+  console.log(cached);
+
+  for (const [key, value] of cached.entries()) {
+    manifest[key] = value;
+  }
+  await fs.promises.writeFile(file, JSON.stringify(manifest, null, 2));
+};
+
+const readManifest = async () => {
+  const file = path.resolve("node_modules/xanix-cache/manifest.json");
+  if (!fs.existsSync(file)) {
+    return new Map();
+  }
+  const content = await fs.promises.readFile(file, "utf-8");
+  const parsed = JSON.parse(content);
+  const map = new Map(Object.entries(parsed));
+  return map;
 };
 
 const externalResolver = (): Plugin => {
-  const cache: Record<string, string> = {};
+  let initialBuild = false;
+  const cache = new Map();
+
   return {
     name: "externalResolver",
+
+    async buildStart() {
+      if (initialBuild) {
+        return;
+      }
+      initialBuild = true;
+      const cacheDir = path.resolve("node_modules/xanix-cache");
+
+      if (!fs.existsSync(cacheDir)) {
+        fs.mkdirSync(cacheDir, { recursive: true });
+        fs.writeFileSync(
+          path.join(cacheDir, "package.json"),
+          JSON.stringify({ type: "module" }),
+        );
+      }
+    },
     async resolveId(source, importer) {
-      if (!source.includes("react")) {
+      if (!importer) {
+        return null;
+      }
+
+      if (source.startsWith("xanix-cache")) {
+        return {
+          id: source,
+          external: true,
+        };
+      }
+
+      if (importer.includes("node_modules")) {
+        return null;
+      }
+
+      if (source.startsWith("xanix")) {
+        return null;
+      }
+
+      if (!isPackageImport(source)) {
         return null;
       }
 
       const name = makeFilename(source);
+      cache.set(source, name);
+      return {
+        id: `xanix-cache/${name}.js`,
+        external: true,
+      };
+    },
 
-      if (cache[source]) {
-        // return {
-        //   id: path.resolve("node_modules/xanix-cache", `${cache[source]}.js`),
-        //   external: "absolute",
-        // };
+    transform(code) {
+      let changed = false;
+
+      const transformed = code.replace(
+        /import\s*\{([^}]+)\}\s*from\s*(['"])([^'"]+)\2\s*;?/g,
+        (match, imports: string, quote: string, source: string) => {
+          if (source.startsWith("xanix")) {
+            return match;
+          }
+          if (!isPackageImport(source)) {
+            return match;
+          }
+
+          const cleanSource = source.split("?")[0];
+          const name = makeFilename(cleanSource);
+          cache.set(cleanSource, name);
+          changed = true;
+
+          const localName = `_${name.replace(/[^a-zA-Z0-9_$]/g, "_")}`;
+
+          const declarations = imports
+            .split(",")
+            .map((item: string) => {
+              const [imported, local] = item
+                .trim()
+                .split(/\s+as\s+/)
+                .map((x) => x.trim());
+
+              return local ? `${imported}: ${local}` : imported;
+            })
+            .join(", ");
+
+          return [
+            `import ${localName} from ${quote}xanix-cache/${name}.js${quote};`,
+            `const { ${declarations} } = ${localName};`,
+          ].join("\n");
+        },
+      );
+
+      if (!changed) {
+        return null;
+      }
+      return {
+        code: transformed,
+        map: null,
+      };
+    },
+
+    async generateBundle() {
+      let manifest = await readManifest();
+      let changed = false;
+      const input: Record<string, string> = {};
+
+      for (const [source, name] of cache.entries()) {
+        input[name] = source;
+        if (!manifest.has(source)) {
+          manifest.set(source, name);
+          changed = true;
+        }
+      }
+
+      if (!changed) {
+        return;
       }
 
       const build = await rollup({
-        input: {
-          [name]: source,
+        input,
+        onwarn(warning, warn) {
+          if (
+            warning.code === "MODULE_LEVEL_DIRECTIVE" &&
+            warning.message.includes('"use client"')
+          ) {
+            return;
+          }
+
+          warn(warning);
         },
-        // external: (id) => {
-        //   return true;
-        // },
         plugins: [
           ...xanixDefaultPlugins({
             target: "server",
@@ -83,6 +198,7 @@ const externalResolver = (): Plugin => {
           }),
         ],
       });
+
       await build.write({
         dir: "node_modules/xanix-cache",
         format: "esm",
@@ -90,53 +206,7 @@ const externalResolver = (): Plugin => {
       });
 
       await build.close();
-
-      cache[source] = name;
-
-      return {
-        id: "xanix-cache:" + name,
-        // external: true,
-      };
-    },
-
-    async transform(code, id) {
-      //replace all imports virtual: with xanix-cache/
-
-      code = code.replaceAll("xanix-cache:", "xanix-cache/");
-
-      const entry = path.resolve(process.cwd(), `index.tsx`);
-      if (code.includes("xanix-cache:")) {
-        console.log(code);
-      }
-
-      return {
-        code,
-        map: null,
-      };
-    },
-    async generateBundle() {
-      // You can use the ids array here if needed
-      // const input: any = {};
-      // for (const { source: id } of deps) {
-      //   const filename = makeFilename(id);
-      //   input[filename] = id;
-      // }
-      // const build = await rollup({
-      //   input,
-      //   plugins: [
-      //     ...xanixDefaultPlugins({
-      //       target: "server",
-      //       development: true,
-      //       assetExternal: true,
-      //     }),
-      //   ],
-      // });
-      // await build.write({
-      //   dir: ".xanix/cache",
-      //   format: "esm",
-      //   exports: "named",
-      //   entryFileNames: "[name].js",
-      // });
+      await writeManifest(manifest);
     },
   };
 };

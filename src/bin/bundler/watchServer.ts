@@ -111,14 +111,14 @@ const watchServer = async ({
       externalResolver(),
     ],
 
-    // external(id) {
-    //   return shouldExternal(id);
-    //   if (!external(id)) {
-    //     return false;
-    //   }
+    external(id) {
+      return shouldExternal(id);
+      // if (!external(id)) {
+      //   return false;
+      // }
 
-    //   return true;
-    // },
+      // return true;
+    },
 
     output: {
       ...bundlerOutput.server({ isDev: true }),
@@ -138,6 +138,8 @@ const watchServer = async ({
   watcher.on("event", async (event) => {
     switch (event.code) {
       case "BUNDLE_END":
+        console.log(event.duration);
+
         onBuildEnd?.(event.duration);
         break;
       case "END":
