@@ -37,25 +37,24 @@ const client = (
   return opt;
 };
 
-const server = (opt: Options): OutputOptions => {
-  return {
+const server = ({ isDev }: Options): OutputOptions => {
+  const opt: OutputOptions = {
     dir: outdirs.server,
     format: "esm",
-    sourcemap: opt.isDev ?? true,
+    sourcemap: isDev ?? true,
     entryFileNames: "[name].js",
     chunkFileNames: "chunks/[name].js",
     assetFileNames: "assets/[hash][extname]",
-    // manualChunks(id) {
-    //   const filename = path.basename(id);
-    //   return filename.split(".")[0];
-
-    //   return "vendor";
-
-    //   if (id.includes("virtual:xanix-document")) {
-    //     return "vendor";
-    //   }
-    // },
   };
+
+  if (isDev) {
+    opt.preserveModules = true;
+    opt.preserveModulesRoot = process.cwd();
+  } else {
+    opt.chunkFileNames = "chunks/[hash].js";
+    opt.assetFileNames = "assets/[name]-[hash][extname]";
+  }
+  return opt;
 };
 
 const bundlerOutput = {

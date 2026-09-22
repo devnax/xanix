@@ -11,6 +11,7 @@ import outdirs from "../../outdirs.js";
 import { normalizePath } from "../include/utils.js";
 import { builtinModules } from "node:module";
 import { tsconfigPathsMatcher } from "./plugins/XanixTsconfigAlias.js";
+import externalResolver from "./externalResolver.js";
 const root = process.cwd();
 const nodeBuiltins = new Set(builtinModules);
 
@@ -19,7 +20,7 @@ function isNodeBuiltin(id: string): boolean {
   return nodeBuiltins.has(normalized);
 }
 
-const forcedExternalPackages = new Set(["express"]);
+const forcedExternalPackages = new Set();
 
 function packageNameOf(id: string): string {
   const parts = id.split("/");
@@ -91,23 +92,37 @@ const watchServer = async ({
   const watcher = watch({
     input,
     treeshake: true,
+    onwarn(warning, warn) {
+      if (
+        warning.code === "MODULE_LEVEL_DIRECTIVE" &&
+        warning.message.includes('"use client"')
+      ) {
+        return;
+      }
+
+      warn(warning);
+    },
     plugins: [
       ...xanixDefaultPlugins({
         target: "server",
         development: true,
         assetExternal: false,
       }),
+      externalResolver(),
     ],
 
-    external(id) {
-      if (!external(id)) {
-        return false;
-      }
+    // external(id) {
+    //   return shouldExternal(id);
+    //   if (!external(id)) {
+    //     return false;
+    //   }
 
-      return true;
+    //   return true;
+    // },
+
+    output: {
+      ...bundlerOutput.server({ isDev: true }),
     },
-
-    output: bundlerOutput.server({ isDev: true }),
     watch: {
       clearScreen: false,
     },

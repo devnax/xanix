@@ -11,9 +11,8 @@ import {
 } from "../include/utils.js";
 import { xanixDefaultPlugins } from "./plugins/plugins.js";
 import outdirs from "../../outdirs.js";
-import XanixCachedDeps from "./plugins/XanixCacheDeps.js";
+// import XanixCachedDeps from "./plugins/XanixCacheDeps.js";
 import XanixCache from "./Cache.js";
-// import XanixCachedDeps from "./plugins/XanixCachedDeps.js";
 
 type Option = {
   onChange?: (files: string[]) => void;
@@ -52,7 +51,6 @@ const WatchClient = async (
     input,
     treeshake: true,
     plugins: [
-      // vendorRedirectPlugin(map),
       // XanixResolveCacheDeps(clientCache, entries),
       // XanixCache({
       //   cacheDir: "./.xanix/cache",
@@ -95,8 +93,6 @@ const WatchClient = async (
       case "BUNDLE_START":
         break;
       case "BUNDLE_END":
-        console.log(event.duration);
-
         options.onBuildEnd?.(event.duration);
         break;
       case "END":

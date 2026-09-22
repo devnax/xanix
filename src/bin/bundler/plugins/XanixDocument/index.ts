@@ -40,9 +40,8 @@ export default function xanixDocument(): Plugin {
 
       // Detect common metadata export forms.
       const hasMetadata =
-        /\bexport\s+(?:const|let|var|function|class)\s+metadata\b/.test(
-          source,
-        ) || /\bexport\s*\{\s*[^}]*\bmetadata\b[^}]*\}/.test(source);
+        /\bexport\s+(?:const|let|var)\s+metadata\b/.test(source) ||
+        /\bexport\s*\{\s*[^}]*\bmetadata\b[^}]*\}/.test(source);
 
       if (hasMetadata) {
         return `

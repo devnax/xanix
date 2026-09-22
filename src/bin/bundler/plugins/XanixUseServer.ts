@@ -488,7 +488,7 @@ export default function XanixUseServer(options: Options): Plugin {
       const ast = parse(code, {
         sourceType: "module",
 
-        plugins: ["typescript", "jsx", "importMeta"],
+        plugins: ["typescript", "jsx"],
       });
 
       const useServerName = getUseServerName(ast);
