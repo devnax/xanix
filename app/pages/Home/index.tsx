@@ -47,8 +47,8 @@ const HomePage = ({ another, category }: any) => {
   return (
     <div>
       <Chunk />
-      <Avatar src="" />
-      {/* <BaselineAddChartIcon height="1em" /> */}
+      {/* <Avatar /> */}
+      <BaselineAddChartIcon height="1em" />
       {/* <Button>Nice</Button> */}
       {/* <IconButton /> */}
       <div>Server Data: {d.data.name}</div>
@@ -71,7 +71,7 @@ const HomePage = ({ another, category }: any) => {
           navigate("/about");
         }}
       >
-        About Page
+        About Pages
       </button>
       <button
         onClick={() => {

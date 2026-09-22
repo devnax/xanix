@@ -13,6 +13,7 @@ import { normalizePath } from "../include/utils.js";
 import loadEnv from "./config/loadEnv.js";
 import { builtinModules } from "node:module";
 import { tsconfigPathsMatcher } from "./plugins/XanixTsconfigAlias.js";
+import externalResolver from "./externalResolver.js";
 
 const root = process.cwd();
 
@@ -99,16 +100,13 @@ const watchServer = async ({
 
   const watcher = watch({
     input,
-
     treeshake: true,
-
     platform: "node",
 
     tsconfig: true,
 
     resolve: {
       extensions: [".mjs", ".js", ".jsx", ".json", ".ts", ".tsx"],
-
       conditionNames: ["node", "import", "module", "default"],
     },
 
@@ -131,6 +129,7 @@ const watchServer = async ({
         development: true,
         assetExternal: false,
       }),
+      externalResolver(),
     ],
 
     external(id) {
@@ -144,46 +143,6 @@ const watchServer = async ({
         return false;
       }
 
-      if (id.startsWith("\0")) {
-        return false;
-      }
-
-      /*
-       * Keep Node built-ins external.
-       *
-       * Examples:
-       * node:fs
-       * node:path
-       * fs
-       * path
-       * crypto
-       * http
-       */
-      if (isNodeBuiltin(id)) {
-        return true;
-      }
-
-      /*
-       * Explicit packages that should remain external.
-       */
-      if (shouldExternal(id)) {
-        return true;
-      }
-
-      /*
-       * Everything installed in node_modules is bundled.
-       */
-      const packageName = packageNameOf(id);
-
-      const nodeModulePath = path.resolve(root, "node_modules", packageName);
-
-      if (fs.existsSync(nodeModulePath)) {
-        return false;
-      }
-
-      /*
-       * Unknown bare imports stay external.
-       */
       return true;
     },
 
