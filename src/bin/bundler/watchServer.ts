@@ -129,10 +129,11 @@ const watchServer = async ({
         development: true,
         assetExternal: false,
       }),
-      externalResolver(),
+      // externalResolver(),
     ],
 
     external(id) {
+      return isNodeBuiltin(id);
       if (
         id.startsWith(".") ||
         path.isAbsolute(id) ||
@@ -142,6 +143,7 @@ const watchServer = async ({
       ) {
         return false;
       }
+      console.log(id);
 
       return true;
     },
