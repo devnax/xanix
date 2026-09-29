@@ -1,5 +1,7 @@
 import type { Plugin } from "rollup";
 import { transformer } from "./transformer.js";
+import { parseSync } from "oxc-parser";
+import { walk } from "oxc-walker";
 
 export default function XanixPageTransform(): Plugin {
   const entries = new Map();
@@ -12,10 +14,22 @@ export default function XanixPageTransform(): Plugin {
     buildStart() {
       entries.clear();
     },
+
     async transform(code, id) {
-      if (id.includes("node_modules") || !/\.(tsx?|jsx?)$/.test(id)) {
+      const hasXanixPage = /\b[A-Za-z_$][\w$]*\s*\.\s*send\s*\(\s*</.test(code);
+      if (!/\.(tsx?|jsx?)$/.test(id) || !hasXanixPage) {
         return null;
       }
+
+      // console.log(id);
+
+      const ast = parseSync(id, code, {
+        sourceType: "module",
+      });
+
+      walk(ast.program, {
+        enter(node) {},
+      });
 
       const result = transformer(code, id);
       if (!result) {

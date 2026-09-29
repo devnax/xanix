@@ -2,8 +2,6 @@ import { watch, type InputOption, type RollupWatcher } from "rollup";
 import bundlerOutput from "./config/output.js";
 import fs from "node:fs";
 import { XanixClientEntry } from "../types.js";
-import BuildClientCache from "./plugins/XanixResolveCacheDeps/BuildClientCache.js";
-import XanixResolveCacheDeps from "./plugins/XanixResolveCacheDeps/index.js";
 import {
   getClientRuntimeFile,
   getClientRuntimeFileName,
@@ -11,8 +9,6 @@ import {
 } from "../include/utils.js";
 import { xanixDefaultPlugins } from "./plugins/plugins.js";
 import outdirs from "../../outdirs.js";
-// import XanixCachedDeps from "./plugins/XanixCacheDeps.js";
-import XanixCache from "./Cache.js";
 
 type Option = {
   onChange?: (files: string[]) => void;
@@ -51,18 +47,12 @@ const WatchClient = async (
     input,
     treeshake: true,
     plugins: [
-      // XanixResolveCacheDeps(clientCache, entries),
-      // XanixCache({
-      //   cacheDir: "./.xanix/cache",
-      //   define: {},
-      // }),
       ...xanixDefaultPlugins({
         WebSocketPort: options.WebSocketPort,
         target: "client",
         development: true,
         assetExternal: true,
       }),
-      // XanixCachedDeps(),
     ],
     output: bundlerOutput.client(entries, { isDev: true }),
     watch: {

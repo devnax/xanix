@@ -1,4 +1,5 @@
 import type { Plugin } from "rollup";
+import xanixTransform from "./XanixTransform.js";
 import XanixTsconfigAlias from "./XanixTsconfigAlias.js";
 import XanixDocument from "./XanixDocument/index.js";
 import { nodeResolve } from "@rollup/plugin-node-resolve";
@@ -13,8 +14,7 @@ import XanixEnvPlugin from "./XanixEnv.js";
 import XanixUseServer from "./XanixUseServer.js";
 import XanixServerTransform from "./XanixServerTransform.js";
 import defines from "../config/defines.js";
-import { XanixClientEntry } from "../../types.js";
-import { XanixEntryFinder } from "./XanixEntryFinder/index.js";
+import XanixResolver from "./XanixResolver.js";
 
 export interface XanixRollupOptions {
   target?: "client" | "server";
@@ -75,12 +75,14 @@ export function xanixDefaultPlugins(options: XanixRollupOptions): Plugin[] {
       preferBuiltins: isServer,
       extensions: [".mjs", ".js", ".jsx", ".json", ".ts", ".tsx"],
     }),
-
+    // XanixResolver(),
     commonjs(),
+
     json(),
     XanixDocument(),
     XanixUseServer({ isClient }),
     ..._plugins,
+    xanixTransform(),
 
     esbuild({
       include: /\.(?:js|jsx|ts|tsx|mjs|cjs|mts|cts)$/,

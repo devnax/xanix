@@ -2,10 +2,8 @@ import path from "node:path";
 import fs from "node:fs";
 import crypto from "node:crypto";
 
-import { parse } from "@babel/parser";
-import traverse from "@babel/traverse";
-import generate from "@babel/generator";
-import * as t from "@babel/types";
+import { parseSync } from "oxc-parser";
+import { walk } from "oxc-walker";
 
 export interface XanixPageEntry {
   id: string;
@@ -22,38 +20,33 @@ export interface XanixTransformResult {
 }
 
 const RUNTIME_IMPORT = "xanix/runtime";
-
 const SOURCE_EXTENSIONS = [".tsx", ".ts", ".jsx", ".js", ".mjs", ".cjs"];
 
-function normalizeFilePath(file: string): string {
+function normalizeFilePath(file: string) {
   return path.resolve(file).split(path.sep).join("/");
 }
 
-export function resolveFile(file: string): string {
+export function resolveFile(file: string) {
   const absolute = path.resolve(file);
 
-  if (fs.existsSync(absolute)) {
-    const stat = fs.statSync(absolute);
-
-    if (stat.isFile()) {
-      return absolute;
-    }
+  if (fs.existsSync(absolute) && fs.statSync(absolute).isFile()) {
+    return absolute;
   }
 
   for (const ext of SOURCE_EXTENSIONS) {
-    const candidate = `${absolute}${ext}`;
+    const file = `${absolute}${ext}`;
 
-    if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
-      return path.resolve(candidate);
+    if (fs.existsSync(file) && fs.statSync(file).isFile()) {
+      return path.resolve(file);
     }
   }
 
   if (fs.existsSync(absolute) && fs.statSync(absolute).isDirectory()) {
     for (const ext of SOURCE_EXTENSIONS) {
-      const candidate = path.join(absolute, `index${ext}`);
+      const file = path.join(absolute, `index${ext}`);
 
-      if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
-        return path.resolve(candidate);
+      if (fs.existsSync(file) && fs.statSync(file).isFile()) {
+        return path.resolve(file);
       }
     }
   }
@@ -61,61 +54,41 @@ export function resolveFile(file: string): string {
   return absolute;
 }
 
-export function resolveComponentFile(
-  importer: string,
-  importPath: string,
-): string {
-  if (!importPath.startsWith(".")) {
-    return importPath;
-  }
+export function resolveComponentFile(importer: string, importPath: string) {
+  if (!importPath.startsWith(".")) return importPath;
 
-  const base = path.resolve(path.dirname(importer), importPath);
-
-  return resolveFile(base);
+  return resolveFile(path.resolve(path.dirname(importer), importPath));
 }
 
-export function createPageId(file: string): string {
-  return `${crypto
+export function createPageId(file: string) {
+  return crypto
     .createHash("sha256")
     .update(path.normalize(file))
     .digest("hex")
-    .slice(0, 12)}`;
+    .slice(0, 12);
 }
 
-export function getJSXComponentName(node: t.JSXElement): string | null {
-  const name = node.openingElement.name;
+function jsxName(node: any): string | null {
+  if (node.type === "JSXIdentifier") return node.name;
 
-  if (t.isJSXIdentifier(name)) {
-    return name.name;
-  }
+  if (node.type === "JSXMemberExpression") {
+    const object = jsxName(node.object);
+    const property = jsxName(node.property);
 
-  if (t.isJSXMemberExpression(name)) {
-    if (t.isJSXIdentifier(name.object) && t.isJSXIdentifier(name.property)) {
-      return `${name.object.name}.${name.property.name}`;
-    }
+    return object && property ? `${object}.${property}` : null;
   }
 
   return null;
 }
 
-function findComponentImport(
-  ast: t.File,
-  componentName: string,
-): {
-  file: string;
-  export: string;
-  declaration: t.ImportDeclaration;
-  specifier: t.ImportSpecifier | t.ImportDefaultSpecifier;
-} | null {
-  for (const node of ast.program.body) {
-    if (!t.isImportDeclaration(node)) {
-      continue;
-    }
+function findComponentImport(ast: any, name: string) {
+  for (const node of ast.body) {
+    if (node.type !== "ImportDeclaration") continue;
 
     for (const specifier of node.specifiers) {
       if (
-        t.isImportDefaultSpecifier(specifier) &&
-        specifier.local.name === componentName
+        specifier.type === "ImportDefaultSpecifier" &&
+        specifier.local.name === name
       ) {
         return {
           file: node.source.value,
@@ -126,14 +99,15 @@ function findComponentImport(
       }
 
       if (
-        t.isImportSpecifier(specifier) &&
-        specifier.local.name === componentName
+        specifier.type === "ImportSpecifier" &&
+        specifier.local.name === name
       ) {
-        const imported = specifier.imported;
-
         return {
           file: node.source.value,
-          export: t.isIdentifier(imported) ? imported.name : imported.value,
+          export:
+            specifier.imported.type === "Identifier"
+              ? specifier.imported.name
+              : String(specifier.imported.value),
           declaration: node,
           specifier,
         };
@@ -144,455 +118,215 @@ function findComponentImport(
   return null;
 }
 
-function removeComponentImport(
-  ast: t.File,
-  componentImport: {
-    declaration: t.ImportDeclaration;
-    specifier: t.ImportSpecifier | t.ImportDefaultSpecifier;
-  },
-): void {
-  const { declaration, specifier } = componentImport;
+function jsxProps(code: string, jsx: any) {
+  const props: string[] = [];
 
-  const index = declaration.specifiers.indexOf(specifier);
-
-  if (index !== -1) {
-    declaration.specifiers.splice(index, 1);
-  }
-
-  if (declaration.specifiers.length === 0) {
-    const bodyIndex = ast.program.body.indexOf(declaration);
-
-    if (bodyIndex !== -1) {
-      ast.program.body.splice(bodyIndex, 1);
-    }
-  }
-}
-
-function jsxNameToExpression(
-  name: t.JSXElement["openingElement"]["name"],
-): t.Expression | null {
-  if (t.isJSXIdentifier(name)) {
-    return t.identifier(name.name);
-  }
-
-  if (t.isJSXMemberExpression(name)) {
-    const object = jsxNameToExpressionFromJSXName(name.object);
-    const property = jsxNameToExpressionFromJSXName(name.property);
-
-    if (!object || !property) {
-      return null;
-    }
-
-    return t.memberExpression(object, property);
-  }
-
-  return null;
-}
-
-function jsxNameToExpressionFromJSXName(
-  name: t.JSXIdentifier | t.JSXMemberExpression,
-): t.Expression | null {
-  if (t.isJSXIdentifier(name)) {
-    return t.identifier(name.name);
-  }
-
-  if (t.isJSXMemberExpression(name)) {
-    const object = jsxNameToExpressionFromJSXName(name.object);
-    const property = jsxNameToExpressionFromJSXName(name.property);
-
-    if (!object || !property) {
-      return null;
-    }
-
-    return t.memberExpression(object, property);
-  }
-
-  return null;
-}
-
-function jsxAttributesToProps(jsx: t.JSXElement): t.ObjectExpression {
-  const properties: (t.ObjectProperty | t.SpreadElement)[] = [];
-
-  for (const attribute of jsx.openingElement.attributes) {
-    if (t.isJSXSpreadAttribute(attribute)) {
-      properties.push(t.spreadElement(attribute.argument as t.Expression));
-
+  for (const attr of jsx.openingElement.attributes) {
+    if (attr.type === "JSXSpreadAttribute") {
+      props.push(`...${code.slice(attr.argument.start, attr.argument.end)}`);
       continue;
     }
 
-    if (!t.isJSXAttribute(attribute)) {
+    const key =
+      attr.name.type === "JSXIdentifier"
+        ? attr.name.name
+        : `${attr.name.namespace.name}:${attr.name.name.name}`;
+
+    if (!attr.value) {
+      props.push(`${JSON.stringify(key)}: true`);
       continue;
     }
 
-    function jsxAttributeNameToExpression(
-      name: t.JSXAttribute["name"],
-    ): t.Identifier | t.StringLiteral {
-      if (t.isJSXIdentifier(name)) {
-        return t.identifier(name.name);
+    if (attr.value.type === "Literal") {
+      props.push(`${JSON.stringify(key)}: ${JSON.stringify(attr.value.value)}`);
+      continue;
+    }
+
+    if (attr.value.type === "JSXExpressionContainer") {
+      const expression = attr.value.expression;
+
+      if (expression.type !== "JSXEmptyExpression") {
+        props.push(
+          `${JSON.stringify(key)}: ${code.slice(
+            expression.start,
+            expression.end,
+          )}`,
+        );
       }
 
-      return t.stringLiteral(`${name.namespace.name}:${name.name.name}`);
-    }
-
-    const key = jsxAttributeNameToExpression(attribute.name);
-
-    if (!attribute.value) {
-      properties.push(t.objectProperty(key, t.booleanLiteral(true)));
-
       continue;
     }
 
-    if (t.isStringLiteral(attribute.value)) {
-      properties.push(
-        t.objectProperty(key, t.stringLiteral(attribute.value.value)),
-      );
-
-      continue;
-    }
-
-    if (t.isJSXExpressionContainer(attribute.value)) {
-      const expression = attribute.value.expression;
-
-      if (t.isJSXEmptyExpression(expression)) {
-        continue;
-      }
-
-      properties.push(t.objectProperty(key, expression as t.Expression));
-
-      continue;
-    }
-
-    if (t.isJSXElement(attribute.value)) {
-      properties.push(t.objectProperty(key, attribute.value));
-    }
-  }
-
-  return t.objectExpression(properties);
-}
-
-function jsxToComponentAndProps(jsx: t.JSXElement): {
-  component: t.Expression;
-  props: t.ObjectExpression;
-} | null {
-  const component = jsxNameToExpression(jsx.openingElement.name);
-
-  if (!component) {
-    return null;
-  }
-
-  const props = jsxAttributesToProps(jsx);
-
-  return {
-    component,
-    props,
-  };
-}
-
-function createDynamicComponentProperty(importPath: string): t.ObjectProperty {
-  const importCall = t.callExpression(t.import(), [
-    t.stringLiteral(importPath),
-  ]);
-
-  const awaitedImport = t.awaitExpression(importCall);
-
-  const arrowFunction = t.arrowFunctionExpression([], awaitedImport);
-
-  arrowFunction.async = true;
-
-  return t.objectProperty(t.identifier("component"), arrowFunction);
-}
-
-function hasRuntimeImport(ast: t.File, name: string): boolean {
-  for (const statement of ast.program.body) {
-    if (!t.isImportDeclaration(statement)) {
-      continue;
-    }
-
-    if (statement.source.value !== RUNTIME_IMPORT) {
-      continue;
-    }
-
-    for (const specifier of statement.specifiers) {
-      if (
-        t.isImportSpecifier(specifier) &&
-        t.isIdentifier(specifier.imported) &&
-        specifier.imported.name === name
-      ) {
-        return true;
-      }
-    }
-  }
-
-  return false;
-}
-
-function injectRuntimeImport(ast: t.File, name: string): void {
-  if (hasRuntimeImport(ast, name)) {
-    return;
-  }
-
-  for (const statement of ast.program.body) {
-    if (!t.isImportDeclaration(statement)) {
-      continue;
-    }
-
-    if (statement.source.value !== RUNTIME_IMPORT) {
-      continue;
-    }
-
-    statement.specifiers.push(
-      t.importSpecifier(t.identifier(name), t.identifier(name)),
+    props.push(
+      `${JSON.stringify(key)}: ${code.slice(attr.value.start, attr.value.end)}`,
     );
-
-    return;
   }
 
-  ast.program.body.unshift(
-    t.importDeclaration(
-      [t.importSpecifier(t.identifier(name), t.identifier(name))],
-      t.stringLiteral(RUNTIME_IMPORT),
-    ),
-  );
+  return `{${props.join(",")}}`;
 }
 
 export function transformer(
   code: string,
   id: string,
 ): XanixTransformResult | null {
-  const ast = parse(code, {
-    sourceType: "module",
-    plugins: ["typescript", "jsx"],
-  });
+  // Cheap check. Don't parse irrelevant files.
+  if (!/\b[A-Za-z_$][\w$]*\s*\.\s*send\s*\(\s*</.test(code)) {
+    return null;
+  }
 
-  let changed = false;
+  const ast = parseSync(id, code, {
+    sourceType: "module",
+    lang: "tsx",
+  }).program;
+
+  const replacements: {
+    start: number;
+    end: number;
+    code: string;
+  }[] = [];
 
   const entries: XanixPageEntry[] = [];
 
-  traverse(ast, {
-    CallExpression(callPath) {
-      const call = callPath.node;
+  let functionNode: any = null;
+  let changed = false;
 
-      /*
-       * Find:
-       *
-       * res.send(...)
-       */
-      if (!t.isMemberExpression(call.callee)) {
-        return;
+  walk(ast, {
+    enter(node: any) {
+      if (
+        node.type === "FunctionDeclaration" ||
+        node.type === "FunctionExpression" ||
+        node.type === "ArrowFunctionExpression"
+      ) {
+        functionNode = node;
       }
 
+      if (node.type !== "CallExpression") return;
+
+      const callee = node.callee;
+
       if (
-        !t.isIdentifier(call.callee.property, {
-          name: "send",
-        })
+        callee.type !== "MemberExpression" ||
+        callee.computed ||
+        callee.property.type !== "Identifier" ||
+        callee.property.name !== "send"
       ) {
         return;
       }
 
-      const argument = call.arguments[0];
+      const jsx = node.arguments[0];
 
-      /*
-       * Only transform:
-       *
-       * res.send(<HomePage />)
-       */
-      if (!argument || !t.isJSXElement(argument)) {
+      if (jsx?.type !== "JSXElement") return;
+      if (!functionNode) return;
+
+      const [req, res] = functionNode.params;
+
+      if (req?.type !== "Identifier" || res?.type !== "Identifier") {
         return;
       }
 
-      /*
-       * Find:
-       *
-       * (req, res) => {}
-       */
-      const functionPath = callPath.getFunctionParent();
+      const componentName = jsxName(jsx.openingElement.name);
 
-      if (!functionPath) {
-        return;
-      }
+      if (!componentName) return;
 
-      const params = functionPath.node.params;
-
-      if (params.length < 2) {
-        return;
-      }
-
-      const requestParam = params[0];
-      const responseParam = params[1];
-
-      if (!t.isIdentifier(requestParam) || !t.isIdentifier(responseParam)) {
-        return;
-      }
-
-      /*
-       * Find component name:
-       *
-       * <HomePage />
-       */
-      const componentName = getJSXComponentName(argument);
-
-      if (!componentName) {
-        return;
-      }
-
-      /*
-       * Find:
-       *
-       * import HomePage from "../pages/Home";
-       */
       const componentImport = findComponentImport(ast, componentName);
 
-      if (!componentImport) {
-        return;
-      }
+      if (!componentImport) return;
 
-      const componentImportPath = componentImport.file;
+      const componentFile = resolveComponentFile(id, componentImport.file);
 
-      /*
-       * Resolve:
-       *
-       * ../pages/Home
-       *
-       * ->
-       *
-       * C:/xampp/htdocs/xanix/app/pages/Home/index.tsx
-       */
-      const componentFile = resolveComponentFile(id, componentImportPath);
+      if (!path.isAbsolute(componentFile)) return;
 
-      if (!path.isAbsolute(componentFile)) {
-        return;
-      }
+      const file = normalizeFilePath(componentFile);
+      const pageId = createPageId(file);
 
-      /*
-       * Normalize absolute file path.
-       */
-      const normalizedFile = normalizeFilePath(componentFile);
-
-      /*
-       * Stable page ID.
-       */
-      const pageId = createPageId(normalizedFile);
-
-      /*
-       * JSX:
-       *
-       * <HomePage title="Hello" />
-       *
-       * ->
-       *
-       * {
-       *   title: "Hello"
-       * }
-       */
-      const componentAndProps = jsxToComponentAndProps(argument);
-
-      if (!componentAndProps) {
-        return;
-      }
-
-      /*
-       * Create manifest entry.
-       */
       entries.push({
         id: pageId,
         name: componentName,
-        file: normalizedFile,
-        path: componentImportPath,
+        file,
+        path: componentImport.file,
         export: componentImport.export,
       });
 
-      /*
-       * Remove static component import.
-       */
-      removeComponentImport(ast, componentImport);
+      // Remove component import.
+      const declaration = componentImport.declaration;
+      const specifier = componentImport.specifier;
 
-      /*
-       * Create:
-       *
-       * component: async () =>
-       *   await import("../pages/Home")
-       */
-      const componentProperty =
-        createDynamicComponentProperty(componentImportPath);
+      if (declaration.specifiers.length === 1) {
+        replacements.push({
+          start: declaration.start,
+          end: declaration.end,
+          code: "",
+        });
+      } else {
+        const index = declaration.specifiers.indexOf(specifier);
+        const next = declaration.specifiers[index + 1];
+        const previous = declaration.specifiers[index - 1];
 
-      /*
-       * Make route handler async.
-       */
-      if (t.isFunction(functionPath.node)) {
-        functionPath.node.async = true;
+        replacements.push({
+          start: next ? specifier.start : previous.end,
+          end: next ? next.start : specifier.end,
+          code: "",
+        });
       }
 
-      /*
-       * Create:
-       *
-       * await xanixPage({
-       *   component: async () =>
-       *     await import("../pages/Home"),
-       *   pageId: "...",
-       *   req,
-       *   res,
-       *   props: {}
-       * })
-       */
-      const pageOptions = t.objectExpression([
-        componentProperty,
+      // Make handler async.
+      if (!functionNode.async) {
+        replacements.push({
+          start: functionNode.start,
+          end: functionNode.start,
+          code: "async ",
+        });
+      }
 
-        t.objectProperty(t.identifier("pageId"), t.stringLiteral(pageId)),
-
-        t.objectProperty(t.identifier("req"), t.identifier(requestParam.name)),
-
-        t.objectProperty(t.identifier("res"), t.identifier(responseParam.name)),
-
-        t.objectProperty(t.identifier("props"), componentAndProps.props),
-      ]);
-
-      const pageCall = t.awaitExpression(
-        t.callExpression(t.identifier("xanixPage"), [pageOptions]),
-      );
-
-      /*
-       * Replace:
-       *
-       * res.send(<HomePage />);
-       *
-       * with:
-       *
-       * res.send(
-       *   await xanixPage({...})
-       * );
-       */
-      call.arguments[0] = pageCall;
+      // Replace JSX.
+      replacements.push({
+        start: jsx.start,
+        end: jsx.end,
+        code: `await xanixPage({
+  component: async () => await import(${JSON.stringify(componentImport.file)}),
+  pageId: ${JSON.stringify(pageId)},
+  req: ${req.name},
+  res: ${res.name},
+  props: ${jsxProps(code, jsx)}
+})`,
+      });
 
       changed = true;
     },
+
+    leave(node: any) {
+      if (node === functionNode) {
+        functionNode = null;
+      }
+    },
   });
 
-  if (!changed) {
-    return null;
+  if (!changed) return null;
+
+  // Add runtime import.
+  const runtime = `import { xanixPage } from "${RUNTIME_IMPORT}";\n`;
+
+  if (!code.includes(`from "${RUNTIME_IMPORT}"`)) {
+    replacements.push({
+      start: 0,
+      end: 0,
+      code: runtime,
+    });
   }
 
-  /*
-   * Add:
-   *
-   * import { xanixPage } from "xanix/runtime";
-   */
-  injectRuntimeImport(ast, "xanixPage");
+  // Apply replacements backwards.
+  replacements.sort((a, b) => b.start - a.start);
 
-  /*
-   * Generate final code + source map.
-   */
-  const output = generate(
-    ast,
-    {
-      sourceMaps: true,
-      sourceFileName: id,
-    },
-    code,
-  );
+  for (const replacement of replacements) {
+    code =
+      code.slice(0, replacement.start) +
+      replacement.code +
+      code.slice(replacement.end);
+  }
 
   return {
-    code: output.code,
-    map: output.map,
+    code,
+    map: null,
     entries,
   };
 }

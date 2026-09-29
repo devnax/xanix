@@ -40,7 +40,6 @@ function isPackageImport(source: string) {
 const writeManifest = async (cached: Map<string, string>) => {
   const file = path.resolve("node_modules/xanix-cache/manifest.json");
   let manifest: any = {};
-  console.log(cached);
 
   for (const [key, value] of cached.entries()) {
     manifest[key] = value;

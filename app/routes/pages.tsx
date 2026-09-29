@@ -7,6 +7,7 @@ router.get("/", (req, res) => {
   res.send(<HomePage />);
 });
 router.get("/about", (req, res) => {
-  res.send(<AboutPage />);
+  const id = "about";
+  res.send(<AboutPage id={id as any} name="About" />);
 });
 export default router;
