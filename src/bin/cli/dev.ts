@@ -126,7 +126,8 @@ const dev = async (rootEntry: string) => {
       spinner.stop(
         `${pc.green("✓")} Server compiled in ${pc.dim(serverDuration + "ms")}`,
       );
-      await clientWatcher(entries);
+      // await clientWatcher(entries);
+      await startServer();
     },
     onChange: async (files, duration) => {
       logger.info(
@@ -145,7 +146,7 @@ const dev = async (rootEntry: string) => {
       _entry: string,
       entries: XanixClientEntry[],
     ) => {
-      await clientWatcher(entries);
+      // await clientWatcher(entries);
     },
     onBuildEnd(duration) {
       serverDuration += duration;

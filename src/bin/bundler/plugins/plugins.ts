@@ -24,10 +24,10 @@ export function xanixDefaultPlugins(options: XanixRollupOptions): Plugin[] {
   let _plugins: Plugin[] = [];
 
   if (isServer) {
-    _plugins.push(XanixPageTransform());
-    _plugins.push(
-      XanixServerTransform({ mode: development ? "watch" : "start" }),
-    );
+    // _plugins.push(XanixPageTransform());
+    // _plugins.push(
+    //   XanixServerTransform({ mode: development ? "watch" : "start" }),
+    // );
   } else {
     if (development) {
       _plugins.push(xanixReactRefresh(options.WebSocketPort as number));

@@ -10,6 +10,8 @@ import {
 import { xanixDefaultPlugins } from "./plugins/plugins.js";
 import outdirs from "../../outdirs.js";
 import loadEnv from "./config/loadEnv.js";
+import externalResolver from "./externalResolver.js";
+import XanixCache from "./cache/index.js";
 
 type Option = {
   onChange?: (files: string[], duration: number) => void;
@@ -61,7 +63,7 @@ const WatchClient = async (
       target: "es2022",
       jsx: {
         runtime: "automatic",
-        refresh: true,
+        // refresh: true,
       },
       define: await loadEnv({
         mode: "development",
@@ -69,6 +71,8 @@ const WatchClient = async (
       }),
     },
     plugins: [
+      // externalResolver(),
+      XanixCache(),
       ...xanixDefaultPlugins({
         WebSocketPort: options.WebSocketPort,
         target: "client",

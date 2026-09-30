@@ -105,24 +105,24 @@ const externalResolver = (): Plugin => {
       }
       return null;
 
-      if (importer.includes("node_modules")) {
-        return null;
-      }
+      // if (importer.includes("node_modules")) {
+      //   return null;
+      // }
 
-      if (source.startsWith("xanix")) {
-        return null;
-      }
+      // if (source.startsWith("xanix")) {
+      //   return null;
+      // }
 
-      if (!isPackageImport(source)) {
-        return null;
-      }
+      // if (!isPackageImport(source)) {
+      //   return null;
+      // }
 
-      const name = makeFilename(source);
-      cache.set(source, name);
-      return {
-        id: `xanix-cache/${name}.js`,
-        external: true,
-      };
+      // const name = makeFilename(source);
+      // cache.set(source, name);
+      // return {
+      //   id: `xanix-cache/${name}.js`,
+      //   external: true,
+      // };
     },
 
     transform(code) {
@@ -167,6 +167,7 @@ const externalResolver = (): Plugin => {
       if (!changed) {
         return null;
       }
+
       return {
         code: transformed,
         map: null,
@@ -194,10 +195,11 @@ const externalResolver = (): Plugin => {
         treeshake: true,
         platform: "node",
         tsconfig: true,
-
+        checks: {
+          moduleLevelDirective: false,
+        },
         resolve: {
           extensions: [".mjs", ".js", ".jsx", ".json", ".ts", ".tsx"],
-
           conditionNames: ["node", "import", "module", "default"],
         },
 

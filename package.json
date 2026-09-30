@@ -27,6 +27,10 @@
     "./runtime": {
       "import": "./dist/server/runtime/index.js",
       "require": "./dist/server/runtime/index.js"
+    },
+    "./express": {
+      "import": "./dist/server/express.js",
+      "require": "./dist/server/express.js"
     }
   },
   "scripts": {
@@ -42,6 +46,7 @@
     "express": "^5.2.1",
     "magic-string": "^1.2.3",
     "oxc-resolver": "^11.24.2",
+    "oxc-walker": "^1.1.1",
     "picocolors": "^1.1.1",
     "react-refresh": "^0.18.0",
     "rolldown": "^1.2.9",

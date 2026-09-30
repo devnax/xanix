@@ -6,6 +6,7 @@ import IconButton from "@xanui/ui/IconButton";
 import Avatar from "@xanui/ui/Avatar";
 import Person from "@xanui/icons/Person";
 import BaselineAddChartIcon from "@iconify-react/ic/baseline-add-chart";
+import { createTheme, ThemeProvider } from "@xanui/core";
 
 const Show = () => {
   const params = useSearchParams();
@@ -19,7 +20,7 @@ const Show = () => {
   );
 };
 
-const HomePage = ({ another, category }: any) => {
+const _HomePage = ({ another, category }: any) => {
   const [n, setN] = useState("Nax");
 
   const d = useServer(
@@ -81,6 +82,14 @@ const HomePage = ({ another, category }: any) => {
         Set Cookie
       </button>
     </div>
+  );
+};
+
+const HomePage = () => {
+  return (
+    <ThemeProvider theme={createTheme({ name: "dark", mode: "dark" })}>
+      Wellcome say hello
+    </ThemeProvider>
   );
 };
 

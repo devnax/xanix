@@ -11,6 +11,7 @@ import { normalizePath } from "../include/utils.js";
 import loadEnv from "./config/loadEnv.js";
 import { builtinModules } from "node:module";
 import { tsconfigPathsMatcher } from "./plugins/XanixTsconfigAlias.js";
+import XanixTransform from "./plugins/TransformServer/index.js";
 import { ResolverFactory } from "rolldown/experimental";
 
 const resolver = new ResolverFactory();
@@ -79,6 +80,8 @@ const watchServer = async ({
     },
 
     plugins: [
+      XanixTransform(),
+
       ...xanixDefaultPlugins({
         target: "server",
         development: true,

@@ -2,6 +2,7 @@ import type { DocumentContextData } from "./components/DocumentContext.js";
 import type { ComponentType } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import outdirs from "./outdirs.js";
+import Document from "virtual:xanix-document";
 
 type DocumentInfo = DocumentContextData & {
   component: ComponentType<any>;
@@ -53,7 +54,6 @@ export async function mount(
 ) {
   const root = getRoot();
   pages.set(path, doc);
-  const Document = (await import("virtual:xanix-document")).default;
 
   root.render(
     <Document
@@ -79,10 +79,10 @@ if (__XANIX_CLIENT__) {
     dispatch(XANIX_NAVIGATE_START, path);
     const mod = await import(getImportUrl(page.pageId));
     mount(path, mod.default, page);
-    const scriptTag = document.getElementById(page.pageId);
-    if (scriptTag) {
-      scriptTag.remove();
-    }
+    // const scriptTag = document.getElementById(page.pageId);
+    // if (scriptTag) {
+    //   scriptTag.remove();
+    // }
     history.pushState(null, "", page.path);
     dispatch(XANIX_NAVIGATE_END, path);
   });

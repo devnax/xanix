@@ -155,15 +155,11 @@ export default function xanixReactRefresh(webSocketPort: number): Plugin {
       const refreshCode = `
 
 import RefreshRuntime from "react-refresh/runtime";
-
 RefreshRuntime.injectIntoGlobalHook(window);
-
 window.$RefreshReg$ = (type, id) => {
   RefreshRuntime.register(type, id);
 };
-
 window.$RefreshSig$ = () => (type) => type;
-
 
 const ws = new WebSocket(
   ${JSON.stringify(`ws://localhost:${webSocketPort}`)}
@@ -200,41 +196,41 @@ ${code}
       };
     },
 
-    // transform: {
-    //   filter: {
-    //     id: /^(?!.*node_modules[\\/]).*\.[cm]?[jt]sx?$/,
-    //   },
+    transform: {
+      filter: {
+        id: /^(?!.*node_modules[\\/]).*\.[cm]?[jt]sx?$/,
+      },
 
-    //   handler(code, id) {
-    //     const resolvedId = path.resolve(id);
+      handler(code, id) {
+        const resolvedId = path.resolve(id);
 
-    //     if (resolvedId === getClientRuntimeFile()) {
-    //       return null;
-    //     }
+        if (resolvedId === getClientRuntimeFile()) {
+          return null;
+        }
 
-    //     const filename = id.split("?")[0];
+        const filename = id.split("?")[0];
 
-    //     if (!/\.(tsx?|jsx?)$/.test(filename)) {
-    //       return null;
-    //     }
+        if (!/\.(tsx?|jsx?)$/.test(filename)) {
+          return null;
+        }
 
-    //     const program = this.parse(code, {
-    //       lang: getLanguage(filename),
-    //     });
+        const program = this.parse(code, {
+          lang: getLanguage(filename),
+        });
 
-    //     const registrations = collectRegistrations(program, filename);
+        const registrations = collectRegistrations(program, filename);
 
-    //     if (registrations.length === 0) {
-    //       return null;
-    //     }
+        if (registrations.length === 0) {
+          return null;
+        }
 
-    //     const registrationCode = `\n\n${registrations.join("\n")}\n`;
+        const registrationCode = `\n\n${registrations.join("\n")}\n`;
 
-    //     return {
-    //       code: code + registrationCode,
-    //       map: null,
-    //     };
-    //   },
-    // },
+        return {
+          code: code + registrationCode,
+          map: null,
+        };
+      },
+    },
   };
 }
