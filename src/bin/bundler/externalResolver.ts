@@ -1,4 +1,3 @@
-import { xanixCachePlugins, xanixDefaultPlugins } from "./plugins/plugins.js";
 import path from "path";
 import fs from "fs";
 import { Plugin, rolldown } from "rolldown";
@@ -48,7 +47,6 @@ function isPackageImport(source: string) {
 const writeManifest = async (cached: Map<string, string>) => {
   const file = path.resolve("node_modules/xanix-cache/manifest.json");
   let manifest: any = {};
-  console.log(cached);
 
   for (const [key, value] of cached.entries()) {
     manifest[key] = value;
@@ -99,12 +97,13 @@ const externalResolver = (): Plugin => {
         return null;
       }
 
-      if (source.startsWith("xanix-cache")) {
+      if (source.startsWith("/xanix-cache")) {
         return {
           id: source,
           external: true,
         };
       }
+      return null;
 
       if (importer.includes("node_modules")) {
         return null;
@@ -159,7 +158,7 @@ const externalResolver = (): Plugin => {
             .join(", ");
 
           return [
-            `import ${localName} from ${quote}xanix-cache/${name}.js${quote};`,
+            `import ${localName} from ${quote}/xanix-cache/${name}.js${quote};`,
             `const { ${declarations} } = ${localName};`,
           ].join("\n");
         },
@@ -169,7 +168,7 @@ const externalResolver = (): Plugin => {
         return null;
       }
       return {
-        code,
+        code: transformed,
         map: null,
       };
     },

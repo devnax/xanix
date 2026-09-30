@@ -66,7 +66,7 @@ function runStart(): Promise<void> {
 
 async function startServer() {
   await runStart();
-  // await curl();
+  await curl();
 }
 
 const dev = async (rootEntry: string) => {

@@ -1,8 +1,6 @@
 import { watch } from "rolldown";
-
 import path from "node:path";
 import fs from "node:fs";
-
 import { getEntries } from "../include/manifest.js";
 import { XanixClientEntry } from "../types.js";
 import bundlerOutput from "./config/output.js";
@@ -13,68 +11,25 @@ import { normalizePath } from "../include/utils.js";
 import loadEnv from "./config/loadEnv.js";
 import { builtinModules } from "node:module";
 import { tsconfigPathsMatcher } from "./plugins/XanixTsconfigAlias.js";
-import externalResolver from "./externalResolver.js";
+import { ResolverFactory } from "rolldown/experimental";
 
+const resolver = new ResolverFactory();
 const root = process.cwd();
-
 const nodeBuiltins = new Set(builtinModules);
 
 function isNodeBuiltin(id: string): boolean {
   const normalized = id.startsWith("node:") ? id.slice(5) : id;
-
   return nodeBuiltins.has(normalized);
-}
-
-const forcedExternalPackages = new Set(["express"]);
-
-function packageNameOf(id: string): string {
-  const parts = id.split("/");
-
-  if (id.startsWith("@")) {
-    return parts.slice(0, 2).join("/");
-  }
-
-  return parts[0];
-}
-
-function shouldExternal(id: string): boolean {
-  if (
-    id.startsWith(".") ||
-    path.isAbsolute(id) ||
-    id.startsWith("xanix") ||
-    id === "virtual:xanix-document" ||
-    tsconfigPathsMatcher(id)
-  ) {
-    return false;
-  }
-
-  if (id.startsWith("\0")) {
-    return false;
-  }
-
-  if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(id) && !id.startsWith("node:")) {
-    return false;
-  }
-
-  if (isNodeBuiltin(id)) {
-    return true;
-  }
-
-  return forcedExternalPackages.has(packageNameOf(id));
 }
 
 export type WatcherOptions = {
   rootEntry: string;
-
   onChange?: (files: string[], duration: number) => Promise<void>;
-
   onBuildEnd?: (duration: number) => void;
-
   onClientEntryChange: (
     id: string,
     entries: XanixClientEntry[],
   ) => Promise<void>;
-
   onReady?: (entries: XanixClientEntry[]) => Promise<void>;
 };
 
@@ -102,9 +57,10 @@ const watchServer = async ({
     input,
     treeshake: true,
     platform: "node",
-
     tsconfig: true,
-
+    checks: {
+      moduleLevelDirective: false,
+    },
     resolve: {
       extensions: [".mjs", ".js", ".jsx", ".json", ".ts", ".tsx"],
       conditionNames: ["node", "import", "module", "default"],
@@ -112,7 +68,6 @@ const watchServer = async ({
 
     transform: {
       target: "node20",
-
       jsx: {
         runtime: "automatic",
       },
@@ -129,11 +84,9 @@ const watchServer = async ({
         development: true,
         assetExternal: false,
       }),
-      // externalResolver(),
     ],
 
-    external(id) {
-      return isNodeBuiltin(id);
+    external(id, parent) {
       if (
         id.startsWith(".") ||
         path.isAbsolute(id) ||
@@ -143,7 +96,21 @@ const watchServer = async ({
       ) {
         return false;
       }
-      console.log(id);
+
+      if (isNodeBuiltin(id)) {
+        return true;
+      }
+
+      if (parent) {
+        const resolve = resolver.sync(path.dirname(parent), id);
+        if (resolve.path) {
+          const ext = path.extname(resolve.path);
+          const valid = [".js", ".cjs", ".mjs"];
+          if (!valid.includes(ext)) {
+            return false;
+          }
+        }
+      }
 
       return true;
     },
@@ -186,12 +153,9 @@ const watchServer = async ({
 
             for (const entry of changedFiles) {
               const isClientEntry = clientEntries.find((e) => e.file === entry);
-
               if (!isClientEntry) {
                 const currentEntries = await getEntries();
-
                 const isEqual = await entriesEqual(currentEntries);
-
                 if (!isEqual) {
                   await onClientEntryChange?.(entry, currentEntries);
                 }
@@ -211,7 +175,6 @@ const watchServer = async ({
 
         if (!isReady) {
           isReady = true;
-
           await onReady?.(entries);
         }
 
@@ -220,7 +183,6 @@ const watchServer = async ({
 
       case "ERROR": {
         console.error("[server]", event.error);
-
         break;
       }
     }

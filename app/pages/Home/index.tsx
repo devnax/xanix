@@ -46,17 +46,17 @@ const HomePage = ({ another, category }: any) => {
   if (d.loading) return <div>Loading...</div>;
   return (
     <div>
-      <Chunk />
-      {/* <Avatar /> */}
-      <BaselineAddChartIcon height="1em" />
-      {/* <Button>Nice</Button> */}
-      {/* <IconButton /> */}
+      <Avatar />
+      <Button>Nice</Button>
+      <IconButton />
       <div>Server Data: {d.data.name}</div>
       <button
         onClick={() => {
           setN(Math.random().toString());
         }}
-      ></button>
+      >
+        R
+      </button>
       <Show />
       Home Page {params.toString()} Name: {name}
       <input

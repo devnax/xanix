@@ -1,9 +1,4 @@
-import {
-  rolldown,
-  watch,
-  type InputOption,
-  type RolldownWatcher,
-} from "rolldown";
+import { watch, type InputOption, type RolldownWatcher } from "rolldown";
 import bundlerOutput from "./config/output.js";
 import fs from "node:fs";
 import { XanixClientEntry } from "../types.js";
@@ -15,9 +10,6 @@ import {
 import { xanixDefaultPlugins } from "./plugins/plugins.js";
 import outdirs from "../../outdirs.js";
 import loadEnv from "./config/loadEnv.js";
-import XanixCache from "./plugins/XanixResolveCacheDeps/index.js";
-import path from "node:path";
-import { tsconfigPathsMatcher } from "./plugins/XanixTsconfigAlias.js";
 
 type Option = {
   onChange?: (files: string[], duration: number) => void;
@@ -58,6 +50,9 @@ const WatchClient = async (
     input,
     treeshake: true,
     tsconfig: true,
+    checks: {
+      moduleLevelDirective: false,
+    },
     resolve: {
       extensions: [".mjs", ".js", ".jsx", ".json", ".ts", ".tsx"],
       conditionNames: ["browser", "import", "module", "default"],
@@ -66,6 +61,7 @@ const WatchClient = async (
       target: "es2022",
       jsx: {
         runtime: "automatic",
+        refresh: true,
       },
       define: await loadEnv({
         mode: "development",
@@ -73,16 +69,6 @@ const WatchClient = async (
       }),
     },
     plugins: [
-      // XanixCache({
-      //   cacheDir: ".xanix/cache",
-      //   define: await loadEnv({
-      //     mode: "development",
-      //     isClient: true,
-      //   }),
-
-      //   // debug: true,
-      // }),
-
       ...xanixDefaultPlugins({
         WebSocketPort: options.WebSocketPort,
         target: "client",

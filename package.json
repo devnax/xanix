@@ -41,6 +41,7 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "magic-string": "^1.2.3",
+    "oxc-resolver": "^11.24.2",
     "picocolors": "^1.1.1",
     "react-refresh": "^0.18.0",
     "rolldown": "^1.2.9",
