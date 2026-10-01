@@ -63,11 +63,7 @@ const __xpress = (...args: Parameters<typeof express>) => {
     app.use(`/${outdirs.client}`, express.static(`${outdirs.client}`));
     app.use(`/assets`, express.static(outdirs.assets));
     app.use(`/${outdirs.cache}`, express.static(`${outdirs.cache}`));
-    app.use(
-      `/node_modules/xanix-cache/`,
-      express.static(`node_modules/xanix-cache`),
-    );
-    app.use(`/xanix-cache/`, express.static(`node_modules/xanix-cache`));
+    app.use(`/xanix-cache/`, express.static(`.xanix/cache`));
   } else {
     app.use(
       `/${outdirs.client}`,

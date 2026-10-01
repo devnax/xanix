@@ -72,60 +72,6 @@ const watchServer = async ({
     ],
   });
 
-  watcher.on("change", async (id) => {
-    // changedFiles.add(normalizePath(id));
-  });
-
-  watcher.on("event", async (event) => {
-    switch (event.code) {
-      // case "BUNDLE_END": {
-      //   duration = event.duration;
-      //   onBuildEnd?.(event.duration);
-      //   break;
-      // }
-
-      case "END": {
-        // if (changedFiles.size) {
-        //   if (entries.length) {
-        //     const clientEntries = Array.from(entries);
-
-        //     for (const entry of changedFiles) {
-        //       const isClientEntry = clientEntries.find((e) => e.file === entry);
-        //       if (!isClientEntry) {
-        //         const currentEntries = await getEntries();
-        //         const isEqual = await entriesEqual(currentEntries);
-        //         if (!isEqual) {
-        //           await onClientEntryChange?.(entry, currentEntries);
-        //         }
-        //       }
-        //     }
-        //   }
-
-        //   await onChange?.(
-        //     Array.from(changedFiles).map((file) =>
-        //       file.replace(normalizePath(root), ""),
-        //     ),
-        //     duration,
-        //   );
-
-        //   changedFiles.clear();
-        // }
-
-        // if (!isReady) {
-        //   isReady = true;
-        //   await onReady?.(entries);
-        // }
-
-        break;
-      }
-
-      case "ERROR": {
-        console.error("[server]", event.error);
-        break;
-      }
-    }
-  });
-
   return watcher;
 };
 

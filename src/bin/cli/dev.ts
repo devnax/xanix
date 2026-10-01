@@ -6,14 +6,12 @@ import watchClient from "../bundler/client/watch.js";
 import pc from "picocolors";
 import logger from "../include/logger.js";
 import { WebSocketServer } from "ws";
-import { XanixClientEntry } from "../types.js";
 import outdirs from "../../outdirs.js";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import spinner from "../include/spinner.js";
-import { getManifest } from "../include/manifest.js";
-const sleep = (ms: number) =>
-  new Promise<void>((resolve) => setTimeout(resolve, ms));
+import { normalizePath } from "../include/utils.js";
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const packageJson = JSON.parse(
   await readFile(path.join(__dirname, "../../../package.json"), "utf8"),
@@ -22,8 +20,8 @@ const packageJson = JSON.parse(
 const serverInfo: { port?: number; url?: string } = {};
 let child: any;
 let firstStart = false;
-let serverDuration = 0;
-let clientDuration = 0;
+
+const root = normalizePath(process.cwd());
 
 const curl = () => {
   return new Promise<void>((resolve, reject) => {
@@ -94,7 +92,6 @@ const dev = async (rootEntry: string) => {
     });
   });
 
-  let changesServerFiles: string[] = [];
   let _clientWatcher: RolldownWatcher | null = null;
   let clientStarted = false;
   let buildDuration = 0;
@@ -122,7 +119,6 @@ const dev = async (rootEntry: string) => {
       onStart: async () => {
         clientStarted = true;
       },
-      WebSocketPort,
       onReady: async (duration) => {
         spinner.stop(
           `${pc.green("✓")} Client compiled in ${pc.dim(buildDuration + duration + "ms")}`,
@@ -132,15 +128,31 @@ const dev = async (rootEntry: string) => {
         clientStarted = false;
         serverWatchReady = false;
       },
-      onChange: async (files, duration) => {
+      onChange: async (files, duration, entries) => {
         await waitUntilReady();
         buildDuration += duration;
         clientStarted = false;
         serverWatchReady = false;
+
+        const _files = [];
+        for (let file of files) {
+          const entry = entries.find((entry) => entry.resolved === file);
+          if (entry) {
+            _files.push(`${entry.id}.js`);
+          } else {
+            file = file.replace(root + "/", "");
+            file = file.replace(path.extname(file), ".js");
+            _files.push(file);
+          }
+        }
+
+        files = files.map((file) => file.replace(root + "/", ""));
         logger.info(
           `${pc.yellow(files.join(", "))} ${pc.green(buildDuration + "ms")}`,
           "[update]",
         );
+
+        broadcast(JSON.stringify(_files));
         buildDuration = 0;
       },
     });
@@ -163,6 +175,7 @@ const dev = async (rootEntry: string) => {
       buildDuration += duration;
 
       if (!clientStarted) {
+        files = files.map((file) => file.replace(root + "/", ""));
         logger.info(
           `${pc.yellow(files.join(", "))} ${pc.green(buildDuration + "ms")}`,
           "[update]",
@@ -170,7 +183,6 @@ const dev = async (rootEntry: string) => {
         buildDuration = 0;
       }
 
-      changesServerFiles = files;
       serverWatchReady = true;
 
       // await startServer();

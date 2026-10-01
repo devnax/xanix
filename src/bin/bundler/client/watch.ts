@@ -1,22 +1,28 @@
 import { watch, type InputOption, type RolldownWatcher } from "rolldown";
 import ClientWatchConfig from "./watch.config.js";
 import fs from "node:fs";
-import { XanixClientEntry } from "../../types.js";
 import { getManifest } from "../../include/manifest.js";
 import {
   getClientRuntimeFile,
   getClientRuntimeFileName,
   normalizePath,
 } from "../../include/utils.js";
-import { xanixDefaultPlugins } from "../../plugins/plugins.js";
 import outdirs from "../../../outdirs.js";
 import XanixCache from "../cache/index.js";
+import { XanixClientEntry } from "../../types.js";
+import xanixAssets from "../../plugins/XanixAssets.js";
+import xanixTsconfigAlias from "../../plugins/XanixTsconfigAlias.js";
+import xanixDocument from "../../plugins/XanixDocument/index.js";
+import XanixUseServer from "../../plugins/XanixUseServer.js";
 
 type Option = {
   onStart?: () => Promise<void>;
-  onChange?: (files: string[], duration: number) => Promise<void>;
+  onChange?: (
+    files: string[],
+    duration: number,
+    entries: XanixClientEntry[],
+  ) => Promise<void>;
   onReady?: (duration: number) => Promise<void>;
-  WebSocketPort: number;
 };
 
 const WatchClient = async (options: Option): Promise<RolldownWatcher> => {
@@ -38,7 +44,7 @@ const WatchClient = async (options: Option): Promise<RolldownWatcher> => {
     recursive: true,
   });
 
-  const config = await ClientWatchConfig();
+  const config = await ClientWatchConfig(true);
   const changedFiles = new Set<string>();
 
   let isReady = false;
@@ -50,13 +56,12 @@ const WatchClient = async (options: Option): Promise<RolldownWatcher> => {
 
     plugins: [
       // XanixCache(),
-      ...xanixDefaultPlugins({
-        WebSocketPort: options.WebSocketPort,
-        target: "client",
-        development: true,
-        assetExternal: true,
+      xanixAssets({
+        emit: false,
       }),
-
+      xanixTsconfigAlias(),
+      xanixDocument(),
+      XanixUseServer({ isClient: true }),
       {
         name: "noop",
         async watchChange(id) {
@@ -72,7 +77,11 @@ const WatchClient = async (options: Option): Promise<RolldownWatcher> => {
             await options.onReady?.(duration);
             isReady = true;
           } else {
-            await options.onChange?.(Array.from(changedFiles), duration);
+            await options.onChange?.(
+              Array.from(changedFiles),
+              duration,
+              entries,
+            );
           }
 
           changedFiles.clear();

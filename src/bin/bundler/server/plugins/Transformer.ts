@@ -1,4 +1,4 @@
-import { rolldown, type Plugin } from "rolldown";
+import { type Plugin } from "rolldown";
 import { walk } from "oxc-walker";
 import fs from "fs/promises";
 import path from "path";

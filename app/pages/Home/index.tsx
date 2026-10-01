@@ -53,8 +53,9 @@ const HomePage = ({ another, category }: any) => {
   if (d.loading) return <div>Loading...</div>;
   return (
     <div>
+      <Chunk />
       <Avatar />
-      <Button>Nice</Button>
+      <Button>Nice </Button>
       <IconButton />
       <div>Server Data: {d.data.name}</div>
       <button
@@ -62,7 +63,7 @@ const HomePage = ({ another, category }: any) => {
           setN(Math.random().toString());
         }}
       >
-        R
+        Randomize
       </button>
       <Show />
       Home Page {params.toString()} Name: {name}
@@ -90,22 +91,5 @@ const HomePage = ({ another, category }: any) => {
     </div>
   );
 };
-
-// const HomePage = (props: any) => {
-//   const doc = useDocument();
-
-//   return (
-//     <ThemeProvider theme={createTheme({ name: "dark", mode: "dark" })}>
-//       Wellcome say hello {props.title}
-//       <button
-//         onClick={() => {
-//           alert();
-//         }}
-//       >
-//         Home Page
-//       </button>
-//     </ThemeProvider>
-//   );
-// };
 
 export default HomePage;

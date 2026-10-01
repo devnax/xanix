@@ -3,7 +3,6 @@ import path from "node:path";
 import fs from "node:fs";
 import { XanixClientEntry } from "../../types.js";
 import { getManifest } from "../../include/manifest.js";
-import { xanixDefaultPlugins } from "../../plugins/plugins.js";
 import outdirs from "../../../outdirs.js";
 
 const root = process.cwd();
@@ -41,11 +40,11 @@ const BuildServer = async ({ rootEntry, onBuildEnd }: WatcherOptions) => {
       warn(warning);
     },
     plugins: [
-      ...xanixDefaultPlugins({
-        target: "server",
-        development: false,
-        assetExternal: false,
-      }),
+      // ...xanixDefaultPlugins({
+      //   target: "server",
+      //   development: false,
+      //   assetExternal: false,
+      // }),
     ],
 
     external(id) {
