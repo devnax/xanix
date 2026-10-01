@@ -5,6 +5,7 @@ import path from "path";
 import TransformExpress from "./Transformer/TransformExpress.js";
 import TransformPage, { Entry } from "./Transformer/TransformPage.js";
 import outdirs from "../../../../outdirs.js";
+import { createManifest } from "../../../include/manifest.js";
 
 function getParserLanguage(id: string): "js" | "jsx" | "ts" | "tsx" {
   const cleanId = id.split("?")[0];
@@ -75,11 +76,7 @@ const XanixTransformer = (): Plugin => {
       try {
         await fs.access(file);
       } catch {
-        this.emitFile({
-          type: "asset",
-          fileName: "client-manifest.json",
-          source: JSON.stringify(Array.from(entries.values()), null, 2),
-        });
+        await createManifest(Array.from(entries.values()));
         return;
       }
       const prevEntries = await fs.readFile(file, "utf-8");
@@ -88,11 +85,7 @@ const XanixTransformer = (): Plugin => {
       if (JSON.stringify(cids) === JSON.stringify(pids)) {
         return;
       }
-      this.emitFile({
-        type: "asset",
-        fileName: "client-manifest.json",
-        source: JSON.stringify(Array.from(entries.values()), null, 2),
-      });
+      await createManifest(Array.from(entries.values()));
     },
   };
 };

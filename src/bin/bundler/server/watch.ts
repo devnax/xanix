@@ -1,9 +1,7 @@
 import { watch } from "rolldown";
 import path from "node:path";
 import fs from "node:fs";
-import { getEntries } from "../../include/manifest.js";
 import type { WatcherOptions } from "./types.js";
-import { entriesEqual } from "../../include/entry.js";
 import { normalizePath } from "../../include/utils.js";
 import outdirs from "../../../outdirs.js";
 import ServerConfig from "./watch.config.js";
@@ -18,8 +16,6 @@ const root = process.cwd();
 const watchServer = async ({
   rootEntry,
   onChange,
-  onBuildEnd,
-  onClientEntryChange,
   onReady,
 }: WatcherOptions) => {
   fs.rmSync(outdirs.server, {
@@ -36,6 +32,10 @@ const watchServer = async ({
   };
 
   const config = await ServerConfig();
+  const changedFiles = new Set<string>();
+
+  let isReady = false;
+  let start = 0;
 
   const watcher = watch({
     ...config,
@@ -48,60 +48,73 @@ const watchServer = async ({
       xanixTsconfigAlias(),
       XanixUseServer({ isClient: false }),
       XanixTransformer(),
+
+      {
+        name: "noop",
+        async watchChange(id) {
+          changedFiles.add(normalizePath(id));
+        },
+        async buildStart() {
+          start = performance.now();
+        },
+        async generateBundle() {
+          const duration = parseInt((performance.now() - start).toFixed(2));
+          if (!isReady) {
+            await onReady?.(duration);
+            isReady = true;
+          } else {
+            await onChange?.(Array.from(changedFiles), duration);
+          }
+
+          changedFiles.clear();
+        },
+      },
     ],
   });
 
-  let isReady = false;
-
-  const changedFiles = new Set<string>();
-
   watcher.on("change", async (id) => {
-    changedFiles.add(normalizePath(id));
+    // changedFiles.add(normalizePath(id));
   });
-
-  let duration = 0;
 
   watcher.on("event", async (event) => {
     switch (event.code) {
-      case "BUNDLE_END": {
-        duration = event.duration;
-        onBuildEnd?.(event.duration);
-        break;
-      }
+      // case "BUNDLE_END": {
+      //   duration = event.duration;
+      //   onBuildEnd?.(event.duration);
+      //   break;
+      // }
 
       case "END": {
-        const entries = await getEntries();
+        // if (changedFiles.size) {
+        //   if (entries.length) {
+        //     const clientEntries = Array.from(entries);
 
-        if (changedFiles.size) {
-          if (entries.length) {
-            const clientEntries = Array.from(entries);
+        //     for (const entry of changedFiles) {
+        //       const isClientEntry = clientEntries.find((e) => e.file === entry);
+        //       if (!isClientEntry) {
+        //         const currentEntries = await getEntries();
+        //         const isEqual = await entriesEqual(currentEntries);
+        //         if (!isEqual) {
+        //           await onClientEntryChange?.(entry, currentEntries);
+        //         }
+        //       }
+        //     }
+        //   }
 
-            for (const entry of changedFiles) {
-              const isClientEntry = clientEntries.find((e) => e.file === entry);
-              if (!isClientEntry) {
-                const currentEntries = await getEntries();
-                const isEqual = await entriesEqual(currentEntries);
-                if (!isEqual) {
-                  await onClientEntryChange?.(entry, currentEntries);
-                }
-              }
-            }
-          }
+        //   await onChange?.(
+        //     Array.from(changedFiles).map((file) =>
+        //       file.replace(normalizePath(root), ""),
+        //     ),
+        //     duration,
+        //   );
 
-          await onChange?.(
-            Array.from(changedFiles).map((file) =>
-              file.replace(normalizePath(root), ""),
-            ),
-            duration,
-          );
+        //   changedFiles.clear();
+        // }
 
-          changedFiles.clear();
-        }
-
-        if (!isReady) {
-          isReady = true;
-          await onReady?.(entries);
-        }
+        // if (!isReady) {
+        //   isReady = true;
+        //   await onReady?.(entries);
+        // }
 
         break;
       }

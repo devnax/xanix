@@ -11,7 +11,9 @@ import outdirs from "../../outdirs.js";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import spinner from "../include/spinner.js";
-
+import { getManifest } from "../include/manifest.js";
+const sleep = (ms: number) =>
+  new Promise<void>((resolve) => setTimeout(resolve, ms));
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const packageJson = JSON.parse(
   await readFile(path.join(__dirname, "../../../package.json"), "utf8"),
@@ -50,10 +52,8 @@ function runServer(): Promise<void> {
           console.log("");
           console.log(`  ${pc.blue("➜ Local:")} ${pc.yellow(serverInfo.url)}`);
           console.log("");
-          console.log(
-            pc.green(`Ready in ${serverDuration + clientDuration}ms`),
-          );
-          console.log("");
+          // console.log(pc.green(`Ready`));
+          // console.log("");
         }
         resolve();
       }
@@ -94,29 +94,58 @@ const dev = async (rootEntry: string) => {
     });
   });
 
-  let clientChangeFiles: string[] = [];
+  let changesServerFiles: string[] = [];
   let _clientWatcher: RolldownWatcher | null = null;
+  let clientStarted = false;
+  let buildDuration = 0;
+  let serverWatchReady = false;
 
-  const clientWatcher = async (entries: XanixClientEntry[]) => {
-    spinner.start("Compiling Client...");
+  const waitUntilReady = () => {
+    return new Promise<void>((resolve) => {
+      if (serverWatchReady) {
+        resolve();
+        return;
+      }
 
+      const timer = setInterval(() => {
+        if (serverWatchReady) {
+          clearInterval(timer);
+          resolve();
+        }
+      }, 10);
+    });
+  };
+
+  const clientWatcher = async () => {
     _clientWatcher?.close();
-    _clientWatcher = await watchClient(entries, {
+    _clientWatcher = await watchClient({
+      onStart: async () => {
+        clientStarted = true;
+      },
       WebSocketPort,
-      onReady: async () => {
+      onReady: async (duration) => {
         spinner.stop(
-          `${pc.green("✓")} Client compiled in ${pc.dim(clientDuration + "ms")}`,
+          `${pc.green("✓")} Client compiled in ${pc.dim(buildDuration + duration + "ms")}`,
         );
         await startServer();
+        buildDuration = 0;
+        clientStarted = false;
+        serverWatchReady = false;
       },
-      onChange: async (files) => {
-        clientChangeFiles = files;
-      },
-      onBuildEnd(duration) {
-        clientDuration += duration;
+      onChange: async (files, duration) => {
+        await waitUntilReady();
+        buildDuration += duration;
+        clientStarted = false;
+        serverWatchReady = false;
+        logger.info(
+          `${pc.yellow(files.join(", "))} ${pc.green(buildDuration + "ms")}`,
+          "[update]",
+        );
+        buildDuration = 0;
       },
     });
   };
+
   console.log("");
   console.log(pc.cyan(pc.bold(`Xanix ${packageJson.version}`)));
   console.log("");
@@ -125,34 +154,30 @@ const dev = async (rootEntry: string) => {
 
   const watch = await watchServer({
     rootEntry,
-    onReady: async (entries: XanixClientEntry[]) => {
-      spinner.stop(
-        `${pc.green("✓")} Server compiled in ${pc.dim(serverDuration + "ms")}`,
-      );
-      // await clientWatcher(entries);
-      await startServer();
+    onReady: async (duration) => {
+      buildDuration += duration;
+      serverWatchReady = true;
+      await clientWatcher();
     },
     onChange: async (files, duration) => {
-      logger.info(
-        `${pc.yellow(files.join(", "))} ${pc.green(duration + "ms")}`,
-        "[update]",
-      );
+      buildDuration += duration;
 
-      await startServer();
-      if (clientChangeFiles.length) {
-        broadcast(JSON.stringify(clientChangeFiles));
+      if (!clientStarted) {
+        logger.info(
+          `${pc.yellow(files.join(", "))} ${pc.green(buildDuration + "ms")}`,
+          "[update]",
+        );
+        buildDuration = 0;
       }
 
-      clientChangeFiles = [];
-    },
-    onClientEntryChange: async (
-      _entry: string,
-      entries: XanixClientEntry[],
-    ) => {
-      // await clientWatcher(entries);
-    },
-    onBuildEnd(duration) {
-      serverDuration += duration;
+      changesServerFiles = files;
+      serverWatchReady = true;
+
+      // await startServer();
+      // if (changesServerFiles.length) {
+      //   broadcast(JSON.stringify(changesServerFiles));
+      // }
+      // changesServerFiles = [];
     },
   });
 
