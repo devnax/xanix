@@ -1,6 +1,6 @@
 import { rolldown } from "rolldown";
 import type { CachedModule } from "./types.js";
-import loadEnv from "../config/loadEnv.js";
+import loadEnv from "../../include/loadEnv.js";
 
 const buildCache = async (cached: Map<string, CachedModule>) => {
   const input: any = {};

@@ -1,8 +1,8 @@
 import type { Plugin } from "rolldown";
 import XanixTsconfigAlias from "./XanixTsconfigAlias.js";
 import XanixDocument from "./XanixDocument/index.js";
-import XanixPageTransform from "./XanixPageTransform/index.js";
-import xanixReactRefresh from "./XanixReactRefresh.js";
+import XanixPageTransform from "./XanixPageTransform-dep/index.js";
+import xanixReactRefresh from "../bundler/client/plugins/XanixReactRefresh.js";
 import XanixUseServer from "./XanixUseServer.js";
 import XanixServerTransform from "./XanixServerTransform.js";
 import XanixAssets from "./XanixAssets.js";

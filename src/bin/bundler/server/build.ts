@@ -1,12 +1,10 @@
 import { rolldown } from "rolldown";
 import path from "node:path";
-import bundlerOutput from "./config/output.js";
 import fs from "node:fs";
-import external from "./config/external.js";
-import { XanixClientEntry } from "../types.js";
-import { xanixDefaultPlugins } from "./plugins/plugins.js";
-import outdirs from "../../outdirs.js";
-import { getEntries } from "../include/manifest.js";
+import { XanixClientEntry } from "../../types.js";
+import { xanixDefaultPlugins } from "../../plugins/plugins.js";
+import outdirs from "../../../outdirs.js";
+import { getEntries } from "../../include/manifest.js";
 
 const root = process.cwd();
 
@@ -51,14 +49,11 @@ const BuildServer = async ({ rootEntry, onBuildEnd }: WatcherOptions) => {
     ],
 
     external(id) {
-      if (!external(id)) {
-        return false;
-      }
       return true;
     },
   });
   const entries = await getEntries();
-  await build.write(bundlerOutput.server({ isDev: false }));
+  // await build.write(bundlerOutput.server({ isDev: false }));
   await build.close();
   await onBuildEnd(entries);
 };

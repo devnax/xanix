@@ -1,7 +1,7 @@
 import path from "node:path";
 import fs from "node:fs";
 import dotenv from "dotenv";
-import { getClientRuntimeFileName, uid } from "../../include/utils.js";
+import { getClientRuntimeFileName, uid } from "./utils.js";
 
 const HEARDER_VALUE = uid(Math.random().toString(36), 32);
 

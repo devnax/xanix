@@ -3,7 +3,7 @@ import type { Plugin } from "rolldown";
 import path from "node:path";
 import fs from "node:fs";
 
-import { getClientRuntimeFile } from "../../include/utils.js";
+import { getClientRuntimeFile } from "../../../include/utils.js";
 
 const root = process.cwd();
 

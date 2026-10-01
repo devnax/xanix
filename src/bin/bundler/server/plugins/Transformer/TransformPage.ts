@@ -1,8 +1,9 @@
 import crypto from "node:crypto";
 import path from "node:path";
+import { TransformPluginContext } from "rolldown";
 
 type Name = string;
-type Entry = {
+export type Entry = {
   name: string;
   id: string;
   source: string;
@@ -17,28 +18,44 @@ class TransformPage {
   }[] = [];
 
   imports: Map<Name, string> = new Map();
-  entries: Entry[] = [];
+  entries: Map<string, Entry> = new Map();
   private identifiers: { name: string; placement: number }[] = [];
+  private context: TransformPluginContext;
+  private importer: string;
+  constructor(
+    context: TransformPluginContext,
+    importer: string,
+    entries: Map<string, Entry>,
+  ) {
+    this.context = context;
+    this.importer = importer;
+    this.entries = entries;
+  }
 
-  get replacements() {
+  async replacements() {
     for (const identifier of this.identifiers) {
       const source = this.imports.get(identifier.name);
 
       if (source) {
-        const id = this.uid(source);
-
-        this.entries.push({
-          name: identifier.name,
-          id,
-          source,
-          resolved: "",
+        const resolved = await this.context.resolve(source, this.importer, {
+          skipSelf: true,
         });
 
-        this._replacements.push({
-          start: identifier.placement,
-          end: identifier.placement,
-          value: ` __xpage={{ id: "${id}", name: "${identifier.name}" }} `,
-        });
+        if (resolved) {
+          const id = this.uid(resolved.id);
+          this.entries.set(id, {
+            name: identifier.name,
+            id,
+            source,
+            resolved: resolved?.id,
+          });
+
+          this._replacements.push({
+            start: identifier.placement,
+            end: identifier.placement,
+            value: ` __xpage={{ id: "${id}", name: "${identifier.name}" }} `,
+          });
+        }
       }
     }
     return this._replacements;
@@ -53,17 +70,6 @@ class TransformPage {
   }
 
   transform(node: any) {
-    /* 
-        res.send(<Home />) to 
-        res.send(__xpage({
-            id: uid,
-            component: Home,
-            props: {},
-            request: req,
-            response: res,
-        })) 
-    */
-
     if (
       node.type === "CallExpression" &&
       node.callee.property?.name === "send" &&

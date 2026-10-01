@@ -1,14 +1,13 @@
 import path from "node:path";
 import { spawn } from "node:child_process";
-import watchServer from "../bundler/watchServer.js";
+import watchServer from "../bundler/server/watch.js";
 import { RolldownWatcher } from "rolldown";
-import watchClient from "../bundler/watchClient.js";
+import watchClient from "../bundler/client/watch.js";
 import pc from "picocolors";
 import logger from "../include/logger.js";
 import { WebSocketServer } from "ws";
 import { XanixClientEntry } from "../types.js";
 import outdirs from "../../outdirs.js";
-import { getWebSocketPort } from "../include/utils.js";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import spinner from "../include/spinner.js";
@@ -64,9 +63,13 @@ function runServer(): Promise<void> {
   });
 }
 
+let started = false;
 async function startServer() {
   await runServer();
-  await curl();
+  if (started) {
+    await curl();
+  }
+  started = true;
 }
 
 const dev = async (rootEntry: string) => {

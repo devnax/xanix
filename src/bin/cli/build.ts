@@ -1,5 +1,5 @@
-import buildServer from "../bundler/buildServer.js";
-import buildClient from "../bundler/buildClient.js";
+import buildServer from "../bundler/server/build.js";
+import buildClient from "../bundler/client/build.js";
 import pc from "picocolors";
 import spinner from "../include/spinner.js";
 import { readFile } from "fs/promises";

@@ -1,17 +1,15 @@
 import { watch, type InputOption, type RolldownWatcher } from "rolldown";
-import bundlerOutput from "./config/output.js";
+import ClientWatchConfig from "./watch.config.js";
 import fs from "node:fs";
-import { XanixClientEntry } from "../types.js";
+import { XanixClientEntry } from "../../types.js";
 import {
   getClientRuntimeFile,
   getClientRuntimeFileName,
   normalizePath,
-} from "../include/utils.js";
-import { xanixDefaultPlugins } from "./plugins/plugins.js";
-import outdirs from "../../outdirs.js";
-import loadEnv from "./config/loadEnv.js";
-import externalResolver from "./externalResolver.js";
-import XanixCache from "./cache/index.js";
+} from "../../include/utils.js";
+import { xanixDefaultPlugins } from "../../plugins/plugins.js";
+import outdirs from "../../../outdirs.js";
+import XanixCache from "../cache/index.js";
 
 type Option = {
   onChange?: (files: string[], duration: number) => void;
@@ -42,36 +40,12 @@ const WatchClient = async (
     recursive: true,
   });
 
-  // options.onCachedStart?.();
-  // let clientCache = await BuildClientCache(entries);
-  // options.onCachedEnd?.();
-
-  let watchingMode = false;
-
+  const config = await ClientWatchConfig();
   const watcher = watch({
+    ...config,
     input,
-    treeshake: true,
-    tsconfig: true,
-    checks: {
-      moduleLevelDirective: false,
-    },
-    resolve: {
-      extensions: [".mjs", ".js", ".jsx", ".json", ".ts", ".tsx"],
-      conditionNames: ["browser", "import", "module", "default"],
-    },
-    transform: {
-      target: "es2022",
-      jsx: {
-        runtime: "automatic",
-        // refresh: true,
-      },
-      define: await loadEnv({
-        mode: "development",
-        isClient: true,
-      }),
-    },
+
     plugins: [
-      // externalResolver(),
       XanixCache(),
       ...xanixDefaultPlugins({
         WebSocketPort: options.WebSocketPort,
@@ -80,10 +54,6 @@ const WatchClient = async (
         assetExternal: true,
       }),
     ],
-    output: bundlerOutput.client(entries, { isDev: true }),
-    watch: {
-      clearScreen: false,
-    },
   });
 
   let isReady = false;

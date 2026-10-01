@@ -1,13 +1,12 @@
 import { rolldown, type InputOption } from "rolldown";
 import fs from "node:fs";
-import { XanixClientEntry } from "../types";
-import bundlerOutput from "./config/output.js";
+import { XanixClientEntry } from "../../types";
 import {
   getClientRuntimeFile,
   getClientRuntimeFileName,
-} from "../include/utils.js";
-import { xanixDefaultPlugins } from "./plugins/plugins.js";
-import outdirs from "../../outdirs.js";
+} from "../../include/utils.js";
+import { xanixDefaultPlugins } from "../../plugins/plugins.js";
+import outdirs from "../../../outdirs.js";
 
 const buildClient = async (entries: XanixClientEntry[]) => {
   const input: InputOption = {};
@@ -49,7 +48,7 @@ const buildClient = async (entries: XanixClientEntry[]) => {
     ],
   });
 
-  await build.write(bundlerOutput.client(entries, { isDev: false }));
+  // await build.write(bundlerOutput.client(entries, { isDev: false }));
   await build.close();
 };
 

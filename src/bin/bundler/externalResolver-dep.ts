@@ -1,8 +1,8 @@
 import path from "path";
 import fs from "fs";
 import { Plugin, rolldown } from "rolldown";
-import loadEnv from "./config/loadEnv.js";
-import { tsconfigPathsMatcher } from "./plugins/XanixTsconfigAlias.js";
+import loadEnv from "../include/loadEnv.js";
+import { tsconfigPathsMatcher } from "../plugins/XanixTsconfigAlias.js";
 import { builtinModules } from "module";
 const nodeBuiltins = new Set(builtinModules);
 
