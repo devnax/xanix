@@ -1,24 +1,42 @@
 import express, { Router, Response } from "express";
-import outdirs from "../outdirs.js";
+import outdirs from "../../outdirs.js";
 import {
   clearExpiredUseServerResources,
   getServerResource,
-} from "../hooks/useServer/core.js";
+} from "../../hooks/useServer/core.js";
 import Page from "./page.js";
+import React from "react";
 
 export { Router };
 
 const __xpress = (...args: Parameters<typeof express>) => {
-  const isDev = __XANIX_DEV__;
   const app = express(...args);
   const originalListener = app.listen;
 
   app.use((req, res, next) => {
-    const originalSend = res.send;
+    const method = req.method.toUpperCase();
+    if (method !== "GET") return next();
+
+    const _send = res.send.bind(res);
     res.send = function (body?: any): Response {
-      body = Page(body);
-      return originalSend.call(this, body);
+      const isElement =
+        React.isValidElement(body) && (body?.props as any)?.__xpage;
+      const isNavigation =
+        req.headers["x-xanix-page"] === __XANIX_PAGE_NAVIGATION_HEADER_VALUE__;
+
+      if (isElement || isNavigation) {
+        const info = {
+          component: body,
+          req,
+          res,
+          props: body?.props as any,
+        };
+        Page(info, isNavigation).then(_send);
+        return this;
+      }
+      return _send(body);
     };
+
     next();
   });
 
@@ -41,7 +59,7 @@ const __xpress = (...args: Parameters<typeof express>) => {
     return server;
   };
 
-  if (isDev) {
+  if (__XANIX_DEV__) {
     app.use(`/${outdirs.client}`, express.static(`${outdirs.client}`));
     app.use(`/assets`, express.static(outdirs.assets));
     app.use(`/${outdirs.cache}`, express.static(`${outdirs.cache}`));

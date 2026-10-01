@@ -162,7 +162,7 @@ window.$RefreshReg$ = (type, id) => {
 window.$RefreshSig$ = () => (type) => type;
 
 const ws = new WebSocket(
-  ${JSON.stringify(`ws://localhost:${webSocketPort}`)}
+  ${JSON.stringify(`ws://localhost:${49152}`)}
 );
 
 ws.onmessage = async (event) => {

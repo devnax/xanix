@@ -37,7 +37,7 @@ class TransformPage {
         this._replacements.push({
           start: identifier.placement,
           end: identifier.placement,
-          value: ` __xpage="${id}" `,
+          value: ` __xpage={{ id: "${id}", name: "${identifier.name}" }} `,
         });
       }
     }
@@ -72,9 +72,11 @@ class TransformPage {
     ) {
       const element = node.arguments[0].openingElement;
       const ComponentName = element.name.name;
-
+      const attrs = element.attributes;
+      let end =
+        attrs.length > 0 ? attrs[attrs.length - 1].end : element.name.end;
       this.identifiers.push({
-        placement: element.name.end,
+        placement: end,
         name: ComponentName,
       });
     }

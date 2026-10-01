@@ -1,8 +1,12 @@
 import { createContext } from "react";
 import type { Request, Response } from "express";
+
 export type DocumentContextData = {
-  pageId: string;
-  props: Record<string, any>;
+  page: {
+    id: string;
+    name: string;
+    props: Record<string, any>;
+  };
   metadata: Record<string, any>;
   params: Record<string, string>;
   path: string;

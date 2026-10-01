@@ -7,7 +7,7 @@ type HeadProps = {
 };
 
 const Head = ({ children }: HeadProps) => {
-  const { pageId, props, params, path, metadata, usedata } = useDocument();
+  const { page, params, path, metadata, usedata } = useDocument();
   if (__XANIX_CLIENT__) {
     useEffect(() => {
       const head = document.head;
@@ -27,11 +27,14 @@ const Head = ({ children }: HeadProps) => {
       <head>
         {children}
         <script
-          id={pageId}
+          id={page.id}
           dangerouslySetInnerHTML={{
-            __html: `window.XANIX_DOCUMENT = ${JSON.stringify({
-              pageId,
-              props,
+            __html: `window.__XDOCUMENT = ${JSON.stringify({
+              page: {
+                id: page.id,
+                name: page.name,
+                props: page.props,
+              },
               params,
               path,
               metadata,

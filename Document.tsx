@@ -11,9 +11,9 @@ export const metadata = async (
   };
 };
 
-const RootDocument = ({ document, children }: XanixDocumentProps) => {
+const RootDocument = ({ children }: XanixDocumentProps) => {
   return (
-    <Document document={document}>
+    <Document>
       <Head>
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />

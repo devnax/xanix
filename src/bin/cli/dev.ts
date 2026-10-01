@@ -34,7 +34,7 @@ const curl = () => {
   });
 };
 
-function runStart(): Promise<void> {
+function runServer(): Promise<void> {
   return new Promise((resolve, reject) => {
     child?.kill();
     const filePath = path.join(outdirs.server, "index.js");
@@ -65,12 +65,12 @@ function runStart(): Promise<void> {
 }
 
 async function startServer() {
-  await runStart();
+  await runServer();
   await curl();
 }
 
 const dev = async (rootEntry: string) => {
-  const WebSocketPort = getWebSocketPort();
+  const WebSocketPort = 49152;
   const wss = new WebSocketServer({
     port: WebSocketPort,
   });

@@ -1,8 +1,8 @@
 import { Head, Body, Document, type XanixDocumentProps } from "xanix";
 
-const BaseDocument = ({ document, children }: XanixDocumentProps) => {
+const BaseDocument = ({ children }: XanixDocumentProps) => {
   return (
-    <Document document={document}>
+    <Document>
       <Head>
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />

@@ -29,8 +29,8 @@
       "require": "./dist/server/runtime/index.js"
     },
     "./express": {
-      "import": "./dist/server/express.js",
-      "require": "./dist/server/express.js"
+      "import": "./dist/server/express/index.js",
+      "require": "./dist/server/express/index.js"
     }
   },
   "scripts": {

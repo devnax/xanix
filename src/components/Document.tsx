@@ -2,18 +2,14 @@ import { DocumentContextData, DocumentProvider } from "./DocumentContext.js";
 
 export type DocumentProps = {
   children?: React.ReactNode;
-  document: DocumentContextData;
+  // document: DocumentContextData;
 };
 
-const Document = ({ children, document }: DocumentProps) => {
+const Document = ({ children /*, document */ }: DocumentProps) => {
   if (__XANIX_CLIENT__) {
-    return <DocumentProvider value={document}>{children}</DocumentProvider>;
+    return children;
   } else {
-    return (
-      <DocumentProvider value={document}>
-        <html>{children}</html>
-      </DocumentProvider>
-    );
+    return <html>{children}</html>;
   }
 };
 

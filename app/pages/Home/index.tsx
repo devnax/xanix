@@ -1,5 +1,11 @@
 import React, { Suspense, useMemo, useState } from "react";
-import { navigate, useSearchParams, useCookies, useServer } from "xanix";
+import {
+  navigate,
+  useSearchParams,
+  useCookies,
+  useServer,
+  useDocument,
+} from "xanix";
 import Chunk from "./Chunk";
 import Button from "@xanui/ui/Button";
 import IconButton from "@xanui/ui/IconButton";
@@ -20,7 +26,7 @@ const Show = () => {
   );
 };
 
-const _HomePage = ({ another, category }: any) => {
+const HomePage = ({ another, category }: any) => {
   const [n, setN] = useState("Nax");
 
   const d = useServer(
@@ -85,12 +91,21 @@ const _HomePage = ({ another, category }: any) => {
   );
 };
 
-const HomePage = () => {
-  return (
-    <ThemeProvider theme={createTheme({ name: "dark", mode: "dark" })}>
-      Wellcome say hello
-    </ThemeProvider>
-  );
-};
+// const HomePage = (props: any) => {
+//   const doc = useDocument();
+
+//   return (
+//     <ThemeProvider theme={createTheme({ name: "dark", mode: "dark" })}>
+//       Wellcome say hello {props.title}
+//       <button
+//         onClick={() => {
+//           alert();
+//         }}
+//       >
+//         Home Page
+//       </button>
+//     </ThemeProvider>
+//   );
+// };
 
 export default HomePage;

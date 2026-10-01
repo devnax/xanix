@@ -104,24 +104,7 @@ export default async function xanixPage({
 
   try {
     let html = await renderPage(
-      <Document
-        metadata={_metadata}
-        request={req}
-        response={res}
-        page={{
-          id: pageId,
-          props,
-        }}
-        document={{
-          pageId,
-          props,
-          params: req.params,
-          path,
-          metadata: _metadata,
-          request: req,
-          response: res,
-        }}
-      >
+      <Document>
         <Component {...props} />
       </Document>,
     );
