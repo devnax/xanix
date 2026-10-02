@@ -5,6 +5,7 @@ import path from "path";
 import TransformExpress from "./Transformer/TransformExpress.js";
 import TransformPage, { Entry } from "./Transformer/TransformPage.js";
 import TransformServerAction from "./Transformer/TransformServerAction.js";
+import TransformUseServer from "./Transformer/TransformUseServer.js";
 import outdirs from "../../../../outdirs.js";
 import { createManifest } from "../../../include/manifest.js";
 
@@ -45,18 +46,20 @@ const XanixTransformer = (): Plugin => {
       const transformExpress = new TransformExpress();
       const transformPage = new TransformPage(this, id, entries);
       const transformServerAction = new TransformServerAction(code, id);
+      const transformUseServer = new TransformUseServer(code, id);
       walk(ast, {
         enter(node) {
           transformExpress.transform(node);
           transformPage.transform(node);
           transformServerAction.transform(node);
+          transformUseServer.transform(node);
         },
       });
 
       let replacements = [
         ...transformExpress.replacements,
         ...transformServerAction.replacements,
-
+        ...transformUseServer.replacements,
         ...(await transformPage.replacements()),
       ];
 
@@ -65,8 +68,13 @@ const XanixTransformer = (): Plugin => {
         code = code.slice(0, start) + value + code.slice(end);
       }
 
+      const useServerCode = `
+      ${!transformUseServer.serverImported ? 'import { server } from "xanix";' : ""}
+      ${transformUseServer.serverCodes.join("\n")}
+      `;
+
       return {
-        code,
+        code: useServerCode + "\n" + code,
         map: null,
       };
     },

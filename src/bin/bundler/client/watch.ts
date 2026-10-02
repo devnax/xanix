@@ -62,7 +62,7 @@ const WatchClient = async (options: Option): Promise<RolldownWatcher> => {
       }),
       xanixTsconfigAlias(),
       xanixDocument(),
-      XanixUseServer({ isClient: true }),
+      // XanixUseServer({ isClient: true }),
       XanixTransformer(),
 
       {

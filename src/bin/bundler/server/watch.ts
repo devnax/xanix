@@ -46,7 +46,7 @@ const watchServer = async ({
         emit: true,
       }),
       xanixTsconfigAlias(),
-      XanixUseServer({ isClient: false }),
+      // XanixUseServer({ isClient: false }),
       XanixTransformer(),
 
       {

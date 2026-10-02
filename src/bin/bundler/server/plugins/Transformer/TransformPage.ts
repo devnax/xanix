@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import { TransformPluginContext } from "rolldown";
+import { normalizePath } from "../../../../include/utils.js";
 
 type Name = string;
 export type Entry = {
@@ -46,7 +47,7 @@ class TransformPage {
             name: identifier.name,
             id,
             source,
-            resolved: resolved?.id,
+            resolved: normalizePath(resolved.id),
           });
 
           this._replacements.push({

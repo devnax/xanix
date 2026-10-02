@@ -7,6 +7,7 @@ import { createRoot, type Root } from "react-dom/client";
 import outdirs from "./outdirs.js";
 import Document from "virtual:xanix-document";
 import "./dev.js";
+import { UseServerResult } from "./hooks/useServer.js";
 
 type DocumentInfo = DocumentContextData & {
   component: any;
@@ -77,6 +78,14 @@ window.addEventListener("load", async () => {
   const doc = (window as any).__XDOCUMENT;
   if (!doc || !doc.page || !doc.page.id) return;
   const path = doc.path;
+  const pageData = (window as any).__XPAGEDATA;
+
+  if (pageData) {
+    for (const [key, value] of Object.entries(pageData)) {
+      UseServerResult.set(key, value);
+    }
+  }
+
   dispatch(XANIX_NAVIGATE_START, path);
   const mod = await import(getImportUrl(doc.page.id));
   mount(path, mod.default, doc);
@@ -94,8 +103,15 @@ window.addEventListener("popstate", async () => {
 
 window.addEventListener(XANIX_NAVIGATE, async (event: any) => {
   const { path, replace } = event.detail;
-  let doc: any = await getDocument(path);
+  const doc: any = await getDocument(path);
   if (!doc || !doc.page || !doc.page.id) return;
+
+  if (doc.pagedata) {
+    for (const [key, value] of Object.entries(doc.pagedata)) {
+      UseServerResult.set(key, value);
+    }
+  }
+
   dispatch(XANIX_NAVIGATE_START, path);
   const mod = await import(getImportUrl(doc.page.id));
   mount(path, mod.default, doc);
@@ -107,23 +123,39 @@ window.addEventListener(XANIX_NAVIGATE, async (event: any) => {
   }
 });
 
+window.addEventListener(XANIX_NAVIGATE_RELOAD, async () => {
+  const path = getPath();
+  dispatch(XANIX_NAVIGATE_START, path);
+  const doc: any = await getDocument(path);
+  if (!doc || !doc.page || !doc.page.id) return;
+
+  if (doc.pagedata) {
+    for (const [key, value] of Object.entries(doc.pagedata)) {
+      UseServerResult.set(key, value);
+    }
+  }
+
+  UseServerResult.clear();
+  const mod = await import(getImportUrl(doc.page.id) + "?t=" + Date.now());
+
+  mount(path, mod.default, doc);
+  dispatch(XANIX_NAVIGATE_END, doc.path);
+});
+
 window.addEventListener(XANIX_PRELOAD, async (event: any) => {
   const path = event.detail.path;
   if (!path) return;
   dispatch(XANIX_PRELOAD_START, path);
-  const page = await getDocument(path);
-  if (!page) return;
-  await import(getImportUrl(page.page.id));
-  documents.set(path, page);
-  dispatch(XANIX_PRELOAD_END, page.path);
-});
+  const doc = await getDocument(path);
+  if (!doc || !doc.page || !doc.page.id) return;
 
-window.addEventListener(XANIX_NAVIGATE_RELOAD, async () => {
-  const path = getPath();
-  dispatch(XANIX_NAVIGATE_START, path);
-  let doc: any = await getDocument(path);
-  if (!doc) return;
-  const mod = await import(getImportUrl(doc.page.id) + "?t=" + Date.now());
-  mount(path, mod.default, doc);
-  dispatch(XANIX_NAVIGATE_END, doc.path);
+  if (doc.pagedata) {
+    for (const [key, value] of Object.entries(doc.pagedata)) {
+      UseServerResult.set(key, value);
+    }
+  }
+
+  await import(getImportUrl(doc.page.id));
+  documents.set(path, doc);
+  dispatch(XANIX_PRELOAD_END, doc.path);
 });

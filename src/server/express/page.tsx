@@ -3,10 +3,8 @@ import { PassThrough } from "node:stream";
 import Document, { metadata } from "virtual:xanix-document";
 import { ReactElement } from "react";
 import { DocumentProvider } from "../../components/DocumentContext";
-import {
-  clearExpiredUseServerResources,
-  getPageResources,
-} from "../../hooks/useServer/core";
+import { UseServerResource, UseServerResult } from "../../hooks/useServer";
+import { encode } from "@msgpack/msgpack";
 
 function renderPage(element: React.ReactElement): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -62,7 +60,6 @@ const __xpage = async (
   const pageInfo = props?.__xpage || {};
   const url = new URL(req.url, `http://${req.headers.host}`);
   const path = url.pathname + url.search;
-  clearExpiredUseServerResources();
 
   const _metadata = await metadata({
     request: req,
@@ -73,21 +70,6 @@ const __xpage = async (
       props,
     },
   });
-
-  if (isNavigation) {
-    res.setHeader("Content-Type", "application/json");
-    return JSON.stringify({
-      page: {
-        id: pageInfo.id,
-        name: pageInfo.name,
-        props,
-      },
-      metadata: _metadata as any,
-      params: {},
-      path,
-      usedata: {},
-    });
-  }
 
   const App = (
     <DocumentProvider
@@ -102,7 +84,7 @@ const __xpage = async (
         path,
         request: req,
         response: res,
-        usedata: {},
+        pagedata: {},
       }}
     >
       <Document>{component}</Document>
@@ -110,13 +92,31 @@ const __xpage = async (
   );
 
   let html = await renderPage(App);
-  const pageResources = getPageResources(pageInfo.id);
-  const serverData: Record<string, any> = {};
-  if (pageResources) {
-    for (const [key, resource] of pageResources) {
-      serverData[resource.uid] = resource.read();
-    }
+  let useServerData: Record<string, any> = {};
+  for (const [key, value] of UseServerResult.entries()) {
+    useServerData[key] = value;
   }
+
+  // useServerData = encode(useServerData);
+
+  UseServerResult.clear();
+  UseServerResource.clear();
+
+  if (isNavigation) {
+    res.setHeader("Content-Type", "application/json");
+    return JSON.stringify({
+      page: {
+        id: pageInfo.id,
+        name: pageInfo.name,
+        props,
+      },
+      metadata: _metadata as any,
+      params: req.params || {},
+      path,
+      pagedata: useServerData,
+    });
+  }
+
   const scripts: string[] = [];
   if (__XANIX_DEV__) {
     scripts.push(
@@ -127,9 +127,7 @@ const __xpage = async (
     );
   }
   scripts.push(
-    `<script id="__USE_SERVER_DATA__">window.__USE_SERVER_DATA__ = ${JSON.stringify(
-      serverData,
-    )}</script>`,
+    `<script>window.__XPAGEDATA = ${JSON.stringify(useServerData)}</script>`,
   );
   html = html.replace("<head>", `<head>${scripts.join("\n")}`);
 

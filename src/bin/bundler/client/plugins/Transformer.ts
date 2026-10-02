@@ -3,6 +3,7 @@ import { walk } from "oxc-walker";
 import fs from "fs/promises";
 import path from "path";
 import TransformServerAction from "./Transformer/TransformServerAction.js";
+import TransformUseServer from "./Transformer/TransformUseServer.js";
 import outdirs from "../../../../outdirs.js";
 import { createManifest } from "../../../include/manifest.js";
 
@@ -31,21 +32,29 @@ const XanixTransformer = (): Plugin => {
       const lang = getParserLanguage(id);
       const ast = this.parse(code, { lang });
       const transformServerAction = new TransformServerAction(code, id);
+      const transformUseServer = new TransformUseServer(code, id);
       walk(ast, {
         enter(node) {
           transformServerAction.transform(node);
+          transformUseServer.transform(node);
         },
       });
 
-      let replacements = [...transformServerAction.replacements];
+      let replacements = [
+        ...transformServerAction.replacements,
+        ...transformUseServer.replacements,
+      ];
 
       const sorted = replacements.sort((a, b) => b.start - a.start);
       for (const { start, end, value } of sorted) {
         code = code.slice(0, start) + value + code.slice(end);
       }
-
+      const useServerCode = `
+      ${!transformUseServer.serverImported ? 'import { server } from "xanix";' : ""}
+      ${transformUseServer.serverCodes.join("\n")}
+      `;
       return {
-        code,
+        code: useServerCode + "\n" + code,
         map: null,
       };
     },

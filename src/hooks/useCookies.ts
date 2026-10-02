@@ -1,5 +1,4 @@
 import { useStore } from "./useStore.js";
-
 import useResponse from "./useResponse.js";
 import useHeaders from "./useHeaders.js";
 
@@ -83,7 +82,12 @@ const serializeCookie = (
 const useCookies = () => {
   const headers = useHeaders();
   const res = useResponse();
-  const [cookies, store] = useStore(() => headers?.cookie ?? document.cookie);
+  const [cookies, store] = useStore(() => {
+    if (__XANIX_SERVER__) {
+      return headers?.cookie ?? "";
+    }
+    return document.cookie;
+  });
   const parsed = parseCookies(cookies);
 
   const set = (name: string, value: string, options: CookieOptions = {}) => {

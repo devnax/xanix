@@ -1,9 +1,6 @@
 import express, { Router, Response } from "express";
 import outdirs from "../../outdirs.js";
-import {
-  clearExpiredUseServerResources,
-  getServerResource,
-} from "../../hooks/useServer/core.js";
+
 import Page from "./page.js";
 import React from "react";
 export { Router };
@@ -84,30 +81,6 @@ const __xpress = (...args: Parameters<typeof express>) => {
       }),
     );
   }
-
-  app.post(
-    `/${outdirs.root}/__server_data__/:pageId/:uid`,
-    express.json(),
-    async (req, res) => {
-      const { pageId, uid } = req.params;
-      const args = req.body;
-
-      clearExpiredUseServerResources();
-
-      try {
-        const resource = getServerResource(pageId, uid, args);
-        const data = await resource.promise;
-        res.json({
-          data,
-        });
-      } catch (error) {
-        console.error(error);
-        res.status(500).json({
-          error: "Failed to execute useServer",
-        });
-      }
-    },
-  );
 
   return app;
 };

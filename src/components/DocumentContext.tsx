@@ -12,7 +12,7 @@ export type DocumentContextData = {
   path: string;
   request?: Request;
   response?: Response;
-  usedata: Record<string, any>;
+  pagedata: Record<string, any>;
 };
 
 export const DocumentContext = createContext<DocumentContextData | null>(null);

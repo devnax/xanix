@@ -24,10 +24,10 @@ const Store = createStore();
 const useSearchParams = () => {
   const { request }: { request?: Request } = useDocument();
   const [search, store] = useStore(() => {
-    if (!request?.url) {
+    if (__XANIX_CLIENT__) {
       return window.location.search.slice(1);
     }
-    const query = request.url.split("?")[1] || "";
+    const query = (request as any).url.split("?")[1] || "";
     return query.split("#")[0];
   }, Store);
 

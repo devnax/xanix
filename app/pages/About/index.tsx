@@ -13,8 +13,8 @@ const AboutPage = () => {
   if (d.loading) return "loading...";
   return (
     <div>
-      About Page - Server Data: {d.data.pageName}
-      <button onClick={() => navigate("/")}>Home</button>
+      About Page - Server Data: {JSON.stringify(d.data)}
+      <button onClick={() => d.reload()}>Home</button>
     </div>
   );
 };

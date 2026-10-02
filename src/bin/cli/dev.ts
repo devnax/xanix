@@ -154,6 +154,7 @@ const dev = async (rootEntry: string) => {
 
         broadcast(JSON.stringify(_files));
         buildDuration = 0;
+        await startServer();
       },
     });
   };
@@ -181,15 +182,10 @@ const dev = async (rootEntry: string) => {
           "[update]",
         );
         buildDuration = 0;
+        startServer();
       }
 
       serverWatchReady = true;
-
-      // await startServer();
-      // if (changesServerFiles.length) {
-      //   broadcast(JSON.stringify(changesServerFiles));
-      // }
-      // changesServerFiles = [];
     },
   });
 

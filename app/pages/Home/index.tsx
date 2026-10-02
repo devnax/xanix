@@ -17,67 +17,59 @@ import { createTheme, ThemeProvider } from "@xanui/core";
 import fs from "fs";
 import path from "path";
 
-const getUser = server(async ({ id }) => {
+const getUser = server(async ({ file, id }) => {
+  console.log(file);
+  const updir = path.join(process.cwd(), ".xanix/uploads");
+  await fs.promises.mkdir(updir, { recursive: true });
+  const filePath = path.join(updir, file.name);
+  await fs.promises.writeFile(filePath, Buffer.from(await file.arrayBuffer()));
   const root = process.cwd();
   const txt = await fs.promises.readFile(path.join(root, `text.txt`), "utf-8");
   return txt;
 });
-const getUser1 = server(async ({ id }) => {
-  const root = process.cwd();
-  const txt = await fs.promises.readFile(path.join(root, `text.txt`), "utf-8");
-
-  return txt;
-});
-
-const Show = () => {
-  const params = useSearchParams();
-  const query = params.get("query");
-  const cookie = useCookies();
-  const name = cookie.get("name");
-  return (
-    <div>
-      Query: {query} Name: {name}
-    </div>
-  );
-};
 
 const HomePage = ({ another, category }: any) => {
   const [n, setN] = useState("Nax");
 
   const d = useServer(
-    async ({ name }) => {
+    async ({ name }: any) => {
       return {
         name,
       };
     },
     {
       name: n,
-      cache: {
-        ttl: 5000, // example TTL value in milliseconds
-      },
     },
   );
+
+  // console.log(d);
 
   const params = useSearchParams();
   const cookie = useCookies();
   const name = cookie.get("name");
+  const [file, setFile] = useState<File | null>(null);
 
   useMemo(() => {
     cookie.set("name", "John Doe");
   }, []);
-  if (d.loading) return <div>Loading...</div>;
+
   return (
     <div>
       <Chunk />
       <Avatar />
       <Button>Nice </Button>
       <IconButton />
-      <div>Server Data: {d.data.name}</div>
+      <div>Server Data: </div>
+      <input
+        type="file"
+        id="fileInput"
+        onChange={(e) => setFile(e.target.files?.[0] || null)}
+      />
       <button
         onClick={async () => {
-          const user = await getUser({ id: "example-id" });
+          if (!file) return;
+          const user = await getUser({ file, id: "example-id" });
           console.log(user);
-          await getUser1();
         }}
       >
         log user
@@ -89,7 +81,6 @@ const HomePage = ({ another, category }: any) => {
       >
         Randomize
       </button>
-      <Show />
       Home Page {params.toString()} Name: {name}
       <input
         type="text"
