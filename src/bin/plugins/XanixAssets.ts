@@ -1,7 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
-
 import type { Plugin } from "rolldown";
 
 const ASSET_RE =
@@ -18,11 +17,7 @@ export default function xanixAssets(options: XanixAssetsOptions = {}): Plugin {
     name: "xanix-assets",
 
     resolveId(source, importer) {
-      if (!importer) {
-        return null;
-      }
-
-      if (!ASSET_RE.test(source)) {
+      if (!importer || !ASSET_RE.test(source)) {
         return null;
       }
 
@@ -34,19 +29,13 @@ export default function xanixAssets(options: XanixAssetsOptions = {}): Plugin {
     },
 
     load(id) {
-      if (!ASSET_RE.test(id)) {
-        return null;
-      }
-
-      if (!fs.existsSync(id)) {
+      if (!ASSET_RE.test(id) || !fs.existsSync(id)) {
         return null;
       }
 
       const source = fs.readFileSync(id);
-
       const ext = path.extname(id);
       const basename = path.basename(id, ext);
-
       const hash = crypto
         .createHash("sha256")
         .update(source)

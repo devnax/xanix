@@ -31,7 +31,7 @@ function useServerOnServer<T = any>({
   args = {},
 }: UseServerArgs): UseServerReturn<T> {
   const page = usePage();
-  const resource = getServerResource<T>(page.pageId, uid, args);
+  const resource = getServerResource<T>(page.id, uid, args);
   return {
     data: resource.read(),
     reload: async () => {},
@@ -53,7 +53,7 @@ function useServerOnClient<T = any>({
   const reload = async (): Promise<void> => {
     setLoading(true);
     const response = await fetch(
-      `/${outdirs.root}/__server_data__/${page.pageId}/${uid}`,
+      `/${outdirs.root}/__server_data__/${page.id}/${uid}`,
       {
         method: "POST",
         headers: {

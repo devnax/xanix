@@ -6,7 +6,7 @@ import { normalizePath } from "../../include/utils.js";
 import outdirs from "../../../outdirs.js";
 import ServerConfig from "./watch.config.js";
 import XanixUseServer from "../../plugins/XanixUseServer.js";
-import xanixDocument from "../../plugins/XanixDocument/index.js";
+import xanixDocument from "../../plugins/XanixDocument.js";
 import xanixTsconfigAlias from "../../plugins/XanixTsconfigAlias.js";
 import xanixAssets from "../../plugins/XanixAssets.js";
 import XanixTransformer from "./plugins/Transformer.js";

@@ -5,6 +5,7 @@ import {
   useCookies,
   useServer,
   useDocument,
+  server,
 } from "xanix";
 import Chunk from "./Chunk";
 import Button from "@xanui/ui/Button";
@@ -13,6 +14,20 @@ import Avatar from "@xanui/ui/Avatar";
 import Person from "@xanui/icons/Person";
 import BaselineAddChartIcon from "@iconify-react/ic/baseline-add-chart";
 import { createTheme, ThemeProvider } from "@xanui/core";
+import fs from "fs";
+import path from "path";
+
+const getUser = server(async ({ id }) => {
+  const root = process.cwd();
+  const txt = await fs.promises.readFile(path.join(root, `text.txt`), "utf-8");
+  return txt;
+});
+const getUser1 = server(async ({ id }) => {
+  const root = process.cwd();
+  const txt = await fs.promises.readFile(path.join(root, `text.txt`), "utf-8");
+
+  return txt;
+});
 
 const Show = () => {
   const params = useSearchParams();
@@ -58,6 +73,15 @@ const HomePage = ({ another, category }: any) => {
       <Button>Nice </Button>
       <IconButton />
       <div>Server Data: {d.data.name}</div>
+      <button
+        onClick={async () => {
+          const user = await getUser({ id: "example-id" });
+          console.log(user);
+          await getUser1();
+        }}
+      >
+        log user
+      </button>
       <button
         onClick={() => {
           setN(Math.random().toString());

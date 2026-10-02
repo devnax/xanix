@@ -1,59 +1,10 @@
-import { useRef, useSyncExternalStore } from "react";
-
+import { useRef } from "react";
 import { navigate } from "../navigate.js";
 import useDocument from "./useDocument.js";
+import { createStore, useStore } from "./useStore.js";
 
 type Request = {
   url?: string;
-};
-
-type SearchParamsStore = {
-  subscribe: (callback: () => void) => () => void;
-  getSnapshot: () => string;
-  getServerSnapshot: () => string;
-  emit: () => void;
-};
-
-const getServerSearch = (request?: Request): string => {
-  if (!request?.url) {
-    return "";
-  }
-  const query = request.url.split("?")[1] || "";
-  return query.split("#")[0];
-};
-
-const createSearchParamsStore = (request?: Request): SearchParamsStore => {
-  const handlers = new Set<() => void>();
-  const subscribe = (callback: () => void) => {
-    handlers.add(callback);
-    return () => {
-      handlers.delete(callback);
-    };
-  };
-
-  const getSnapshot = () => {
-    if (__XANIX_SERVER__) {
-      return getServerSearch(request);
-    }
-    return window.location.search.slice(1);
-  };
-
-  const getServerSnapshot = () => {
-    return getServerSearch(request);
-  };
-
-  const emit = () => {
-    for (const handler of handlers) {
-      handler();
-    }
-  };
-
-  return {
-    subscribe,
-    getSnapshot,
-    getServerSnapshot,
-    emit,
-  };
 };
 
 const buildUrl = (search: string) => {
@@ -68,75 +19,45 @@ const buildUrl = (search: string) => {
   );
 };
 
+const Store = createStore();
+
 const useSearchParams = () => {
   const { request }: { request?: Request } = useDocument();
+  const [search, store] = useStore(() => {
+    if (!request?.url) {
+      return window.location.search.slice(1);
+    }
+    const query = request.url.split("?")[1] || "";
+    return query.split("#")[0];
+  }, Store);
 
-  /**
-   * The store must remain stable between renders.
-   *
-   * Creating this directly inside the component would create
-   * a new subscribe/getSnapshot implementation on every render.
-   */
-  const storeRef = useRef<SearchParamsStore | null>(null);
-  if (!storeRef.current) {
-    storeRef.current = createSearchParamsStore(request);
-  }
-
-  const store = storeRef.current;
-  const search = useSyncExternalStore(
-    store.subscribe,
-    store.getSnapshot,
-    store.getServerSnapshot,
-  );
-
-  /**
-   * URLSearchParams is recreated from the stable string snapshot.
-   * This object itself does not need to be stable.
-   */
   const params = new URLSearchParams(search);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const update = (newParams: URLSearchParams) => {
-    if (__XANIX_SERVER__) {
-      return;
+    if (__XANIX_CLIENT__) {
+      const newSearch = newParams.toString();
+      const currentSearch = window.location.search.slice(1);
+
+      if (currentSearch === newSearch) {
+        return;
+      }
+
+      window.history.replaceState(
+        window.history.state,
+        "",
+        buildUrl(newSearch),
+      );
+      store.emit();
+
+      if (timer.current !== null) {
+        clearTimeout(timer.current);
+      }
+
+      timer.current = setTimeout(() => {
+        timer.current = null;
+        navigate(buildUrl(newSearch));
+      }, 300);
     }
-
-    const newSearch = newParams.toString();
-    const currentSearch = window.location.search.slice(1);
-
-    /**
-     * Nothing changed.
-     */
-    if (currentSearch === newSearch) {
-      return;
-    }
-
-    /**
-     * Update the browser URL first.
-     *
-     * replaceState does NOT trigger popstate, so we explicitly
-     * notify useSyncExternalStore afterwards.
-     */
-    window.history.replaceState(window.history.state, "", buildUrl(newSearch));
-
-    /**
-     * Now the snapshot returned by getSnapshot() has changed.
-     */
-    store.emit();
-
-    /**
-     * Cancel previous navigation.
-     */
-    if (timer.current !== null) {
-      clearTimeout(timer.current);
-    }
-
-    /**
-     * Debounce the actual Xanix navigation.
-     */
-    timer.current = setTimeout(() => {
-      timer.current = null;
-      navigate(buildUrl(newSearch));
-    }, 300);
   };
 
   return {
@@ -165,7 +86,6 @@ const useSearchParams = () => {
         if (!result[key]) {
           result[key] = [];
         }
-
         result[key].push(value);
       }
 
@@ -216,9 +136,7 @@ const useSearchParams = () => {
      */
     delete: (key: string) => {
       const newParams = new URLSearchParams(params);
-
       newParams.delete(key);
-
       update(newParams);
     },
 
@@ -227,11 +145,9 @@ const useSearchParams = () => {
      */
     deletes: (keys: string[]) => {
       const newParams = new URLSearchParams(params);
-
       for (const key of keys) {
         newParams.delete(key);
       }
-
       update(newParams);
     },
 

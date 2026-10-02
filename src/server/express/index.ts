@@ -6,12 +6,14 @@ import {
 } from "../../hooks/useServer/core.js";
 import Page from "./page.js";
 import React from "react";
-
 export { Router };
+import XanixRouter from "./Router.js";
 
 const __xpress = (...args: Parameters<typeof express>) => {
   const app = express(...args);
-  const originalListener = app.listen;
+  app.use(express.json());
+  app.use("/__xanix__", XanixRouter);
+  const originalListener = app.listen.bind(app);
 
   app.use((req, res, next) => {
     const method = req.method.toUpperCase();
@@ -106,6 +108,7 @@ const __xpress = (...args: Parameters<typeof express>) => {
       }
     },
   );
+
   return app;
 };
 

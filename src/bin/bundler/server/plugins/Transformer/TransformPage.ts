@@ -1,5 +1,4 @@
 import crypto from "node:crypto";
-import path from "node:path";
 import { TransformPluginContext } from "rolldown";
 
 type Name = string;

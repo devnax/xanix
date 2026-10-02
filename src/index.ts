@@ -18,6 +18,8 @@ import useResponse from "./hooks/useResponse.js";
 import useHeaders from "./hooks/useHeaders.js";
 import useCookies, { CookieOptions } from "./hooks/useCookies.js";
 import useServer, { registerUseServer } from "./hooks/useServer/index.js";
+import { useStore, createStore, createStoreRef } from "./hooks/useStore.js";
+import server from "./hooks/server/index.js";
 
 export * from "./utils.js";
 
@@ -53,6 +55,10 @@ export {
   useCookies,
   useServer,
   registerUseServer,
+  useStore,
+  createStore,
+  createStoreRef,
+  server,
 
   // navigation
   navigate,

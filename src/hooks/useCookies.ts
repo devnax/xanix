@@ -1,4 +1,4 @@
-import { useRef, useSyncExternalStore } from "react";
+import { useStore } from "./useStore.js";
 
 import useResponse from "./useResponse.js";
 import useHeaders from "./useHeaders.js";
@@ -11,47 +11,6 @@ export type CookieOptions = {
   secure?: boolean;
   httpOnly?: boolean;
   sameSite?: "strict" | "lax" | "none";
-};
-
-type CookiesStore = {
-  subscribe: (callback: () => void) => () => void;
-
-  getSnapshot: () => string;
-  getServerSnapshot: () => string;
-  emit: () => void;
-};
-
-const createCookiesStore = (serverCookies?: string): CookiesStore => {
-  const handlers = new Set<() => void>();
-  const subscribe = (callback: () => void) => {
-    handlers.add(callback);
-    return () => {
-      handlers.delete(callback);
-    };
-  };
-
-  const getSnapshot = () => {
-    if (__XANIX_SERVER__) {
-      return serverCookies ?? "";
-    } else {
-      return document.cookie;
-    }
-  };
-
-  const getServerSnapshot = () => serverCookies ?? "";
-
-  const emit = () => {
-    for (const handler of handlers) {
-      handler();
-    }
-  };
-
-  return {
-    subscribe,
-    getSnapshot,
-    getServerSnapshot,
-    emit,
-  };
 };
 
 const parseCookies = (cookies: string): Record<string, string> => {
@@ -124,18 +83,7 @@ const serializeCookie = (
 const useCookies = () => {
   const headers = useHeaders();
   const res = useResponse();
-  const storeRef = useRef<CookiesStore | null>(null);
-  if (!storeRef.current) {
-    storeRef.current = createCookiesStore(headers?.cookie);
-  }
-
-  const store = storeRef.current;
-  const cookies = useSyncExternalStore(
-    store.subscribe,
-    store.getSnapshot,
-    store.getServerSnapshot,
-  );
-
+  const [cookies, store] = useStore(() => headers?.cookie ?? document.cookie);
   const parsed = parseCookies(cookies);
 
   const set = (name: string, value: string, options: CookieOptions = {}) => {
