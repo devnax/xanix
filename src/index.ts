@@ -1,4 +1,6 @@
 import type { Request, Response } from "express";
+import xanix from "./server/index.js";
+
 import Link from "./components/Link.js";
 import Document, { DocumentProps } from "./components/Document.js";
 import Head from "./components/Head.js";
@@ -20,8 +22,30 @@ import useCookies, { CookieOptions } from "./hooks/useCookies.js";
 import useServer from "./hooks/useServer.js";
 import { useStore, createStore, createStoreRef } from "./hooks/useStore.js";
 import server from "./hooks/server.js";
+import cache, { XanixCache } from "./hooks/cache.js";
 
 export * from "./utils.js";
+
+export type { CookieOptions };
+
+export type XanixDocumentProps = DocumentProps & {
+  request?: Request;
+  metadata: Record<string, any>;
+  page: {
+    id: string;
+    props: Record<string, any>;
+  };
+};
+
+export type DocumentMetadata = {
+  request: Request;
+  response: Response;
+  page: {
+    id: string;
+    name: string;
+    props: Record<string, any>;
+  };
+};
 
 // navigate
 import {
@@ -35,6 +59,7 @@ import {
 } from "./navigate.js";
 
 export {
+  xanix,
   Link,
   Document,
   Head,
@@ -58,6 +83,8 @@ export {
   createStore,
   createStoreRef,
   server,
+  cache,
+  XanixCache,
 
   // navigation
   navigate,
@@ -67,25 +94,4 @@ export {
   onNavigateStart,
   onNavigateEnd,
   reload,
-};
-
-export type { CookieOptions };
-
-export type XanixDocumentProps = DocumentProps & {
-  request?: Request;
-  metadata: Record<string, any>;
-  page: {
-    id: string;
-    props: Record<string, any>;
-  };
-};
-
-export type DocumentMetadata = {
-  request: Request;
-  response: Response;
-  page: {
-    id: string;
-    name: string;
-    props: Record<string, any>;
-  };
 };

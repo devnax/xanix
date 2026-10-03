@@ -13,8 +13,8 @@ import { XanixClientEntry } from "../../types.js";
 import xanixAssets from "../../plugins/XanixAssets.js";
 import xanixTsconfigAlias from "../../plugins/XanixTsconfigAlias.js";
 import xanixDocument from "../../plugins/XanixDocument.js";
-import XanixUseServer from "../../plugins/XanixUseServer.js";
 import XanixTransformer from "./plugins/Transformer.js";
+import VirtualDev from "./plugins/VirtualDev.js";
 
 type Option = {
   onStart?: () => Promise<void>;
@@ -56,13 +56,14 @@ const WatchClient = async (options: Option): Promise<RolldownWatcher> => {
     input,
 
     plugins: [
+      VirtualDev(true),
+
       // XanixCache(),
       xanixAssets({
         emit: false,
       }),
       xanixTsconfigAlias(),
       xanixDocument(),
-      // XanixUseServer({ isClient: true }),
       XanixTransformer(),
 
       {
@@ -91,6 +92,12 @@ const WatchClient = async (options: Option): Promise<RolldownWatcher> => {
         },
       },
     ],
+  });
+
+  watcher.on("event", (event) => {
+    if (event.code === "ERROR") {
+      console.error("Build error:", event.error);
+    }
   });
 
   return watcher;

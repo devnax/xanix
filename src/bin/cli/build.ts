@@ -19,13 +19,13 @@ const build = async (rootEntry: string) => {
   const st = Date.now();
   await buildServer({
     rootEntry,
-    onBuildEnd: async (entries) => {
+    onBuildEnd: async () => {
       spinner.stop(
         `${pc.green("✓")} Server built in ${pc.dim(Date.now() - st + "ms")}`,
       );
       spinner.start(`Building client...`);
       const duration = Date.now() - st;
-      await buildClient(entries);
+      await buildClient();
       spinner.stop(
         `${pc.green("✓")} Client built in ${pc.dim(duration + "ms")}`,
       );

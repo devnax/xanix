@@ -14,7 +14,7 @@ const AboutPage = () => {
   return (
     <div>
       About Page - Server Data: {JSON.stringify(d.data)}
-      <button onClick={() => d.reload()}>Home</button>
+      <button onClick={() => navigate("/")}>Home</button>
     </div>
   );
 };

@@ -1,5 +1,6 @@
 import { encode, decode } from "@msgpack/msgpack";
 import { Request, Response } from "express";
+import cache, { CacheOption } from "./cache.js";
 type ServerCallback = (args: any, context?: Context) => Promise<any>;
 type Args = Record<string, any>;
 
@@ -37,11 +38,14 @@ async function uploadFile(file: File) {
   return `FILE(${uploadId}:${filename}:${file.type})`;
 }
 
-const server = (callback: ServerCallback, id?: string) => {
-  if (id) register.set(id, callback);
-  return async (args: Args = {}) => {
+const server = (
+  callback: ServerCallback,
+  options?: CacheOption,
+  id?: string,
+) => {
+  let cb = async (args: Args = {}, context?: Context) => {
     if (__XANIX_SERVER__) {
-      return await callback(args);
+      return await callback(args, context);
     } else {
       for (const key in args) {
         const file = args[key];
@@ -66,6 +70,14 @@ const server = (callback: ServerCallback, id?: string) => {
       return decode(new Uint8Array(buffer));
     }
   };
+
+  const cachecb = cache(
+    (args: Args = {}, context?: Context) => cb(args, context),
+    options,
+  );
+
+  register.set(id!, cachecb as any);
+  return cachecb;
 };
 
 export default server;

@@ -6,6 +6,7 @@ import {
   useServer,
   useDocument,
   server,
+  cache,
 } from "xanix";
 import Chunk from "./Chunk";
 import Button from "@xanui/ui/Button";
@@ -17,16 +18,30 @@ import { createTheme, ThemeProvider } from "@xanui/core";
 import fs from "fs";
 import path from "path";
 
-const getUser = server(async ({ file, id }) => {
-  console.log(file);
-  const updir = path.join(process.cwd(), ".xanix/uploads");
-  await fs.promises.mkdir(updir, { recursive: true });
-  const filePath = path.join(updir, file.name);
-  await fs.promises.writeFile(filePath, Buffer.from(await file.arrayBuffer()));
-  const root = process.cwd();
-  const txt = await fs.promises.readFile(path.join(root, `text.txt`), "utf-8");
-  return txt;
-});
+const getUser = server(
+  async ({ file, id }) => {
+    console.log("file");
+    if (file) {
+      const updir = path.join(process.cwd(), ".xanix/uploads");
+      await fs.promises.mkdir(updir, { recursive: true });
+      const filePath = path.join(updir, file.name);
+      await fs.promises.writeFile(
+        filePath,
+        Buffer.from(await file.arrayBuffer()),
+      );
+    }
+    const root = process.cwd();
+    const txt = await fs.promises.readFile(
+      path.join(root, `text.txt`),
+      "utf-8",
+    );
+    return txt;
+  },
+  {
+    ttl: 2000, // cache time-to-live in milliseconds
+    mode: "server",
+  },
+);
 
 const HomePage = ({ another, category }: any) => {
   const [n, setN] = useState("Nax");
@@ -39,6 +54,9 @@ const HomePage = ({ another, category }: any) => {
     },
     {
       name: n,
+    },
+    {
+      ttl: 2000, // cache time-to-live in milliseconds
     },
   );
 
@@ -67,7 +85,7 @@ const HomePage = ({ another, category }: any) => {
       />
       <button
         onClick={async () => {
-          if (!file) return;
+          // if (!file) return;
           const user = await getUser({ file, id: "example-id" });
           console.log(user);
         }}

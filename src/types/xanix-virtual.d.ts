@@ -2,26 +2,8 @@ declare module "virtual:xanix-document" {
   import type { ComponentType, ReactNode } from "react";
   import type { Request, Response } from "express";
 
-  // export type XanixDocumentData = {
-  //   pageId: string;
-  //   props: Record<string, any>;
-  //   params: Record<string, string>;
-  //   path: string;
-  //   metadata: Record<string, any>;
-  //   request?: Request;
-  //   response?: Response;
-  // };
-
   export type XanixDocumentProps = {
-    // document: XanixDocumentData;
     children?: ReactNode;
-    // page: {
-    //   id: string;
-    //   props: Record<string, any>;
-    // };
-    // metadata: Record<string, any>;
-    // request?: Request;
-    // response?: Response;
   };
 
   /**
@@ -44,3 +26,5 @@ declare module "virtual:xanix-document" {
 
   export default Document;
 }
+
+declare module "virtual:xanix-dev" {}

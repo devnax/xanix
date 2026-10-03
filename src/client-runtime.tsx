@@ -6,8 +6,8 @@ import type { ComponentType } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import outdirs from "./outdirs.js";
 import Document from "virtual:xanix-document";
-import "./dev.js";
 import { UseServerResult } from "./hooks/useServer.js";
+import "virtual:xanix-dev";
 
 type DocumentInfo = DocumentContextData & {
   component: any;

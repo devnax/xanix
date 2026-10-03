@@ -4,12 +4,27 @@ import fs from "node:fs";
 import { XanixClientEntry } from "../../types.js";
 import { getManifest } from "../../include/manifest.js";
 import outdirs from "../../../outdirs.js";
+import XanixTransformer from "./plugins/Transformer.js";
+import xanixTsconfigAlias, {
+  tsconfigPathsMatcher,
+} from "../../plugins/XanixTsconfigAlias.js";
+import xanixAssets from "../../plugins/XanixAssets.js";
+import xanixDocument from "../../plugins/XanixDocument.js";
+import { builtinModules } from "node:module";
+import { ResolverFactory } from "rolldown/experimental";
+import loadEnv from "../../include/loadEnv.js";
+const nodeBuiltins = new Set(builtinModules);
 
+const resolver = new ResolverFactory();
+function isNodeBuiltin(id: string): boolean {
+  const normalized = id.startsWith("node:") ? id.slice(5) : id;
+  return nodeBuiltins.has(normalized);
+}
 const root = process.cwd();
 
 export type WatcherOptions = {
   rootEntry: string;
-  onBuildEnd: (entries: XanixClientEntry[]) => Promise<void>;
+  onBuildEnd: () => Promise<void>;
 };
 
 const BuildServer = async ({ rootEntry, onBuildEnd }: WatcherOptions) => {
@@ -29,6 +44,26 @@ const BuildServer = async ({ rootEntry, onBuildEnd }: WatcherOptions) => {
   const build = await rolldown({
     input,
     treeshake: true,
+    platform: "node",
+    tsconfig: true,
+    checks: {
+      moduleLevelDirective: false,
+    },
+    resolve: {
+      extensions: [".mjs", ".js", ".jsx", ".json", ".ts", ".tsx"],
+      conditionNames: ["node", "import", "module", "default"],
+    },
+    transform: {
+      target: "node20",
+      jsx: {
+        runtime: "automatic",
+      },
+
+      define: await loadEnv({
+        mode: "production",
+        isClient: false,
+      }),
+    },
     onwarn(warning, warn) {
       if (
         warning.code === "MODULE_LEVEL_DIRECTIVE" &&
@@ -36,25 +71,56 @@ const BuildServer = async ({ rootEntry, onBuildEnd }: WatcherOptions) => {
       ) {
         return;
       }
-
       warn(warning);
     },
     plugins: [
-      // ...xanixDefaultPlugins({
-      //   target: "server",
-      //   development: false,
-      //   assetExternal: false,
-      // }),
+      xanixDocument(),
+      xanixAssets({
+        emit: true,
+      }),
+      xanixTsconfigAlias(),
+      XanixTransformer(),
     ],
 
-    external(id) {
+    external(id, parent) {
+      if (
+        id.startsWith(".") ||
+        path.isAbsolute(id) ||
+        id.startsWith("xanix") ||
+        id === "virtual:xanix-document" ||
+        tsconfigPathsMatcher(id)
+      ) {
+        return false;
+      }
+
+      if (isNodeBuiltin(id)) {
+        return true;
+      }
+
+      if (parent) {
+        const resolve = resolver.sync(path.dirname(parent), id);
+        if (resolve.path) {
+          const ext = path.extname(resolve.path);
+          const valid = [".js", ".cjs", ".mjs"];
+          if (!valid.includes(ext)) {
+            return false;
+          }
+        }
+      }
+
       return true;
     },
   });
-  const entries = await getManifest();
-  // await build.write(bundlerOutput.server({ isDev: false }));
+  await build.write({
+    dir: outdirs.server,
+    format: "esm",
+    entryFileNames: "[name].js",
+    chunkFileNames: "chunks/[hash].js",
+    assetFileNames: "assets/[name][extname]",
+    minify: true,
+  });
   await build.close();
-  // await onBuildEnd(entries);
+  await onBuildEnd();
 };
 
 export default BuildServer;

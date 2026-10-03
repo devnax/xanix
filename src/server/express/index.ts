@@ -6,7 +6,7 @@ import React from "react";
 export { Router };
 import XanixRouter from "./Router.js";
 
-const __xpress = (...args: Parameters<typeof express>) => {
+const xanix_express = (...args: Parameters<typeof express>) => {
   const app = express(...args);
   app.use(express.json());
   app.use("/__xanix__", XanixRouter);
@@ -85,4 +85,4 @@ const __xpress = (...args: Parameters<typeof express>) => {
   return app;
 };
 
-export default __xpress;
+export default xanix_express;

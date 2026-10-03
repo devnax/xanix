@@ -6,6 +6,7 @@ import TransformServerAction from "./Transformer/TransformServerAction.js";
 import TransformUseServer from "./Transformer/TransformUseServer.js";
 import outdirs from "../../../../outdirs.js";
 import { createManifest } from "../../../include/manifest.js";
+import TransformCache from "./Transformer/TransformCache.js";
 
 function getParserLanguage(id: string): "js" | "jsx" | "ts" | "tsx" {
   const cleanId = id.split("?")[0];
@@ -33,24 +34,31 @@ const XanixTransformer = (): Plugin => {
       const ast = this.parse(code, { lang });
       const transformServerAction = new TransformServerAction(code, id);
       const transformUseServer = new TransformUseServer(code, id);
+      const transformCache = new TransformCache(code, id);
       walk(ast, {
         enter(node) {
           transformServerAction.transform(node);
           transformUseServer.transform(node);
+          transformCache.transform(node);
         },
       });
 
-      let replacements = [
-        ...transformServerAction.replacements,
-        ...transformUseServer.replacements,
-      ];
+      let replacements = [...transformUseServer.replacements];
+
+      if (transformServerAction.serverImported) {
+        replacements = [...replacements, ...transformServerAction.replacements];
+      }
+
+      if (transformCache.cacheImported) {
+        replacements = [...replacements, ...transformCache.replacements];
+      }
 
       const sorted = replacements.sort((a, b) => b.start - a.start);
       for (const { start, end, value } of sorted) {
         code = code.slice(0, start) + value + code.slice(end);
       }
       const useServerCode = `
-      ${!transformUseServer.serverImported ? 'import { server } from "xanix";' : ""}
+      ${!transformUseServer.serverImported ? 'import * as __xanix from "xanix";' : ""}
       ${transformUseServer.serverCodes.join("\n")}
       `;
       return {

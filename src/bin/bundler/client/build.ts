@@ -1,16 +1,24 @@
 import { rolldown, type InputOption } from "rolldown";
 import fs from "node:fs";
-import { XanixClientEntry } from "../../types";
+import { XanixClientEntry } from "../../types.js";
 import {
   getClientRuntimeFile,
   getClientRuntimeFileName,
 } from "../../include/utils.js";
 import outdirs from "../../../outdirs.js";
+import XanixTransformer from "./plugins/Transformer.js";
+import xanixAssets from "../../plugins/XanixAssets.js";
+import xanixDocument from "../../plugins/XanixDocument.js";
+import xanixTsconfigAlias from "../../plugins/XanixTsconfigAlias.js";
+import loadEnv from "../../include/loadEnv.js";
+import { getManifest } from "../../include/manifest.js";
+import VirtualDev from "./plugins/VirtualDev.js";
 
-const buildClient = async (entries: XanixClientEntry[]) => {
+const buildClient = async () => {
+  const entries = await getManifest();
   const input: InputOption = {};
   for (const entry of entries) {
-    // input[entry.name] = entry.file;
+    input[entry.name] = entry.resolved;
   }
 
   const runtimeFileName = getClientRuntimeFileName("production");
@@ -28,6 +36,24 @@ const buildClient = async (entries: XanixClientEntry[]) => {
   const build = await rolldown({
     input,
     treeshake: true,
+    tsconfig: true,
+    checks: {
+      moduleLevelDirective: false,
+    },
+    resolve: {
+      extensions: [".mjs", ".js", ".jsx", ".json", ".ts", ".tsx"],
+      conditionNames: ["browser", "import", "module", "default"],
+    },
+    transform: {
+      target: "es2022",
+      jsx: {
+        runtime: "automatic",
+      },
+      define: await loadEnv({
+        mode: "production",
+        isClient: true,
+      }),
+    },
     onwarn(warning, warn) {
       if (
         warning.code === "MODULE_LEVEL_DIRECTIVE" &&
@@ -39,15 +65,31 @@ const buildClient = async (entries: XanixClientEntry[]) => {
       warn(warning);
     },
     plugins: [
-      // ...xanixDefaultPlugins({
-      //   target: "client",
-      //   development: false,
-      //   assetExternal: true,
-      // }),
+      VirtualDev(false),
+
+      xanixAssets({
+        emit: false,
+      }),
+      xanixTsconfigAlias(),
+      xanixDocument(),
+      XanixTransformer(),
     ],
   });
 
-  // await build.write(bundlerOutput.client(entries, { isDev: false }));
+  await build.write({
+    dir: outdirs.client,
+    // minify: true,
+    format: "esm",
+    chunkFileNames: "chunks/[hash].js",
+    assetFileNames: "assets/[name][extname]",
+    entryFileNames: (id: any) => {
+      const entry = entries.find((e) => e.name === id.name);
+      if (entry) {
+        return `${entry.id}.js`;
+      }
+      return `[name].js`;
+    },
+  });
   await build.close();
 };
 

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { CacheOption } from "./cache.js";
 
 type Callback<T = any> = (args: Record<string, any>) => Promise<T>;
 type ResourceEntry = {
@@ -59,6 +60,7 @@ const useServerOnServer = <T = any>(
 const useServer = <T = any>(
   callback: Callback<T>,
   args: Record<string, any> = {},
+  option?: CacheOption,
   id?: string,
 ) => {
   if (__XANIX_SERVER__) {

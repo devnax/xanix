@@ -154,7 +154,9 @@ const dev = async (rootEntry: string) => {
 
         broadcast(JSON.stringify(_files));
         buildDuration = 0;
-        await startServer();
+        setTimeout(() => {
+          startServer();
+        }, 200);
       },
     });
   };

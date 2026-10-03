@@ -5,7 +5,6 @@ import type { WatcherOptions } from "./types.js";
 import { normalizePath } from "../../include/utils.js";
 import outdirs from "../../../outdirs.js";
 import ServerConfig from "./watch.config.js";
-import XanixUseServer from "../../plugins/XanixUseServer.js";
 import xanixDocument from "../../plugins/XanixDocument.js";
 import xanixTsconfigAlias from "../../plugins/XanixTsconfigAlias.js";
 import xanixAssets from "../../plugins/XanixAssets.js";
@@ -46,7 +45,6 @@ const watchServer = async ({
         emit: true,
       }),
       xanixTsconfigAlias(),
-      // XanixUseServer({ isClient: false }),
       XanixTransformer(),
 
       {
@@ -71,7 +69,11 @@ const watchServer = async ({
       },
     ],
   });
-
+  watcher.on("event", (event) => {
+    if (event.code === "ERROR") {
+      console.error("Build error:", event.error);
+    }
+  });
   return watcher;
 };
 
