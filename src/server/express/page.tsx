@@ -93,11 +93,10 @@ const __xpage = async (
 
   let html = await renderPage(App);
   let useServerData: Record<string, any> = {};
+
   for (const [key, value] of UseServerResult.entries()) {
     useServerData[key] = value;
   }
-
-  // useServerData = encode(useServerData);
 
   UseServerResult.clear();
   UseServerResource.clear();

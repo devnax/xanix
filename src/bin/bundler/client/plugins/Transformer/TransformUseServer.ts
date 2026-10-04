@@ -55,7 +55,7 @@ class TransformUseServer {
       this.replacements.push({
         start: node.start,
         end: node.end,
-        value: `useServer(_${id}, ${argString}, "${id}")`,
+        value: `useServer(_${id}, ${argString}, undefined, "${id}")`,
       });
     }
   }

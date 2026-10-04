@@ -59,7 +59,7 @@ const server = (
       const res = await fetch(`/__xanix__/server/${id}`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/msgpack",
+          "Content-Type": "application/xanix",
         },
         body: binary,
       });
@@ -71,11 +71,21 @@ const server = (
     }
   };
 
-  const cachecb = cache(
-    (args: Args = {}, context?: Context) => cb(args, context),
-    options,
-  );
-
+  const cachecb: any = cache(cb, {
+    ...options,
+    validate: ({ entry, args }) => {
+      const entryArgs = entry.args[0];
+      const currentArgs = args[0];
+      try {
+        if (JSON.stringify(entryArgs) !== JSON.stringify(currentArgs)) {
+          return false;
+        }
+      } catch (error) {
+        return false;
+      }
+      return true;
+    },
+  });
   register.set(id!, cachecb as any);
   return cachecb;
 };

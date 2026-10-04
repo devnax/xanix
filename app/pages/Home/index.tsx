@@ -39,7 +39,7 @@ const getUser = server(
   },
   {
     ttl: 2000, // cache time-to-live in milliseconds
-    mode: "server",
+    // mode: "server",
   },
 );
 
@@ -86,7 +86,7 @@ const HomePage = ({ another, category }: any) => {
       <button
         onClick={async () => {
           // if (!file) return;
-          const user = await getUser({ file, id: "example-id" });
+          const user = await getUser({ file, id: "example" });
           console.log(user);
         }}
       >

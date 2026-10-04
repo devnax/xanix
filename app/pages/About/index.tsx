@@ -7,6 +7,7 @@ const AboutPage = () => {
       pageName: "about",
     };
   });
+
   useMemo(() => {
     // navigate("/?name=new");
   }, []);

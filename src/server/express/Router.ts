@@ -22,7 +22,7 @@ const readFile = async (
 
 router.post(
   "/server/:id",
-  express.raw({ type: "application/msgpack" }),
+  express.raw({ type: "application/xanix" }),
   async (req, res) => {
     const callback = register.get(req.params.id);
 
@@ -58,7 +58,7 @@ router.post(
       await fs.promises.unlink(path.join(TMP_DIR, uploadId));
     }
 
-    res.set("Content-Type", "application/msgpack");
+    res.set("Content-Type", "application/xanix");
     res.send(buffer);
   },
 );

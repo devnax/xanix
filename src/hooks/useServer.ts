@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import type { CacheOption } from "./cache.js";
 
 type Callback<T = any> = (args: Record<string, any>) => Promise<T>;
@@ -72,18 +72,29 @@ const useServer = <T = any>(
       reload: async () => {},
     };
   } else {
+    const init = useRef(false);
     const [loading, setLoading] = useState(false);
     const [data, setData] = useState(UseServerResult.get(id!));
+
+    const reload = async () => {
+      setLoading(true);
+      const res = await callback(args);
+      setData(res);
+      setLoading(false);
+    };
+
+    useEffect(() => {
+      if (init.current) {
+        reload();
+      } else {
+        init.current = true;
+      }
+    }, [JSON.stringify(args)]);
 
     return {
       data,
       loading,
-      reload: async () => {
-        setLoading(true);
-        const res = await callback(args);
-        setData(res);
-        setLoading(false);
-      },
+      reload,
     };
   }
 };

@@ -7,6 +7,7 @@ import { createRoot, type Root } from "react-dom/client";
 import outdirs from "./outdirs.js";
 import Document from "virtual:xanix-document";
 import { UseServerResult } from "./hooks/useServer.js";
+import xanix from "./server/index.js";
 import "virtual:xanix-dev";
 
 type DocumentInfo = DocumentContextData & {
@@ -85,8 +86,7 @@ window.addEventListener("load", async () => {
       UseServerResult.set(key, value);
     }
   }
-
-  dispatch(XANIX_NAVIGATE_START, path);
+  xanix.emit("load:start", path);
   const mod = await import(getImportUrl(doc.page.id));
   mount(path, mod.default, doc);
   const scriptTag = document.getElementById(doc.page.id);
@@ -94,15 +94,15 @@ window.addEventListener("load", async () => {
     scriptTag.remove();
   }
   history.pushState(null, "", doc.path);
-  dispatch(XANIX_NAVIGATE_END, path);
+  xanix.emit("load:end", path);
 });
 
 window.addEventListener("popstate", async () => {
   dispatch(XANIX_NAVIGATE, getPath());
 });
 
-window.addEventListener(XANIX_NAVIGATE, async (event: any) => {
-  const { path, replace } = event.detail;
+xanix.on("navigate", async (info: any) => {
+  const { path, replace } = info;
   const doc: any = await getDocument(path);
   if (!doc || !doc.page || !doc.page.id) return;
 
@@ -112,10 +112,10 @@ window.addEventListener(XANIX_NAVIGATE, async (event: any) => {
     }
   }
 
-  dispatch(XANIX_NAVIGATE_START, path);
+  xanix.emit("navigate:start", path);
   const mod = await import(getImportUrl(doc.page.id));
   mount(path, mod.default, doc);
-  dispatch(XANIX_NAVIGATE_END, doc.path);
+  xanix.emit("navigate:end", doc.path);
   if (replace) {
     history.replaceState(null, "", doc.path);
   } else {
@@ -123,9 +123,9 @@ window.addEventListener(XANIX_NAVIGATE, async (event: any) => {
   }
 });
 
-window.addEventListener(XANIX_NAVIGATE_RELOAD, async () => {
+xanix.on("reload", async () => {
   const path = getPath();
-  dispatch(XANIX_NAVIGATE_START, path);
+  xanix.emit("navigate:start", path);
   const doc: any = await getDocument(path);
   if (!doc || !doc.page || !doc.page.id) return;
 
@@ -139,13 +139,12 @@ window.addEventListener(XANIX_NAVIGATE_RELOAD, async () => {
   const mod = await import(getImportUrl(doc.page.id) + "?t=" + Date.now());
 
   mount(path, mod.default, doc);
-  dispatch(XANIX_NAVIGATE_END, doc.path);
+  xanix.emit("navigate:end", doc.path);
 });
 
-window.addEventListener(XANIX_PRELOAD, async (event: any) => {
-  const path = event.detail.path;
+xanix.on("preload", async (path: string) => {
   if (!path) return;
-  dispatch(XANIX_PRELOAD_START, path);
+  xanix.emit("preload:start", path);
   const doc = await getDocument(path);
   if (!doc || !doc.page || !doc.page.id) return;
 
@@ -157,5 +156,5 @@ window.addEventListener(XANIX_PRELOAD, async (event: any) => {
 
   await import(getImportUrl(doc.page.id));
   documents.set(path, doc);
-  dispatch(XANIX_PRELOAD_END, doc.path);
+  xanix.emit("preload:end", doc.path);
 });
