@@ -17,15 +17,6 @@ const watchServer = async ({
   onChange,
   onReady,
 }: WatcherOptions) => {
-  fs.rmSync(outdirs.server, {
-    recursive: true,
-    force: true,
-  });
-
-  fs.mkdirSync(outdirs.server, {
-    recursive: true,
-  });
-
   const input = {
     index: path.resolve(root, rootEntry),
   };

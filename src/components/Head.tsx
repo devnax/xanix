@@ -25,6 +25,12 @@ const Head = ({ children }: HeadProps) => {
   if (__XANIX_SERVER__) {
     return (
       <head>
+        {__XANIX_DEV__ && (
+          <script id="__DEV__">{`
+              window.$RefreshReg$ = (type, id) => {};
+              window.$RefreshSig$ = () => (type) => type;
+            `}</script>
+        )}
         {children}
         <script
           id={page.id}

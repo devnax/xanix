@@ -1,4 +1,9 @@
-import { watch, type InputOption, type RolldownWatcher } from "rolldown";
+import {
+  rolldown,
+  watch,
+  type InputOption,
+  type RolldownWatcher,
+} from "rolldown";
 import ClientWatchConfig from "./watch.config.js";
 import fs from "node:fs";
 import { getManifest } from "../../include/manifest.js";
@@ -14,7 +19,6 @@ import xanixAssets from "../../plugins/XanixAssets.js";
 import xanixTsconfigAlias from "../../plugins/XanixTsconfigAlias.js";
 import xanixDocument from "../../plugins/XanixDocument.js";
 import XanixTransformer from "./plugins/Transformer.js";
-import VirtualDev from "./plugins/VirtualDev.js";
 
 type Option = {
   onStart?: () => Promise<void>;
@@ -36,15 +40,6 @@ const WatchClient = async (options: Option): Promise<RolldownWatcher> => {
   const runtimeFileName = getClientRuntimeFileName("development");
   input[runtimeFileName] = getClientRuntimeFile();
 
-  fs.rmSync(outdirs.client, {
-    recursive: true,
-    force: true,
-  });
-
-  fs.mkdirSync(outdirs.client, {
-    recursive: true,
-  });
-
   const config = await ClientWatchConfig(true);
   const changedFiles = new Set<string>();
 
@@ -54,10 +49,7 @@ const WatchClient = async (options: Option): Promise<RolldownWatcher> => {
   const watcher = watch({
     ...config,
     input,
-
     plugins: [
-      VirtualDev(true),
-
       // XanixCache(),
       xanixAssets({
         emit: false,

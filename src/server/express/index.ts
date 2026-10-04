@@ -1,15 +1,13 @@
-import express, { Router, Response } from "express";
+import express, { Response } from "express";
 import outdirs from "../../outdirs.js";
-
-import Page from "./page.js";
 import React from "react";
-export { Router };
-import XanixRouter from "./Router.js";
+import Router from "./Router.js";
+import __xpage from "./page.js";
 
-const xanix_express = (...args: Parameters<typeof express>) => {
+const xanixpress = (...args: Parameters<typeof express>) => {
   const app = express(...args);
   app.use(express.json());
-  app.use("/__xanix__", XanixRouter);
+  app.use("/__xanix__", Router);
   const originalListener = app.listen.bind(app);
 
   app.use((req, res, next) => {
@@ -20,8 +18,10 @@ const xanix_express = (...args: Parameters<typeof express>) => {
     res.send = function (body?: any): Response {
       const isElement =
         React.isValidElement(body) && (body?.props as any)?.__xpage;
-      const isNavigation =
+      const isContentType = req.headers["content-type"] === "application/xanix";
+      const isPage =
         req.headers["x-xanix-page"] === __XANIX_PAGE_NAVIGATION_HEADER_VALUE__;
+      const isNavigation = isPage && isContentType;
 
       if (isElement || isNavigation) {
         const info = {
@@ -30,7 +30,7 @@ const xanix_express = (...args: Parameters<typeof express>) => {
           res,
           props: body?.props as any,
         };
-        Page(info, isNavigation).then(_send);
+        __xpage(info, isNavigation).then(_send);
         return this;
       }
       return _send(body);
@@ -62,7 +62,6 @@ const xanix_express = (...args: Parameters<typeof express>) => {
     app.use(`/${outdirs.client}`, express.static(`${outdirs.client}`));
     app.use(`/assets`, express.static(outdirs.assets));
     app.use(`/${outdirs.cache}`, express.static(`${outdirs.cache}`));
-    app.use(`/xanix-cache/`, express.static(`.xanix/cache`));
   } else {
     app.use(
       `/${outdirs.client}`,
@@ -85,4 +84,4 @@ const xanix_express = (...args: Parameters<typeof express>) => {
   return app;
 };
 
-export default xanix_express;
+export default xanixpress;

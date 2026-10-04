@@ -5,6 +5,8 @@ import spinner from "../include/spinner.js";
 import { readFile } from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
+import outdirs from "../../outdirs.js";
+import fs from "fs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const packageJson = JSON.parse(
@@ -12,6 +14,15 @@ const packageJson = JSON.parse(
 );
 
 const build = async (rootEntry: string) => {
+  fs.rmSync(outdirs.root, {
+    recursive: true,
+    force: true,
+  });
+
+  fs.mkdirSync(outdirs.root, {
+    recursive: true,
+  });
+
   console.log("");
   console.log(pc.cyan(pc.bold(`Xanix ${packageJson.version}`)));
   console.log("");

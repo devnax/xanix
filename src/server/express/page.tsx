@@ -4,6 +4,8 @@ import Document, { metadata } from "virtual:xanix-document";
 import { ReactElement } from "react";
 import { DocumentProvider } from "../../components/DocumentContext";
 import { UseServerResource, UseServerResult } from "../../hooks/useServer";
+import XanixRedirect from "../../classes/XanixRedirect";
+import xanix from "..";
 import { encode } from "@msgpack/msgpack";
 
 function renderPage(element: React.ReactElement): Promise<string> {
@@ -61,6 +63,8 @@ const __xpage = async (
   const url = new URL(req.url, `http://${req.headers.host}`);
   const path = url.pathname + url.search;
 
+  xanix.emit("navigate:start", { path });
+
   const _metadata = await metadata({
     request: req,
     response: res,
@@ -71,66 +75,75 @@ const __xpage = async (
     },
   });
 
-  const App = (
-    <DocumentProvider
-      value={{
-        page: {
-          id: pageInfo.id,
-          name: pageInfo.name,
-          props,
-        },
-        metadata: _metadata as any,
-        params: {},
-        path,
-        request: req,
-        response: res,
-        pagedata: {},
-      }}
-    >
-      <Document>{component}</Document>
-    </DocumentProvider>
-  );
+  try {
+    const App = (
+      <DocumentProvider
+        value={{
+          path,
+          request: req,
+          response: res,
+          metadata: _metadata as any,
+          page: {
+            id: pageInfo.id,
+            name: pageInfo.name,
+            props,
+          },
+          params: req.params || {},
+          pagedata: {},
+        }}
+      >
+        <Document>{component}</Document>
+      </DocumentProvider>
+    );
 
-  let html = await renderPage(App);
-  let useServerData: Record<string, any> = {};
-
-  for (const [key, value] of UseServerResult.entries()) {
-    useServerData[key] = value;
-  }
-
-  UseServerResult.clear();
-  UseServerResource.clear();
-
-  if (isNavigation) {
-    res.setHeader("Content-Type", "application/json");
-    return JSON.stringify({
+    let html = await renderPage(App);
+    const context = {
+      path,
+      request: null,
+      response: null,
+      metadata: _metadata as any,
       page: {
         id: pageInfo.id,
         name: pageInfo.name,
         props,
       },
-      metadata: _metadata as any,
       params: req.params || {},
-      path,
-      pagedata: useServerData,
+      pagedata: {} as any,
+    };
+
+    for (const [key, value] of UseServerResult.entries()) {
+      context.pagedata[key] = value;
+    }
+
+    UseServerResult.clear();
+    UseServerResource.clear();
+
+    xanix.emit("navigate:end", {
+      ...context,
+      request: req,
+      response: res,
     });
-  }
 
-  const scripts: string[] = [];
-  if (__XANIX_DEV__) {
+    if (isNavigation) {
+      res.setHeader("Content-Type", "application/xanix");
+      return encode(context);
+    }
+
+    const scripts: string[] = [];
+
     scripts.push(
-      `<script id="__DEV__">
-        window.$RefreshReg$ = (type, id) => {};
-        window.$RefreshSig$ = () => (type) => type;
-      </script>`,
+      `<script>window.__XPAGEDATA = ${JSON.stringify(context.pagedata)}</script>`,
     );
-  }
-  scripts.push(
-    `<script>window.__XPAGEDATA = ${JSON.stringify(useServerData)}</script>`,
-  );
-  html = html.replace("<head>", `<head>${scripts.join("\n")}`);
+    html = html.replace("<head>", `<head>${scripts.join("\n")}`);
 
-  return `<!DOCTYPE html>${html}`;
+    return `<!DOCTYPE html>${html}`;
+  } catch (error: any) {
+    if (error instanceof XanixRedirect) {
+      res.redirect(error.status, error.location);
+      return;
+    }
+    throw error;
+  }
 };
 
 export default __xpage;

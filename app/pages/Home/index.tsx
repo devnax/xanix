@@ -77,7 +77,7 @@ const HomePage = ({ another, category }: any) => {
       <Avatar />
       <Button>Nice </Button>
       <IconButton />
-      <div>Server Data: </div>
+      <div>Server Data:ss </div>
       <input
         type="file"
         id="fileInput"

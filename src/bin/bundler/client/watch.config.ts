@@ -26,6 +26,15 @@ const ClientWatchConfig = async (isDev = false): Promise<WatchOptions> => {
 
         return `[name].js`;
       },
+
+      banner(e) {
+        if (e.name === "xanix-runtime") {
+          return ` window.$RefreshReg$ = (type, id) => {};
+        window.$RefreshSig$ = () => (type) => type;`;
+        }
+
+        return ``;
+      },
     },
     treeshake: true,
     tsconfig: true,

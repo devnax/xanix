@@ -12,7 +12,6 @@ import xanixDocument from "../../plugins/XanixDocument.js";
 import xanixTsconfigAlias from "../../plugins/XanixTsconfigAlias.js";
 import loadEnv from "../../include/loadEnv.js";
 import { getManifest } from "../../include/manifest.js";
-import VirtualDev from "./plugins/VirtualDev.js";
 
 const buildClient = async () => {
   const entries = await getManifest();
@@ -23,15 +22,6 @@ const buildClient = async () => {
 
   const runtimeFileName = getClientRuntimeFileName("production");
   input[runtimeFileName] = getClientRuntimeFile();
-
-  fs.rmSync(outdirs.client, {
-    recursive: true,
-    force: true,
-  });
-
-  fs.mkdirSync(outdirs.client, {
-    recursive: true,
-  });
 
   const build = await rolldown({
     input,
@@ -65,8 +55,6 @@ const buildClient = async () => {
       warn(warning);
     },
     plugins: [
-      VirtualDev(false),
-
       xanixAssets({
         emit: false,
       }),
@@ -78,7 +66,7 @@ const buildClient = async () => {
 
   await build.write({
     dir: outdirs.client,
-    // minify: true,
+    minify: true,
     format: "esm",
     chunkFileNames: "chunks/[hash].js",
     assetFileNames: "assets/[name][extname]",

@@ -28,15 +28,6 @@ export type WatcherOptions = {
 };
 
 const BuildServer = async ({ rootEntry, onBuildEnd }: WatcherOptions) => {
-  fs.rmSync(outdirs.server, {
-    recursive: true,
-    force: true,
-  });
-
-  fs.mkdirSync(outdirs.server, {
-    recursive: true,
-  });
-
   const input = {
     index: path.resolve(root, rootEntry),
   };

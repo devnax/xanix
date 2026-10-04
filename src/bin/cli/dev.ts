@@ -1,4 +1,5 @@
 import path from "node:path";
+import fs from "node:fs";
 import { spawn } from "node:child_process";
 import watchServer from "../bundler/server/watch.js";
 import { RolldownWatcher } from "rolldown";
@@ -62,15 +63,29 @@ function runServer(): Promise<void> {
 }
 
 let started = false;
+let timer: NodeJS.Timeout;
 async function startServer() {
-  await runServer();
-  if (started) {
-    await curl();
+  if (!started) {
+    await runServer();
+    started = true;
+    return;
   }
-  started = true;
+  clearTimeout(timer);
+  timer = setTimeout(async () => {
+    await runServer();
+    await curl();
+  }, 1000);
 }
 
 const dev = async (rootEntry: string) => {
+  fs.rmSync(outdirs.root, {
+    recursive: true,
+    force: true,
+  });
+
+  fs.mkdirSync(outdirs.root, {
+    recursive: true,
+  });
   const WebSocketPort = 49152;
   const wss = new WebSocketServer({
     port: WebSocketPort,
@@ -154,9 +169,7 @@ const dev = async (rootEntry: string) => {
 
         broadcast(JSON.stringify(_files));
         buildDuration = 0;
-        setTimeout(() => {
-          startServer();
-        }, 200);
+        startServer();
       },
     });
   };
@@ -190,6 +203,8 @@ const dev = async (rootEntry: string) => {
       serverWatchReady = true;
     },
   });
+
+  // chokidar for the manifest file
 
   process.on("SIGINT", () => {
     child?.kill();

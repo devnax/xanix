@@ -22,7 +22,17 @@ xanix.on = (event: keyof EventMap, callback: Function) => {
   eventCallbacks[event].push(callback);
 };
 
-xanix.emit = <T extends keyof EventMap>(event: T, args: EventMap[T]) => {
+xanix.off = (event: keyof EventMap, callback: Function) => {
+  if (!eventCallbacks[event]) {
+    return;
+  }
+  const index = eventCallbacks[event].indexOf(callback);
+  if (index !== -1) {
+    eventCallbacks[event].splice(index, 1);
+  }
+};
+
+xanix.emit = <T extends keyof EventMap>(event: T, args?: EventMap[T]) => {
   if (!eventCallbacks[event]) {
     return;
   }

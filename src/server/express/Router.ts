@@ -53,13 +53,11 @@ router.post(
       request: req,
       response: res,
     });
-    const buffer = Buffer.from(encode(data));
     for (const uploadId of fileIds) {
       await fs.promises.unlink(path.join(TMP_DIR, uploadId));
     }
-
     res.set("Content-Type", "application/xanix");
-    res.send(buffer);
+    res.send(Buffer.from(encode(data)));
   },
 );
 

@@ -1,12 +1,15 @@
 import RefreshRuntime from "react-refresh/runtime";
-const getImportUrl = (file: string) => `/.xanix/client/${file}.js`;
+import outdirs from "./outdirs.js";
+const getImportUrl = (file: string) => `/${outdirs.client}/${file}.js`;
 
 if (__XANIX_DEV__) {
-  RefreshRuntime.injectIntoGlobalHook(window);
-  (window as any).$RefreshReg$ = (type: any, id: any) => {
+  const win: any = window;
+
+  RefreshRuntime.injectIntoGlobalHook(win);
+  win.$RefreshReg$ = (type: any, id: any) => {
     RefreshRuntime.register(type, id);
   };
-  (window as any).$RefreshSig$ = () => (type: any) => type;
+  win.$RefreshSig$ = () => (type: any) => type;
 
   const ws = new WebSocket("ws://localhost:49152");
 

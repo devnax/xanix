@@ -48,15 +48,7 @@ export type DocumentMetadata = {
 };
 
 // navigate
-import {
-  navigate,
-  back,
-  forward,
-  preload,
-  onNavigateStart,
-  onNavigateEnd,
-  reload,
-} from "./navigate.js";
+import { navigate, back, forward, preload, reload } from "./navigate.js";
 
 export {
   xanix,
@@ -91,7 +83,5 @@ export {
   back,
   forward,
   preload,
-  onNavigateStart,
-  onNavigateEnd,
   reload,
 };
