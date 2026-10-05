@@ -7,9 +7,9 @@ import TransformPage, { Entry } from "./Transformer/TransformPage.js";
 import TransformServerAction from "./Transformer/TransformServerAction.js";
 import TransformUseServer from "./Transformer/TransformUseServer.js";
 import outdirs from "../../../../outdirs.js";
-import { createManifest } from "../../../include/manifest.js";
+import { createManifest, getManifest } from "../../../include/manifest.js";
 import TransformCache from "./Transformer/TransformCache.js";
-import TransformReactContext from "./Transformer/TransformReactContext.js";
+import crypto from "node:crypto";
 
 function getParserLanguage(id: string): "js" | "jsx" | "ts" | "tsx" {
   const cleanId = id.split("?")[0];
@@ -20,7 +20,10 @@ function getParserLanguage(id: string): "js" | "jsx" | "ts" | "tsx" {
   return "js";
 }
 
-const XanixTransformer = (): Plugin => {
+type Args = {
+  onChangeManifest?: () => Promise<void>;
+};
+const XanixTransformer = ({ onChangeManifest }: Args = {}): Plugin => {
   const entries: Map<string, Entry> = new Map();
   return {
     name: "xanix-transform",
@@ -42,15 +45,18 @@ const XanixTransformer = (): Plugin => {
       if (ext !== ".tsx" && ext !== ".jsx") {
         return null;
       }
-
+      const uid = crypto
+        .createHash("sha256")
+        .update(id)
+        .digest("hex")
+        .slice(0, 12);
       const lang = getParserLanguage(id);
       const ast = this.parse(code, { lang });
       const transformServer = new TransformServer();
       const transformPage = new TransformPage(this, id, entries);
-      const transformServerAction = new TransformServerAction(code, id);
-      const transformUseServer = new TransformUseServer(code, id);
-      const transformCache = new TransformCache(code, id);
-      const transformReactContext = new TransformReactContext();
+      const transformServerAction = new TransformServerAction(code, id, uid);
+      const transformUseServer = new TransformUseServer(code, id, uid);
+      const transformCache = new TransformCache(code, id, uid);
 
       walk(ast, {
         enter(node) {
@@ -59,7 +65,6 @@ const XanixTransformer = (): Plugin => {
           transformServerAction.transform(node);
           transformUseServer.transform(node);
           transformCache.transform(node);
-          transformReactContext.transform(node);
         },
       });
 
@@ -67,7 +72,6 @@ const XanixTransformer = (): Plugin => {
         ...transformServer.replacements,
         ...transformUseServer.replacements,
         ...(await transformPage.replacements()),
-        ...transformReactContext.replacements,
       ];
 
       if (transformServerAction.serverImported) {
@@ -81,9 +85,7 @@ const XanixTransformer = (): Plugin => {
       for (const { start, end, value } of sorted) {
         code = code.slice(0, start) + value + code.slice(end);
       }
-      let needImport =
-        !transformUseServer.serverImported ||
-        !transformReactContext.replacements.length;
+      let needImport = !transformUseServer.serverImported;
       const useServerCode = `
       ${needImport ? 'import * as __xanix from "xanix";' : ""}
       ${transformUseServer.serverCodes.join("\n")}
@@ -100,24 +102,14 @@ const XanixTransformer = (): Plugin => {
     },
 
     async generateBundle() {
-      const file = path.resolve(
-        process.cwd(),
-        outdirs.root,
-        "client-manifest.json",
-      );
-      try {
-        await fs.access(file);
-      } catch {
-        await createManifest(Array.from(entries.values()));
-        return;
-      }
-      const prevEntries = await fs.readFile(file, "utf-8");
-      const pids = JSON.parse(prevEntries).map((e: any) => e.resolved);
+      const prevEntries = await getManifest();
+      const pids = prevEntries.map((e: any) => e.resolved);
       const cids = Array.from(entries.values()).map((entry) => entry.resolved);
       if (JSON.stringify(cids) === JSON.stringify(pids)) {
         return;
       }
       await createManifest(Array.from(entries.values()));
+      await onChangeManifest?.();
     },
   };
 };

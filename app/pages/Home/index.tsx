@@ -20,7 +20,6 @@ import path from "path";
 
 const getUser = server(
   async ({ file, id }) => {
-    console.log("file");
     if (file) {
       const updir = path.join(process.cwd(), ".xanix/uploads");
       await fs.promises.mkdir(updir, { recursive: true });
@@ -47,7 +46,7 @@ const HomePage = ({ another, category }: any) => {
   const [n, setN] = useState("Nax");
 
   const d = useServer(
-    async ({ name }: any) => {
+    async ({ name }: any, ctx) => {
       return {
         name,
       };

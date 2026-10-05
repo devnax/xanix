@@ -137,7 +137,7 @@ const __xpage = async (
     );
     html = html.replace("<head>", `<head>${scripts.join("\n")}`);
 
-    return `<!DOCTYPE html>${html}`;
+    return `${html}`;
   } catch (error: any) {
     if (error instanceof XanixRedirect) {
       res.redirect(error.status, error.location);

@@ -1,5 +1,6 @@
-import { HTMLProps, useEffect, useRef } from "react";
+import { forwardRef, HTMLProps } from "react";
 import { navigate } from "../navigate.js";
+import { preload as _preload } from "../navigate.js";
 
 export type LinkProps = Omit<
   HTMLProps<HTMLAnchorElement>,
@@ -9,47 +10,38 @@ export type LinkProps = Omit<
   href: string;
 };
 
-const Link = ({ children, preload, ...props }: LinkProps) => {
-  const ref = useRef<HTMLAnchorElement>(null);
-
+const Link = (
+  { children, preload, href, ...props }: LinkProps,
+  ref: React.Ref<HTMLAnchorElement>,
+) => {
   if (__XANIX_CLIENT__) {
-    useEffect(() => {
-      const load = () => {
-        window.dispatchEvent(
-          new CustomEvent("xanix:preload", { detail: { path: props.href } }),
-        );
-      };
-      if (preload && ref.current) {
-        ref.current.addEventListener("mouseenter", load);
-      }
-
-      return () => {
-        if (preload && ref.current) {
-          ref.current.removeEventListener("mouseenter", load);
-        }
-      };
-    }, []);
-    if (preload) {
-      props.onMouseEnter;
-    }
     return (
       <a
         ref={ref}
         {...props}
+        href={href}
         onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          navigate(props.href);
+          if (props.target !== "_blank") {
+            e.preventDefault();
+            e.stopPropagation();
+            navigate(href);
+          }
+        }}
+        onMouseEnter={(e) => {
+          if (preload && props.target !== "_blank") {
+            _preload(href);
+          }
         }}
       >
         {children}
       </a>
     );
   }
-
-  if (__XANIX_SERVER__) {
-    return <a {...props}>{children}</a>;
-  }
+  return (
+    <a href={href} {...props}>
+      {children}
+    </a>
+  );
 };
 
-export default Link;
+export default forwardRef(Link);

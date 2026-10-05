@@ -50,7 +50,7 @@ const WatchClient = async (options: Option): Promise<RolldownWatcher> => {
     ...config,
     input,
     plugins: [
-      // XanixCache(),
+      XanixCache(),
       xanixAssets({
         emit: false,
       }),

@@ -122,7 +122,7 @@ const server = (
     }
   };
 
-  const cachecb: any = cache(cb, {
+  const handler: any = cache(cb, {
     ...options,
     validate: ({ entry, args }) => {
       const entryArgs = entry.args[0];
@@ -137,8 +137,9 @@ const server = (
       return true;
     },
   });
-  register.set(id!, cachecb as any);
-  return cachecb;
+  register.set(id!, handler as any);
+  handler.id = id!;
+  return handler;
 };
 
 export default server;

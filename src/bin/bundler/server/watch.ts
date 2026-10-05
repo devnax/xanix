@@ -1,21 +1,25 @@
 import { watch } from "rolldown";
 import path from "node:path";
-import fs from "node:fs";
-import type { WatcherOptions } from "./types.js";
 import { normalizePath } from "../../include/utils.js";
-import outdirs from "../../../outdirs.js";
 import ServerConfig from "./watch.config.js";
 import xanixDocument from "../../plugins/XanixDocument.js";
 import xanixTsconfigAlias from "../../plugins/XanixTsconfigAlias.js";
 import xanixAssets from "../../plugins/XanixAssets.js";
 import XanixTransformer from "./plugins/Transformer.js";
 
+export type WatcherOptions = {
+  rootEntry: string;
+  onChange: (files: string[], duration: number) => Promise<void>;
+  onReady: (duration: number) => Promise<void>;
+  onChangeManifest: () => Promise<void>;
+};
 const root = process.cwd();
 
 const watchServer = async ({
   rootEntry,
   onChange,
   onReady,
+  onChangeManifest,
 }: WatcherOptions) => {
   const input = {
     index: path.resolve(root, rootEntry),
@@ -36,7 +40,7 @@ const watchServer = async ({
         emit: true,
       }),
       xanixTsconfigAlias(),
-      XanixTransformer(),
+      XanixTransformer({ onChangeManifest }),
 
       {
         name: "noop",

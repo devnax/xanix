@@ -1,15 +1,17 @@
 import crypto from "node:crypto";
 
 class TransformUseServer {
+  uid: string;
   code: string;
   importer: string;
   count = 0;
   replacements: Array<{ start: number; end: number; value: string }> = [];
   serverImported = false;
   serverCodes: Array<string> = [];
-  constructor(code: string, importer: string) {
+  constructor(code: string, importer: string, uid: string) {
     this.code = code;
     this.importer = importer;
+    this.uid = uid;
   }
   transform(node: any) {
     // check variable __xanix exists
@@ -27,17 +29,11 @@ class TransformUseServer {
     if (
       node.type === "CallExpression" &&
       node.callee.name === "useServer" &&
-      (node.arguments.length === 1 ||
-        node.arguments.length === 2 ||
-        node.arguments.length === 3) &&
+      (node.arguments.length === 1 || node.arguments.length <= 3) &&
       (node.arguments[0].type === "ArrowFunctionExpression" ||
         node.arguments[0].type === "FunctionExpression")
     ) {
-      const id = crypto
-        .createHash("sha256")
-        .update("use-server" + this.importer + this.count++)
-        .digest("hex")
-        .slice(0, 12);
+      const id = this.uid + this.count++;
 
       const argNode = node.arguments[1];
       const optionNode = node.arguments[2];
@@ -55,7 +51,7 @@ class TransformUseServer {
       this.replacements.push({
         start: node.start,
         end: node.end,
-        value: `useServer(_${id}, ${argString}, undefined, "${id}")`,
+        value: `useServer(_${id}, ${argString})`,
       });
     }
   }

@@ -1,15 +1,13 @@
-import { DocumentContextData, DocumentProvider } from "./DocumentContext.js";
-
-export type DocumentProps = {
+import { type HTMLProps } from "react";
+export type DocumentProps = HTMLProps<HTMLHtmlElement> & {
   children?: React.ReactNode;
-  // document: DocumentContextData;
 };
 
-const Document = ({ children /*, document */ }: DocumentProps) => {
+const Document = ({ children, ...props }: DocumentProps) => {
   if (__XANIX_CLIENT__) {
     return children;
   } else {
-    return <html>{children}</html>;
+    return <html {...props}>{children}</html>;
   }
 };
 

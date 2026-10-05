@@ -5,7 +5,6 @@ import Link from "./components/Link.js";
 import Document, { DocumentProps } from "./components/Document.js";
 import Head from "./components/Head.js";
 import Body from "./components/Body.js";
-import Script from "./components/Script.js";
 
 // hooks
 import useDocument from "./hooks/useDocument.js";
@@ -57,7 +56,6 @@ export {
   Document,
   Head,
   Body,
-  Script,
 
   // hooks
   useDocument,

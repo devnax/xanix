@@ -11,9 +11,11 @@ class TransformServerAction {
   serverImported = false;
   importer: string;
   count = 0;
-  constructor(code: string, importer: string) {
+  uid: string;
+  constructor(code: string, importer: string, uid: string) {
     this.code = code;
     this.importer = importer;
+    this.uid = uid;
   }
 
   transform(node: any) {
@@ -36,11 +38,7 @@ class TransformServerAction {
       (node.arguments[0].type === "ArrowFunctionExpression" ||
         node.arguments[0].type === "FunctionExpression")
     ) {
-      const id = crypto
-        .createHash("sha256")
-        .update(this.importer + this.count++)
-        .digest("hex")
-        .slice(0, 12);
+      const id = this.uid + this.count++;
 
       if (node.arguments.length === 2) {
         const optionNode = node.arguments[1];

@@ -1,12 +1,12 @@
-import { useEffect } from "react";
+import { useEffect, type HTMLProps } from "react";
 import useDocument from "../hooks/useDocument.js";
 import outdirs from "../outdirs.js";
 
-type HeadProps = {
+type HeadProps = HTMLProps<HTMLHeadElement> & {
   children?: React.ReactNode;
 };
 
-const Head = ({ children }: HeadProps) => {
+const Head = ({ children, ...props }: HeadProps) => {
   const { page, params, path, metadata, pagedata } = useDocument();
   if (__XANIX_CLIENT__) {
     useEffect(() => {
@@ -23,19 +23,15 @@ const Head = ({ children }: HeadProps) => {
   }
 
   if (__XANIX_SERVER__) {
+    let devScript = __XANIX_DEV__
+      ? `window.$RefreshReg$ = (type, id) => {};window.$RefreshSig$ = () => (type) => type;`
+      : "";
     return (
-      <head>
-        {__XANIX_DEV__ && (
-          <script id="__DEV__">{`
-              window.$RefreshReg$ = (type, id) => {};
-              window.$RefreshSig$ = () => (type) => type;
-            `}</script>
-        )}
+      <head {...props}>
         {children}
         <script
-          id={page.id}
           dangerouslySetInnerHTML={{
-            __html: `window.__XDOCUMENT = ${JSON.stringify({
+            __html: `${devScript}; window.__XDOCUMENT = ${JSON.stringify({
               page: {
                 id: page.id,
                 name: page.name,
@@ -45,7 +41,7 @@ const Head = ({ children }: HeadProps) => {
               path,
               metadata,
               pagedata,
-            })};
+            })}; 
         `,
           }}
         ></script>

@@ -10,10 +10,12 @@ class TransformCache {
   code: string;
   cacheImported = false;
   importer: string;
+  uid: string;
   count = 0;
-  constructor(code: string, importer: string) {
+  constructor(code: string, importer: string, uid: string) {
     this.code = code;
     this.importer = importer;
+    this.uid = uid;
   }
 
   transform(node: any) {
@@ -34,11 +36,7 @@ class TransformCache {
       node.callee.name === "cache" &&
       (node.arguments.length === 1 || node.arguments.length === 2)
     ) {
-      const id = crypto
-        .createHash("sha256")
-        .update(this.importer + this.count++)
-        .digest("hex")
-        .slice(0, 12);
+      const id = this.uid + this.count++;
 
       if (node.arguments.length === 1) {
         this.replacements.push({

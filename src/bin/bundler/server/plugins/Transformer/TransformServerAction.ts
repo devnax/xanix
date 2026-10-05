@@ -10,10 +10,12 @@ class TransformServerAction {
   code: string;
   serverImported = false;
   importer: string;
+  uid: string;
   count = 0;
-  constructor(code: string, importer: string) {
+  constructor(code: string, importer: string, uid: string) {
     this.code = code;
     this.importer = importer;
+    this.uid = uid;
   }
 
   transform(node: any) {
@@ -41,11 +43,7 @@ class TransformServerAction {
       const optionNode = node.arguments[1];
       const fnString = this.code.slice(fnNode.start, fnNode.end);
 
-      const id = crypto
-        .createHash("sha256")
-        .update(this.importer + this.count++)
-        .digest("hex")
-        .slice(0, 12);
+      const id = this.uid + this.count++;
 
       if (node.arguments.length === 2) {
         const optionString = this.code.slice(optionNode.start, optionNode.end);

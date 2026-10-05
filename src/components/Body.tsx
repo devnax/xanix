@@ -1,12 +1,11 @@
-type BodyProps = {
-  children?: React.ReactNode;
-};
+import { HTMLProps } from "react";
+type BodyProps = HTMLProps<HTMLBodyElement>;
 
-const Body = ({ children }: BodyProps) => {
+const Body = ({ children, ...props }: BodyProps) => {
   if (__XANIX_CLIENT__) {
     return children;
   } else {
-    return <body>{children}</body>;
+    return <body {...props}>{children}</body>;
   }
 };
 

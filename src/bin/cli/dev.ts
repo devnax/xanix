@@ -182,10 +182,14 @@ const dev = async (rootEntry: string) => {
 
   const watch = await watchServer({
     rootEntry,
+    onChangeManifest: async () => {
+      // Handle manifest change
+      await clientWatcher();
+    },
     onReady: async (duration) => {
       buildDuration += duration;
       serverWatchReady = true;
-      await clientWatcher();
+      // await clientWatcher();
     },
     onChange: async (files, duration) => {
       buildDuration += duration;
@@ -203,8 +207,6 @@ const dev = async (rootEntry: string) => {
       serverWatchReady = true;
     },
   });
-
-  // chokidar for the manifest file
 
   process.on("SIGINT", () => {
     child?.kill();

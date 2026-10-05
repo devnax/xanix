@@ -1,13 +1,10 @@
 import { type Plugin } from "rolldown";
 import { walk } from "oxc-walker";
-import fs from "fs/promises";
 import path from "path";
 import TransformServerAction from "./Transformer/TransformServerAction.js";
 import TransformUseServer from "./Transformer/TransformUseServer.js";
-import outdirs from "../../../../outdirs.js";
-import { createManifest } from "../../../include/manifest.js";
 import TransformCache from "./Transformer/TransformCache.js";
-import { TransformReactContext } from "./Transformer/TransformReactContext.js";
+import crypto from "node:crypto";
 
 function getParserLanguage(id: string): "js" | "jsx" | "ts" | "tsx" {
   const cleanId = id.split("?")[0];
@@ -21,6 +18,7 @@ function getParserLanguage(id: string): "js" | "jsx" | "ts" | "tsx" {
 const XanixTransformer = (): Plugin => {
   return {
     name: "xanix-transform",
+
     async transform(code, id) {
       if (id.includes("node_modules")) {
         return null;
@@ -30,27 +28,26 @@ const XanixTransformer = (): Plugin => {
       if (ext !== ".tsx" && ext !== ".jsx") {
         return null;
       }
-
+      const uid = crypto
+        .createHash("sha256")
+        .update(id)
+        .digest("hex")
+        .slice(0, 12);
       const lang = getParserLanguage(id);
       const ast = this.parse(code, { lang });
-      const transformServerAction = new TransformServerAction(code, id);
-      const transformUseServer = new TransformUseServer(code, id);
-      const transformCache = new TransformCache(code, id);
-      const transformReactContext = new TransformReactContext();
+      const transformServerAction = new TransformServerAction(code, id, uid);
+      const transformUseServer = new TransformUseServer(code, id, uid);
+      const transformCache = new TransformCache(code, id, uid);
 
       walk(ast, {
         enter(node) {
           transformServerAction.transform(node);
           transformUseServer.transform(node);
           transformCache.transform(node);
-          transformReactContext.transform(node);
         },
       });
 
-      let replacements = [
-        ...transformUseServer.replacements,
-        ...transformReactContext.replacements,
-      ];
+      let replacements = [...transformUseServer.replacements];
 
       if (transformServerAction.serverImported) {
         replacements = [...replacements, ...transformServerAction.replacements];
@@ -64,9 +61,7 @@ const XanixTransformer = (): Plugin => {
       for (const { start, end, value } of sorted) {
         code = code.slice(0, start) + value + code.slice(end);
       }
-      let needImport =
-        !transformUseServer.serverImported ||
-        !transformReactContext.replacements.length;
+      let needImport = !transformUseServer.serverImported;
 
       const useServerCode = `
       ${needImport ? 'import * as __xanix from "xanix";' : ""}

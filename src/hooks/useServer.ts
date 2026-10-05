@@ -1,7 +1,18 @@
 import { useRef, useState, useEffect } from "react";
+import useRequest from "./useRequest.js";
+import useResponse from "./useResponse.js";
 import type { CacheOption } from "./cache.js";
+import { Request, Response } from "express";
 
-type Callback<T = any> = (args: Record<string, any>) => Promise<T>;
+type Context = {
+  request: Request;
+  response: Response;
+};
+
+type Callback<T = any> = (
+  args: Record<string, any>,
+  ctx?: Context,
+) => Promise<T>;
 type ResourceEntry = {
   promise: Promise<unknown>;
   status: "pending" | "success" | "error";
@@ -13,15 +24,19 @@ export const UseServerResource = new Map<string, ResourceEntry>();
 export const UseServerResult = new Map<string, unknown>();
 
 const useServerOnServer = <T = any>(
-  callback: Callback<T>,
+  callback: Function,
   args: Record<string, any> = {},
   id: string,
 ) => {
   if (__XANIX_SERVER__) {
     let entry = UseServerResource.get(id);
-
+    const req = useRequest();
+    const res = useResponse();
     if (!entry) {
-      const promise = callback(args);
+      const promise = callback(args, {
+        request: req,
+        response: res,
+      });
 
       entry = {
         promise,
@@ -33,11 +48,11 @@ const useServerOnServer = <T = any>(
       UseServerResource.set(id, entry as any);
 
       promise.then(
-        (value) => {
+        (value: any) => {
           (entry as any).status = "success";
           (entry as any).value = value;
         },
-        (error) => {
+        (error: any) => {
           (entry as any).status = "error";
           (entry as any).error = error;
         },
@@ -61,15 +76,23 @@ const useServer = <T = any>(
   callback: Callback<T>,
   args: Record<string, any> = {},
   option?: CacheOption,
-  id?: string,
 ) => {
+  const id = (callback as any).id;
   if (__XANIX_SERVER__) {
-    const res = useServerOnServer(callback, args, id!);
-    UseServerResult.set(id!, res);
+    const req = useRequest();
+    const res = useResponse();
+    const value = useServerOnServer(callback, args, id!);
+    UseServerResult.set(id!, value);
     return {
-      data: res,
+      data: value,
       loading: false,
-      reload: async () => {},
+      reload: async () => {
+        const value = await callback(args, {
+          request: req!,
+          response: res!,
+        });
+        UseServerResult.set(id!, value);
+      },
     };
   } else {
     const init = useRef(false);

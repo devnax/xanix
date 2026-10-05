@@ -35,6 +35,7 @@ const XanixCache = (): Plugin => {
       if (!changed) {
         return;
       }
+      changed = false;
       await buildCache(cached);
     },
 
