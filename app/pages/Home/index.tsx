@@ -75,7 +75,7 @@ const HomePage = ({ another, category }: any) => {
     <div>
       <Chunk />
       <Avatar />
-      <Button>Nice </Button>
+      <Button>Nice</Button>
       <IconButton />
       <div>Server Data:ss </div>
       <input

@@ -3,6 +3,7 @@ import outdirs from "../../outdirs.js";
 import React from "react";
 import Router from "./Router.js";
 import __xpage from "./page.js";
+import xanix from "../index.js";
 
 const xanixpress = (...args: Parameters<typeof express>) => {
   const app = express(...args);

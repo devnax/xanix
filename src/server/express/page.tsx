@@ -63,7 +63,7 @@ const __xpage = async (
   const url = new URL(req.url, `http://${req.headers.host}`);
   const path = url.pathname + url.search;
 
-  xanix.emit("navigate:start", { path });
+  xanix.emit("navigate:start", { path, request: req, response: res });
 
   const _metadata = await metadata({
     request: req,
@@ -76,31 +76,31 @@ const __xpage = async (
   });
 
   try {
+    const value = {
+      path,
+      request: req,
+      response: res,
+      metadata: _metadata as any,
+      page: {
+        id: pageInfo.id,
+        name: pageInfo.name,
+        props,
+      },
+      params: req.params || {},
+      pagedata: {},
+    };
     const App = (
-      <DocumentProvider
-        value={{
-          path,
-          request: req,
-          response: res,
-          metadata: _metadata as any,
-          page: {
-            id: pageInfo.id,
-            name: pageInfo.name,
-            props,
-          },
-          params: req.params || {},
-          pagedata: {},
-        }}
-      >
+      <DocumentProvider value={value}>
         <Document>{component}</Document>
       </DocumentProvider>
     );
 
+    xanix.emit("page:before-render", value);
     let html = await renderPage(App);
     const context = {
       path,
-      request: null,
-      response: null,
+      request: undefined,
+      response: undefined,
       metadata: _metadata as any,
       page: {
         id: pageInfo.id,
@@ -118,6 +118,7 @@ const __xpage = async (
     UseServerResult.clear();
     UseServerResource.clear();
 
+    xanix.emit("page:after-render", context);
     xanix.emit("navigate:end", {
       ...context,
       request: req,
@@ -142,6 +143,12 @@ const __xpage = async (
       res.redirect(error.status, error.location);
       return;
     }
+    xanix.emit("navigation:error", {
+      error,
+      path,
+      request: req,
+      response: res,
+    });
     throw error;
   }
 };

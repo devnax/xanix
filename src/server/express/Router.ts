@@ -3,6 +3,7 @@ import express, { Router } from "express";
 import fs from "fs";
 import path from "path";
 import { register, CHUNK_SIZE } from "../../hooks/server.js";
+import xanix from "../index.js";
 
 const router = Router();
 const TMP_DIR = path.resolve(".xanix/tmp");
@@ -27,13 +28,25 @@ router.post(
     const callback = register.get(req.params.id);
 
     if (!callback) {
+      xanix.emit("action:error", {
+        error: new Error("Action not found"),
+        args: {},
+        id: req.params.id,
+        request: req,
+        response: res,
+      });
       res.status(404).json({
         status: "Action not found",
         id: req.params.id,
       });
       return;
     }
-
+    xanix.emit("action:start", {
+      args: {},
+      id: req.params.id,
+      request: req,
+      response: res,
+    });
     const args: any = req.body?.length ? decode(new Uint8Array(req.body)) : {};
     let fileIds = [];
     for (const key in args) {
@@ -44,7 +57,20 @@ router.post(
         value.endsWith(")")
       ) {
         const [uploadId, filename, fileType] = value.slice(5, -1).split(":");
-        args[key] = await readFile(uploadId, filename, fileType);
+        const file = await readFile(uploadId, filename, fileType);
+        xanix.emit("upload:start", {
+          file: file,
+          request: req,
+          response: res,
+        });
+        xanix.emit("upload:end", {
+          file: file,
+          id: uploadId,
+          request: req,
+          response: res,
+        });
+
+        args[key] = file;
         fileIds.push(uploadId);
       }
     }
@@ -56,6 +82,12 @@ router.post(
     for (const uploadId of fileIds) {
       await fs.promises.unlink(path.join(TMP_DIR, uploadId));
     }
+    xanix.emit("action:end", {
+      args: {},
+      id: req.params.id,
+      request: req,
+      response: res,
+    });
     res.set("Content-Type", "application/xanix");
     res.send(Buffer.from(encode(data)));
   },

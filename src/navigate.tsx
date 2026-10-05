@@ -74,6 +74,12 @@ const getDocument = async (path: string) => {
       return _doc;
     }
   } catch (error) {}
+  xanix.emit("navigation:error", {
+    error: new Error(`Failed to fetch page for path ${path}`),
+    path,
+    request: undefined,
+    response: undefined,
+  });
   throw new Error(`Failed to fetch page for path ${path}`);
 };
 

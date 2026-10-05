@@ -1,12 +1,14 @@
-import React from "react";
+import r, { createContext as ctx } from "react";
 import Button from "@xanui/ui/Button";
+
+const ChunkContext = r.createContext(null);
 
 const Chunk = () => {
   return (
-    <div>
+    <ChunkContext.Provider value={null}>
       Chunks
-      <Button>Click M</Button>
-    </div>
+      <Button>Click Ms</Button>
+    </ChunkContext.Provider>
   );
 };
 export default Chunk;

@@ -19,18 +19,6 @@
     ".": {
       "import": "./dist/index.js",
       "require": "./dist/index.js"
-    },
-    "./page": {
-      "import": "./dist/server/page.js",
-      "require": "./dist/server/page.js"
-    },
-    "./runtime": {
-      "import": "./dist/server/runtime/index.js",
-      "require": "./dist/server/runtime/index.js"
-    },
-    "./express": {
-      "import": "./dist/server/express/index.js",
-      "require": "./dist/server/express/index.js"
     }
   },
   "scripts": {

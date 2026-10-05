@@ -9,6 +9,7 @@ import TransformUseServer from "./Transformer/TransformUseServer.js";
 import outdirs from "../../../../outdirs.js";
 import { createManifest } from "../../../include/manifest.js";
 import TransformCache from "./Transformer/TransformCache.js";
+import TransformReactContext from "./Transformer/TransformReactContext.js";
 
 function getParserLanguage(id: string): "js" | "jsx" | "ts" | "tsx" {
   const cleanId = id.split("?")[0];
@@ -49,6 +50,8 @@ const XanixTransformer = (): Plugin => {
       const transformServerAction = new TransformServerAction(code, id);
       const transformUseServer = new TransformUseServer(code, id);
       const transformCache = new TransformCache(code, id);
+      const transformReactContext = new TransformReactContext();
+
       walk(ast, {
         enter(node) {
           transformServer.transform(node);
@@ -56,6 +59,7 @@ const XanixTransformer = (): Plugin => {
           transformServerAction.transform(node);
           transformUseServer.transform(node);
           transformCache.transform(node);
+          transformReactContext.transform(node);
         },
       });
 
@@ -63,6 +67,7 @@ const XanixTransformer = (): Plugin => {
         ...transformServer.replacements,
         ...transformUseServer.replacements,
         ...(await transformPage.replacements()),
+        ...transformReactContext.replacements,
       ];
 
       if (transformServerAction.serverImported) {
@@ -76,14 +81,16 @@ const XanixTransformer = (): Plugin => {
       for (const { start, end, value } of sorted) {
         code = code.slice(0, start) + value + code.slice(end);
       }
-
+      let needImport =
+        !transformUseServer.serverImported ||
+        !transformReactContext.replacements.length;
       const useServerCode = `
-      ${!transformUseServer.serverImported ? 'import * as __xanix from "xanix";' : ""}
+      ${needImport ? 'import * as __xanix from "xanix";' : ""}
       ${transformUseServer.serverCodes.join("\n")}
       `;
 
       if (transformServer.foundServer) {
-        code = `import {xanix} from "xanix";\n` + code;
+        code = `import { xanix } from "xanix";\n` + code;
       }
 
       return {

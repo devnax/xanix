@@ -1,6 +1,7 @@
 import { encode, decode } from "@msgpack/msgpack";
 import { Request, Response } from "express";
 import cache, { CacheOption } from "./cache.js";
+import xanix from "../server/index.js";
 type ServerCallback = (args: any, context?: Context) => Promise<any>;
 type Args = Record<string, any>;
 
@@ -45,29 +46,79 @@ const server = (
 ) => {
   let cb = async (args: Args = {}, context?: Context) => {
     if (__XANIX_SERVER__) {
-      return await callback(args, context);
+      try {
+        xanix.emit("action:start", {
+          args,
+          id: id!,
+          request: context?.request,
+          response: context?.response,
+        });
+        const result = await callback(args, context);
+        xanix.emit("action:end", {
+          args,
+          id: id!,
+          request: context?.request,
+          response: context?.response,
+        });
+        return result;
+      } catch (error: any) {
+        xanix.emit("action:error", {
+          error,
+          args,
+          id: id!,
+          request: context?.request,
+          response: context?.response,
+        });
+        throw error;
+      }
     } else {
-      for (const key in args) {
-        const file = args[key];
-        if (file instanceof File) {
-          const fid = await uploadFile(file);
-          args[key] = fid;
+      try {
+        for (const key in args) {
+          const file = args[key];
+          if (file instanceof File) {
+            xanix.emit("upload:start", {
+              file: file,
+            });
+            const fid = await uploadFile(file);
+            args[key] = fid;
+            xanix.emit("upload:end", {
+              file: file,
+              id: fid,
+            });
+          }
         }
-      }
 
-      const binary = encode(args);
-      const res = await fetch(`/__xanix__/server/${id}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/xanix",
-        },
-        body: binary,
-      });
-      if (res.status !== 200) {
-        throw new Error(`Request failed with status ${res.status}`);
+        xanix.emit("action:start", {
+          args,
+          id: id!,
+        });
+
+        const binary = encode(args);
+        const res = await fetch(`/__xanix__/server/${id}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/xanix",
+          },
+          body: binary,
+        });
+        if (res.status !== 200) {
+          throw new Error(`Request failed with status ${res.status}`);
+        }
+        const buffer = await res.arrayBuffer();
+        const result = decode(new Uint8Array(buffer));
+        xanix.emit("action:end", {
+          args,
+          id: id!,
+        });
+        return result;
+      } catch (error: any) {
+        xanix.emit("action:error", {
+          error,
+          args,
+          id: id!,
+        });
+        throw error;
       }
-      const buffer = await res.arrayBuffer();
-      return decode(new Uint8Array(buffer));
     }
   };
 
