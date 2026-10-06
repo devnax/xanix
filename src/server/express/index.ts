@@ -3,7 +3,6 @@ import outdirs from "../../outdirs.js";
 import React from "react";
 import Router from "./Router.js";
 import __xpage from "./page.js";
-import xanix from "../index.js";
 
 const xanixpress = (...args: Parameters<typeof express>) => {
   const app = express(...args);
@@ -55,14 +54,16 @@ const xanixpress = (...args: Parameters<typeof express>) => {
         url: `http://${host}:${port}`,
       });
     }
-
+    server.on("error", (error: NodeJS.ErrnoException) => {
+      throw error;
+    });
     return server;
   };
 
   if (__XANIX_DEV__) {
     app.use(`/${outdirs.client}`, express.static(`${outdirs.client}`));
     app.use(`/assets`, express.static(outdirs.assets));
-    app.use(`/xanix-cache`, express.static(`${outdirs.cache}`));
+    app.use(`/__xmod`, express.static(`${outdirs.module_cache}`));
   } else {
     app.use(
       `/${outdirs.client}`,

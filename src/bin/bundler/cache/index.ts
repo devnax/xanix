@@ -18,7 +18,6 @@ const require = createRequire(import.meta.url);
 
 function getParserLanguage(id: string): "js" | "jsx" | "ts" | "tsx" {
   const cleanId = id.split("?")[0];
-
   if (cleanId.endsWith(".tsx")) return "tsx";
   if (cleanId.endsWith(".ts")) return "ts";
   if (cleanId.endsWith(".jsx")) return "jsx";
@@ -44,10 +43,10 @@ const XanixCache = (): Plugin => {
   let cacheChanged = false;
 
   return {
-    name: "xanix-cache",
+    name: "__xmod",
 
     async resolveId(source) {
-      if (source.startsWith("/xanix-cache")) {
+      if (source.startsWith("/__xmod")) {
         return {
           id: source,
           external: true,
@@ -108,7 +107,7 @@ const XanixCache = (): Plugin => {
 
           const name = makeFilename(source);
           const importName = makeImportName(name);
-          const cachePath = `/xanix-cache/${name}.js`;
+          const cachePath = `/__xmod/${name}.js`;
           const lines: string[] = [];
           const specifiers = (node.specifiers ?? []).filter(
             (specifier: any) => specifier.importKind !== "type",
@@ -239,22 +238,10 @@ const XanixCache = (): Plugin => {
           }
 
           cache.resolved = resolved.id;
-
-          try {
-            const mod = require(resolved.id);
-            cache.exports = Object.keys(mod);
-            cache.default = Object.prototype.hasOwnProperty.call(
-              mod,
-              "default",
-            );
-          } catch {
-            /*
-             * ESM modules may not be require()-able.
-             * The cache build itself will handle them.
-             */
-          }
+          const mod = require(resolved.id);
+          cache.exports = Object.keys(mod);
+          cache.default = Object.prototype.hasOwnProperty.call(mod, "default");
         } catch (error) {
-          console.error(`[xanix-cache] Failed to resolve ${source}`, error);
           cached.delete(source);
         }
       }
@@ -282,7 +269,7 @@ const XanixCache = (): Plugin => {
       cacheChanged = false;
 
       if (init) {
-        logger.info("[xanix-cache] building cache");
+        logger.info("[__xmod] building cache");
       }
       init = true;
       await buildCache(cached);

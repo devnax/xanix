@@ -1,9 +1,9 @@
-const root = ".xanix";
+const root = "node_modules/.xanix";
 const outdirs = {
   root,
   server: root,
-  client: `${root}/client`,
-  cache: `${root}/cache`,
+  client: `${root}/static`,
+  module_cache: `${root}/`,
   assets: `${root}/assets`,
 };
 

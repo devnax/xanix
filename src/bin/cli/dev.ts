@@ -49,7 +49,9 @@ function runServer(): Promise<void> {
         if (!firstStart) {
           firstStart = true;
           console.log("");
-          console.log(`  ${pc.blue("➜ Local:")} ${pc.yellow(serverInfo.url)}`);
+          console.log(
+            `  ${pc.blue("➜ Listening on:")} ${pc.yellow(serverInfo.url)}`,
+          );
           console.log("");
           // console.log(pc.green(`Ready`));
           // console.log("");
@@ -129,15 +131,19 @@ const dev = async (rootEntry: string) => {
   };
 
   const clientWatcher = async () => {
+    const isClientAlreadyReady = !!_clientWatcher;
     _clientWatcher?.close();
     _clientWatcher = await watchClient({
       onStart: async () => {
         clientStarted = true;
       },
       onReady: async (duration) => {
-        spinner.stop(
-          `${pc.green("✓")} Client compiled in ${pc.dim(buildDuration + duration + "ms")}`,
-        );
+        if (!isClientAlreadyReady) {
+          // spinner.stop(
+          //   `${pc.green("✓")} Client compiled in ${pc.dim(buildDuration + duration + "ms")}`,
+          // );
+        }
+
         await startServer();
         buildDuration = 0;
         clientStarted = false;
@@ -175,10 +181,10 @@ const dev = async (rootEntry: string) => {
   };
 
   console.log("");
-  console.log(pc.cyan(pc.bold(`Xanix ${packageJson.version}`)));
-  console.log("");
+  console.log(pc.green(pc.bold(`Xanix`) + ` v${packageJson.version}`));
+  // console.log("");
 
-  spinner.start("Compiling Server...");
+  // spinner.start("Compiling Server...");
 
   const watch = await watchServer({
     rootEntry,
@@ -189,7 +195,7 @@ const dev = async (rootEntry: string) => {
     onReady: async (duration) => {
       buildDuration += duration;
       serverWatchReady = true;
-      // await clientWatcher();
+      await clientWatcher();
     },
     onChange: async (files, duration) => {
       buildDuration += duration;

@@ -1,8 +1,7 @@
 import { rolldown } from "rolldown";
-
 import type { CachedModule } from "./types.js";
-
 import loadEnv from "../../include/loadEnv.js";
+import outdirs from "../../../outdirs.js";
 
 const VIRTUAL_PREFIX = "\0xanix-cache:";
 
@@ -81,10 +80,8 @@ export { __xanix_namespace };
   });
 
   await build.write({
-    dir: ".xanix/cache",
-
+    dir: outdirs.module_cache,
     format: "es",
-
     entryFileNames: "[name].js",
   });
 

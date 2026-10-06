@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import { builtinModules } from "node:module";
 
 export function isPackageImport(source: string) {
   // Relative import
@@ -55,3 +56,10 @@ export const readCacheManifest = async () => {
   const map = new Map(Object.entries(parsed));
   return map;
 };
+
+const nodeBuiltins = new Set(builtinModules);
+
+export function isNodeBuiltin(id: string): boolean {
+  const normalized = id.startsWith("node:") ? id.slice(5) : id;
+  return nodeBuiltins.has(normalized);
+}

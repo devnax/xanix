@@ -40,7 +40,11 @@ const watchServer = async ({
         emit: true,
       }),
       xanixTsconfigAlias(),
-      XanixTransformer({ onChangeManifest }),
+      XanixTransformer({
+        onChangeManifest: async () => {
+          isReady && (await onChangeManifest?.());
+        },
+      }),
 
       {
         name: "noop",

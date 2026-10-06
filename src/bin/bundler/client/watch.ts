@@ -51,13 +51,13 @@ const WatchClient = async (options: Option): Promise<RolldownWatcher> => {
     input,
     plugins: [
       XanixCache(),
+      XanixTransformer(),
 
       xanixAssets({
         emit: false,
       }),
       xanixTsconfigAlias(),
       xanixDocument(),
-      XanixTransformer(),
 
       {
         name: "noop",
