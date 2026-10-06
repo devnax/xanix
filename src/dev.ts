@@ -20,8 +20,10 @@ if (__XANIX_DEV__) {
       if (!file.endsWith(".js")) {
         continue;
       }
+      win.refreshing = true;
       const url = getImportUrl(file.replace(/\.js$/, ""));
       await import(`${url}?t=${Date.now()}`);
+      win.refreshing = false;
     }
 
     RefreshRuntime.performReactRefresh();

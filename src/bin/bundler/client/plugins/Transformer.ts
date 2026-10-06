@@ -18,7 +18,6 @@ function getParserLanguage(id: string): "js" | "jsx" | "ts" | "tsx" {
 const XanixTransformer = (): Plugin => {
   return {
     name: "xanix-transform",
-
     async transform(code, id) {
       if (id.includes("node_modules")) {
         return null;
@@ -38,16 +37,21 @@ const XanixTransformer = (): Plugin => {
       const transformServerAction = new TransformServerAction(code, id, uid);
       const transformUseServer = new TransformUseServer(code, id, uid);
       const transformCache = new TransformCache(code, id, uid);
+      // const transformModuleCache = new TransformModuleCache();
 
       walk(ast, {
         enter(node) {
           transformServerAction.transform(node);
           transformUseServer.transform(node);
           transformCache.transform(node);
+          // transformModuleCache.transform(node);
         },
       });
 
-      let replacements = [...transformUseServer.replacements];
+      let replacements = [
+        ...transformUseServer.replacements,
+        // ...transformModuleCache.getReplacements(),
+      ];
 
       if (transformServerAction.serverImported) {
         replacements = [...replacements, ...transformServerAction.replacements];

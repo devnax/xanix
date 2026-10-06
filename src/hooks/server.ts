@@ -2,6 +2,7 @@ import { encode, decode } from "@msgpack/msgpack";
 import { Request, Response } from "express";
 import cache, { CacheOption } from "./cache.js";
 import xanix from "../server/index.js";
+import { useRef } from "react";
 type ServerCallback = (args: any, context?: Context) => Promise<any>;
 type Args = Record<string, any>;
 

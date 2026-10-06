@@ -22,7 +22,6 @@ import useServer from "./hooks/useServer.js";
 import { useStore, createStore, createStoreRef } from "./hooks/useStore.js";
 import server from "./hooks/server.js";
 import cache, { XanixCache } from "./hooks/cache.js";
-import createContext from "./hooks/createContext.js";
 
 export * from "./utils.js";
 
@@ -73,7 +72,6 @@ export {
   useStore,
   createStore,
   createStoreRef,
-  createContext,
   server,
   cache,
   XanixCache,

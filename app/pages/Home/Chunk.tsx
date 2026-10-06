@@ -18,7 +18,7 @@ const Chunk = () => {
   );
   return (
     <div>
-      <ThemeContext.Provider value={data.name || ""}>
+      <ThemeContext.Provider value={data?.name || ""}>
         Chunks
         <Button>Click Me</Button>
       </ThemeContext.Provider>

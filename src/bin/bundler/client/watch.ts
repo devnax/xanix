@@ -51,6 +51,7 @@ const WatchClient = async (options: Option): Promise<RolldownWatcher> => {
     input,
     plugins: [
       XanixCache(),
+
       xanixAssets({
         emit: false,
       }),
@@ -90,6 +91,9 @@ const WatchClient = async (options: Option): Promise<RolldownWatcher> => {
     if (event.code === "ERROR") {
       console.error("Build error:", event.error);
     }
+    // if (event.code === "BUNDLE_END") {
+    //   console.log(event.duration);
+    // }
   });
 
   return watcher;

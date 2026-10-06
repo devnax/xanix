@@ -71,7 +71,6 @@ const useServerOnServer = <T = any>(
   } else {
   }
 };
-
 const useServer = <T = any>(
   callback: Callback<T>,
   args: Record<string, any> = {},
@@ -96,6 +95,7 @@ const useServer = <T = any>(
     };
   } else {
     const init = useRef(false);
+    const first = useRef(true);
     const [loading, setLoading] = useState(false);
     const [data, setData] = useState(UseServerResult.get(id!));
 
@@ -107,6 +107,15 @@ const useServer = <T = any>(
     };
 
     useEffect(() => {
+      if (!first.current) {
+        return;
+      }
+      first.current = false;
+    }, []);
+    useEffect(() => {
+      if (!first.current) {
+        return;
+      }
       if (init.current) {
         reload();
       } else {

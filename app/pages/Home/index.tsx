@@ -74,9 +74,9 @@ const HomePage = ({ another, category }: any) => {
     <div>
       <Chunk />
       <Avatar />
-      <Button>Nice</Button>
+      <Button>Nice one</Button>
       <IconButton />
-      <div>Server Data:ss </div>
+      <div>Server Data:</div>
       <input
         type="file"
         id="fileInput"
@@ -89,7 +89,7 @@ const HomePage = ({ another, category }: any) => {
           console.log(user);
         }}
       >
-        log user
+        log user haha
       </button>
       <button
         onClick={() => {
