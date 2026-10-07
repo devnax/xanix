@@ -12,15 +12,15 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import spinner from "../include/spinner.js";
 import { normalizePath } from "../include/utils.js";
-import callbackReplacer from "../include/callbackReplacer.js";
-import sendFinder from "../include/sendFinder.js";
+import callbackReplacer from "../modifier/callbackReplacer.js";
+import sendFinder from "../modifier/pageFinder.js";
 
 let code = `
 import Home from "./Home";
 import { Layout } from "./Layout";
 import * as Pages from "./pages";
 
-res.send(<Home />);
+res.send(<Home name={"Home Page"}/>);
 
 response.send(<Layout />);
 ctx.send(<Pages.About />);
@@ -28,15 +28,17 @@ ctx.send(<Pages.About />);
 res.send("hello");
 res.send(<div>Hello</div>);
 `;
-let _code = callbackReplacer(code, "res.send", (args) => {
-  const uid = `"server_${Math.random().toString(36).slice(2)}"`;
 
-  return `cache(${args.join(", ")}, ${uid})`;
-});
+// const f = sendFinder(code);
+// const sorted = f.sort((a, b) => a.start - b.start);
+// for (const item of sorted.reverse()) {
+//   code =
+//     code.slice(0, item.start) +
+//     `${item.identifier}.send({component: ${item.args[0]}, id: "my id"})` +
+//     code.slice(item.end);
+// }
 
-const f = sendFinder(code);
-
-console.log(f);
+// console.log(code);
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const packageJson = JSON.parse(

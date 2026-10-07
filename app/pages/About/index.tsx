@@ -11,9 +11,6 @@ const AboutPage = () => {
     {
       name: 1,
     },
-    {
-      ttl: 2000, // cache time-to-live in milliseconds
-    },
   );
 
   useMemo(() => {

@@ -2,7 +2,6 @@ import { encode, decode } from "@msgpack/msgpack";
 import { Request, Response } from "express";
 import cache, { CacheOption } from "./cache.js";
 import xanix from "../server/index.js";
-import { useRef } from "react";
 type ServerCallback = (args: any, context?: Context) => Promise<any>;
 type Args = Record<string, any>;
 
@@ -123,21 +122,25 @@ const server = (
     }
   };
 
-  const handler: any = cache(cb, {
-    ...options,
-    validate: ({ entry, args }) => {
-      const entryArgs = entry.args[0];
-      const currentArgs = args[0];
-      try {
-        if (JSON.stringify(entryArgs) !== JSON.stringify(currentArgs)) {
+  const handler: any = cache(
+    cb,
+    {
+      ...options,
+      validate: ({ entry, args }) => {
+        const entryArgs = entry.args[0];
+        const currentArgs = args[0];
+        try {
+          if (JSON.stringify(entryArgs) !== JSON.stringify(currentArgs)) {
+            return false;
+          }
+        } catch (error) {
           return false;
         }
-      } catch (error) {
-        return false;
-      }
-      return true;
+        return true;
+      },
     },
-  });
+    id,
+  );
   register.set(id!, handler as any);
   handler.id = id!;
   return handler;

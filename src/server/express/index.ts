@@ -1,11 +1,11 @@
-import express, { Response } from "express";
+import express, { Response, type Express } from "express";
 import outdirs from "../../outdirs.js";
 import React from "react";
 import Router from "./Router.js";
 import __xpage from "./page.js";
 
-const xanixpress = (...args: Parameters<typeof express>) => {
-  const app = express(...args);
+const xanixpress = () => {
+  const app: Express = (express as any)("xanix");
   app.use(express.json());
   app.use("/__xanix__", Router);
   const originalListener = app.listen.bind(app);
@@ -15,9 +15,8 @@ const xanixpress = (...args: Parameters<typeof express>) => {
     if (method !== "GET") return next();
 
     const _send = res.send.bind(res);
-    res.send = function (body?: any): Response {
-      const isElement =
-        React.isValidElement(body) && (body?.props as any)?.__xpage;
+    res.send = function (body?: any, pageId?: string): Response {
+      const isElement = React.isValidElement(body) && pageId;
       const isContentType = req.headers["content-type"] === "application/xanix";
       const isPage =
         req.headers["x-xanix-page"] === __XANIX_PAGE_NAVIGATION_HEADER_VALUE__;
@@ -29,6 +28,7 @@ const xanixpress = (...args: Parameters<typeof express>) => {
           req,
           res,
           props: body?.props as any,
+          pageId: pageId!,
         };
         __xpage(info, isNavigation).then(_send);
         return this;

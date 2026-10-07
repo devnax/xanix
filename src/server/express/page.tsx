@@ -52,14 +52,14 @@ interface XPageProps {
   req: any;
   res: any;
   props: Record<string, any>;
+  pageId: string;
 }
 
 const __xpage = async (
-  { component, req, res }: XPageProps,
+  { component, req, res, pageId }: XPageProps,
   isNavigation: boolean,
 ) => {
   const props: any = component?.props;
-  const pageInfo = props?.__xpage || {};
   const url = new URL(req.url, `http://${req.headers.host}`);
   const path = url.pathname + url.search;
 
@@ -69,8 +69,7 @@ const __xpage = async (
     request: req,
     response: res,
     page: {
-      id: pageInfo.id,
-      name: pageInfo.name,
+      id: pageId,
       props,
     },
   });
@@ -82,8 +81,7 @@ const __xpage = async (
       response: res,
       metadata: _metadata as any,
       page: {
-        id: pageInfo.id,
-        name: pageInfo.name,
+        id: pageId,
         props,
       },
       params: req.params || {},
@@ -103,8 +101,7 @@ const __xpage = async (
       response: undefined,
       metadata: _metadata as any,
       page: {
-        id: pageInfo.id,
-        name: pageInfo.name,
+        id: pageId,
         props,
       },
       params: req.params || {},

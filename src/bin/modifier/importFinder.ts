@@ -1,4 +1,4 @@
-type ImportInfo = {
+export type ImportInfo = {
   specifiers: {
     local: string;
     imported: string;

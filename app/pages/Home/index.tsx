@@ -5,7 +5,7 @@ import {
   useCookies,
   useServer,
   useDocument,
-  server as srv,
+  server,
   cache,
 } from "xanix";
 import Chunk from "./Chunk";
@@ -17,8 +17,29 @@ import BaselineAddChartIcon from "@iconify-react/ic/baseline-add-chart";
 import { createTheme, ThemeProvider } from "@xanui/core";
 import fs from "fs";
 import path from "path";
+const cb = async () => {
+  return "cached callback data";
+};
+const data = cache(
+  cb,
+  {
+    validate: ({ entry, args }) => {
+      const entryArgs = entry.args[0];
+      const currentArgs = args[0];
+      try {
+        if (JSON.stringify(entryArgs) !== JSON.stringify(currentArgs)) {
+          return false;
+        }
+      } catch (error) {
+        return false;
+      }
+      return true;
+    },
+  },
+  "welncie",
+);
 
-const getUser = srv(
+const getUser = server(
   async ({ file, id }) => {
     if (file) {
       const updir = path.join(process.cwd(), ".xanix/uploads");
@@ -70,7 +91,7 @@ const HomePage = ({ another, category }: any) => {
     <div>
       <Chunk />
       <Avatar />
-      <Button>Nice one</Button>
+      <Button>Nice </Button>
       <IconButton />
       <div>Server Data:</div>
       <input

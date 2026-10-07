@@ -1,7 +1,7 @@
 function callbackReplacer(
   code: string,
   name: string,
-  replacer: (args: string[]) => string,
+  replacer: (args: string[]) => string | void,
 ) {
   const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const regex = new RegExp(`${escaped}\\(`, "g");
@@ -96,7 +96,12 @@ function callbackReplacer(
     }
 
     result += code.slice(last, start);
-    result += replacer(args);
+    const replaced = replacer(args);
+    if (replaced !== undefined) {
+      result += replaced;
+    } else {
+      result += code.slice(start, i + 1);
+    }
 
     last = i + 1;
     regex.lastIndex = i + 1;

@@ -4,7 +4,6 @@ import type { Request, Response } from "express";
 export type DocumentContextData = {
   page: {
     id: string;
-    name: string;
     props: Record<string, any>;
   };
   metadata: Record<string, any>;

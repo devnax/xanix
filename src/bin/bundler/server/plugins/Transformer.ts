@@ -1,17 +1,15 @@
 import { type Plugin } from "rolldown";
+import useServerReplacer from "./replacer/useServerReplacer.js";
+import serverFunctionReplacer from "./replacer/serverFunctionReplacer.js";
+import cacheFunctionReplacer from "./replacer/cacheFunctionReplacer.js";
 import { walk } from "oxc-walker";
-import fs from "fs/promises";
 import path from "path";
-import TransformServer from "./Transformer/TransformServer.js";
 import TransformPage, { Entry } from "./Transformer/TransformPage.js";
-import TransformServerAction from "./Transformer/TransformServerAction.js";
-import TransformUseServer from "./Transformer/TransformUseServer.js";
-import outdirs from "../../../../outdirs.js";
 import { createManifest, getManifest } from "../../../include/manifest.js";
-import TransformCache from "./Transformer/TransformCache.js";
 import crypto from "node:crypto";
-import importFinder from "../../../include/importFinder.js";
-import callbackReplacer from "../../../include/callbackReplacer.js";
+import importFinder from "../../../modifier/importFinder.js";
+import expressFunctionReplace from "./replacer/expressFunctionReplace.js";
+import pageReplacer from "./replacer/pageReplacer.js";
 
 function getParserLanguage(id: string): "js" | "jsx" | "ts" | "tsx" {
   const cleanId = id.split("?")[0];
@@ -40,133 +38,23 @@ const XanixTransformer = ({ onChangeManifest }: Args = {}): Plugin => {
 
     async transform(code, id) {
       const xanixImports = importFinder(code, "xanix");
-      // useServer or namespace.useServer
+      const expressImports = importFinder(code, "express");
+      code = expressFunctionReplace(code, expressImports);
+      code = await pageReplacer(id, code, this, entries);
+
       if (xanixImports.length) {
         const uid = crypto
           .createHash("sha256")
           .update(id)
           .digest("hex")
           .slice(0, 12);
-        let count = 0;
-        let serverCodes: string[] = [];
-        let serverImported = false;
-
-        const replaceUseServer = (cb: string) => {
-          const replacedCode = callbackReplacer(code, cb, (args) => {
-            const id = uid + count++;
-            const fn = args[0];
-            const argString = args[1] ?? "undefined";
-            const options = args[2] || "undefined";
-            const server_code = `const _${id} = server(${fn}, ${options}, "${id}");`;
-            serverCodes.push(server_code);
-            return `${cb}(_${id}, ${argString})`;
-          });
-          code = replacedCode;
-        };
-
-        const replaceServer = (cb: string) => {
-          const replacedCode = callbackReplacer(code, cb, (args) => {
-            const id = uid + count++;
-            const fn = args[0];
-            const options = args[1] || "undefined";
-            return `${cb}(${fn}, ${options}, "${id}");`;
-          });
-          code = replacedCode;
-        };
-
-        for (let xanixImport of xanixImports) {
-          if (xanixImport.namespace) {
-            replaceServer(`${xanixImport.namespace}.server`);
-          }
-          for (let sp of xanixImport.specifiers) {
-            if (sp.imported === "server") {
-              replaceServer(sp.local);
-            }
-          }
-        }
-
-        for (let xanixImport of xanixImports) {
-          if (xanixImport.namespace) {
-            replaceUseServer(`${xanixImport.namespace}.useServer`);
-          }
-          for (let sp of xanixImport.specifiers) {
-            if (sp.local === "server") {
-              serverImported = true;
-            }
-            if (sp.imported === "useServer") {
-              replaceUseServer(sp.local);
-            }
-          }
-        }
-
-        if (serverCodes.length) {
-          if (!serverImported) {
-            code = `import { server } from "xanix";\n` + code;
-          }
-          code = serverCodes.join("\n") + "\n" + code;
-        }
-      }
-
-      if (id.includes("node_modules")) {
-        return null;
-      }
-
-      const ext = path.extname(id);
-      if (ext !== ".tsx" && ext !== ".jsx") {
-        return null;
-      }
-      const uid = crypto
-        .createHash("sha256")
-        .update(id)
-        .digest("hex")
-        .slice(0, 12);
-      const lang = getParserLanguage(id);
-      const ast = this.parse(code, { lang });
-      const transformServer = new TransformServer();
-      const transformPage = new TransformPage(this, id, entries);
-      const transformServerAction = new TransformServerAction(code, id, uid);
-      const transformUseServer = new TransformUseServer(code, id, uid);
-      const transformCache = new TransformCache(code, id, uid);
-
-      walk(ast, {
-        enter(node) {
-          transformServer.transform(node);
-          transformPage.transform(node);
-          transformServerAction.transform(node);
-          transformUseServer.transform(node);
-          transformCache.transform(node);
-        },
-      });
-
-      let replacements = [
-        // ...transformServer.replacements,
-        // ...transformUseServer.replacements,
-        ...(await transformPage.replacements()),
-      ];
-
-      if (transformServerAction.serverImported) {
-        // replacements = [...replacements, ...transformServerAction.replacements];
-      }
-      if (transformCache.cacheImported) {
-        replacements = [...replacements, ...transformCache.replacements];
-      }
-
-      const sorted = replacements.sort((a, b) => b.start - a.start);
-      for (const { start, end, value } of sorted) {
-        code = code.slice(0, start) + value + code.slice(end);
-      }
-      let needImport = !transformUseServer.serverImported;
-      const useServerCode = `
-      ${needImport ? 'import * as __xanix from "xanix";' : ""}
-      ${transformUseServer.serverCodes.join("\n")}
-      `;
-
-      if (transformServer.foundServer) {
-        code = `import { xanix } from "xanix";\n` + code;
+        code = useServerReplacer(code, xanixImports);
+        code = serverFunctionReplacer(code, xanixImports, uid);
+        code = cacheFunctionReplacer(code, xanixImports, uid);
       }
 
       return {
-        code: useServerCode + "\n" + code,
+        code: code,
         map: null,
       };
     },

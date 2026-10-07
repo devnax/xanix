@@ -19,7 +19,6 @@ declare module "virtual:xanix-document" {
     response: Response;
     page: {
       id: string;
-      name: string;
       props: Record<string, any>;
     };
   }) => Promise<Record<string, any>>;
