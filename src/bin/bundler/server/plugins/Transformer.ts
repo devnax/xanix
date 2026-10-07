@@ -10,6 +10,8 @@ import outdirs from "../../../../outdirs.js";
 import { createManifest, getManifest } from "../../../include/manifest.js";
 import TransformCache from "./Transformer/TransformCache.js";
 import crypto from "node:crypto";
+import importFinder from "../../../include/importFinder.js";
+import callbackReplacer from "../../../include/callbackReplacer.js";
 
 function getParserLanguage(id: string): "js" | "jsx" | "ts" | "tsx" {
   const cleanId = id.split("?")[0];
@@ -37,6 +39,74 @@ const XanixTransformer = ({ onChangeManifest }: Args = {}): Plugin => {
     },
 
     async transform(code, id) {
+      const xanixImports = importFinder(code, "xanix");
+      // useServer or namespace.useServer
+      if (xanixImports.length) {
+        const uid = crypto
+          .createHash("sha256")
+          .update(id)
+          .digest("hex")
+          .slice(0, 12);
+        let count = 0;
+        let serverCodes: string[] = [];
+        let serverImported = false;
+
+        const replaceUseServer = (cb: string) => {
+          const replacedCode = callbackReplacer(code, cb, (args) => {
+            const id = uid + count++;
+            const fn = args[0];
+            const argString = args[1] ?? "undefined";
+            const options = args[2] || "undefined";
+            const server_code = `const _${id} = server(${fn}, ${options}, "${id}");`;
+            serverCodes.push(server_code);
+            return `${cb}(_${id}, ${argString})`;
+          });
+          code = replacedCode;
+        };
+
+        const replaceServer = (cb: string) => {
+          const replacedCode = callbackReplacer(code, cb, (args) => {
+            const id = uid + count++;
+            const fn = args[0];
+            const options = args[1] || "undefined";
+            return `${cb}(${fn}, ${options}, "${id}");`;
+          });
+          code = replacedCode;
+        };
+
+        for (let xanixImport of xanixImports) {
+          if (xanixImport.namespace) {
+            replaceServer(`${xanixImport.namespace}.server`);
+          }
+          for (let sp of xanixImport.specifiers) {
+            if (sp.imported === "server") {
+              replaceServer(sp.local);
+            }
+          }
+        }
+
+        for (let xanixImport of xanixImports) {
+          if (xanixImport.namespace) {
+            replaceUseServer(`${xanixImport.namespace}.useServer`);
+          }
+          for (let sp of xanixImport.specifiers) {
+            if (sp.local === "server") {
+              serverImported = true;
+            }
+            if (sp.imported === "useServer") {
+              replaceUseServer(sp.local);
+            }
+          }
+        }
+
+        if (serverCodes.length) {
+          if (!serverImported) {
+            code = `import { server } from "xanix";\n` + code;
+          }
+          code = serverCodes.join("\n") + "\n" + code;
+        }
+      }
+
       if (id.includes("node_modules")) {
         return null;
       }
@@ -69,13 +139,13 @@ const XanixTransformer = ({ onChangeManifest }: Args = {}): Plugin => {
       });
 
       let replacements = [
-        ...transformServer.replacements,
-        ...transformUseServer.replacements,
+        // ...transformServer.replacements,
+        // ...transformUseServer.replacements,
         ...(await transformPage.replacements()),
       ];
 
       if (transformServerAction.serverImported) {
-        replacements = [...replacements, ...transformServerAction.replacements];
+        // replacements = [...replacements, ...transformServerAction.replacements];
       }
       if (transformCache.cacheImported) {
         replacements = [...replacements, ...transformCache.replacements];

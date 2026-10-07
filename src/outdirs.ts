@@ -1,4 +1,4 @@
-const root = "node_modules/.xanix";
+const root = ".xanix";
 const outdirs = {
   root,
   server: root,

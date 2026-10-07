@@ -5,6 +5,7 @@ import TransformServerAction from "./Transformer/TransformServerAction.js";
 import TransformUseServer from "./Transformer/TransformUseServer.js";
 import TransformCache from "./Transformer/TransformCache.js";
 import crypto from "node:crypto";
+import importFinder from "../../../include/importFinder.js";
 
 function getParserLanguage(id: string): "js" | "jsx" | "ts" | "tsx" {
   const cleanId = id.split("?")[0];

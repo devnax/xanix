@@ -12,6 +12,31 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import spinner from "../include/spinner.js";
 import { normalizePath } from "../include/utils.js";
+import callbackReplacer from "../include/callbackReplacer.js";
+import sendFinder from "../include/sendFinder.js";
+
+let code = `
+import Home from "./Home";
+import { Layout } from "./Layout";
+import * as Pages from "./pages";
+
+res.send(<Home />);
+
+response.send(<Layout />);
+ctx.send(<Pages.About />);
+
+res.send("hello");
+res.send(<div>Hello</div>);
+`;
+let _code = callbackReplacer(code, "res.send", (args) => {
+  const uid = `"server_${Math.random().toString(36).slice(2)}"`;
+
+  return `cache(${args.join(", ")}, ${uid})`;
+});
+
+const f = sendFinder(code);
+
+console.log(f);
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const packageJson = JSON.parse(

@@ -5,7 +5,7 @@ import {
   useCookies,
   useServer,
   useDocument,
-  server,
+  server as srv,
   cache,
 } from "xanix";
 import Chunk from "./Chunk";
@@ -18,7 +18,7 @@ import { createTheme, ThemeProvider } from "@xanui/core";
 import fs from "fs";
 import path from "path";
 
-const getUser = server(
+const getUser = srv(
   async ({ file, id }) => {
     if (file) {
       const updir = path.join(process.cwd(), ".xanix/uploads");
@@ -29,12 +29,8 @@ const getUser = server(
         Buffer.from(await file.arrayBuffer()),
       );
     }
-    const root = process.cwd();
-    const txt = await fs.promises.readFile(
-      path.join(root, `text.txt`),
-      "utf-8",
-    );
-    return txt;
+
+    return "txt";
   },
   {
     ttl: 2000, // cache time-to-live in milliseconds
