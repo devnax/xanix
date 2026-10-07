@@ -34,7 +34,6 @@ const Head = ({ children, ...props }: HeadProps) => {
             __html: `${devScript}; window.__XDOCUMENT = ${JSON.stringify({
               page: {
                 id: page.id,
-                name: page.name,
                 props: page.props,
               },
               params,

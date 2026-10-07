@@ -76,7 +76,7 @@ const HomePage = ({ another, category }: any) => {
     },
   );
 
-  // console.log(d);
+  console.log(d);
 
   const params = useSearchParams();
   const cookie = useCookies();

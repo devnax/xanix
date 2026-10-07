@@ -10,35 +10,8 @@ import { WebSocketServer } from "ws";
 import outdirs from "../../outdirs.js";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
-import spinner from "../include/spinner.js";
 import { normalizePath } from "../include/utils.js";
-import callbackReplacer from "../modifier/callbackReplacer.js";
-import sendFinder from "../modifier/pageFinder.js";
-
-let code = `
-import Home from "./Home";
-import { Layout } from "./Layout";
-import * as Pages from "./pages";
-
-res.send(<Home name={"Home Page"}/>);
-
-response.send(<Layout />);
-ctx.send(<Pages.About />);
-
-res.send("hello");
-res.send(<div>Hello</div>);
-`;
-
-// const f = sendFinder(code);
-// const sorted = f.sort((a, b) => a.start - b.start);
-// for (const item of sorted.reverse()) {
-//   code =
-//     code.slice(0, item.start) +
-//     `${item.identifier}.send({component: ${item.args[0]}, id: "my id"})` +
-//     code.slice(item.end);
-// }
-
-// console.log(code);
+import stop from "./stop.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const packageJson = JSON.parse(
@@ -107,6 +80,8 @@ async function startServer() {
 }
 
 const dev = async (rootEntry: string) => {
+  await stop();
+
   fs.rmSync(outdirs.root, {
     recursive: true,
     force: true,
