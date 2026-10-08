@@ -40,21 +40,25 @@ const getUser = server(
   },
 );
 
-const session = createSession({
-  secret: "my-secret",
-  verify: async (info) => {
-    // Implement your verification logic here
-    return true;
+const session = createSession(
+  {
+    secret: "my-secret",
+    verify: async (info) => {
+      // Implement your verification logic here
+      return true;
+    },
+    getUser: async (info) => {
+      // Implement your user retrieval logic here
+      return { id: "user-id", name: "John Doe" };
+    },
   },
-  getUser: async (info) => {
-    // Implement your user retrieval logic here
-    return { id: "user-id", name: "John Doe" };
-  },
-});
+  "myauth",
+);
 
 const HomePage = ({ another, category }: any) => {
   const [n, setN] = useState("Nax");
   const userSession = useSession(session);
+  console.log(userSession);
 
   const d = useServer(
     async ({ name }: any, ctx) => {
@@ -73,16 +77,32 @@ const HomePage = ({ another, category }: any) => {
   // console.log(d);
 
   const params = useSearchParams();
-  const cookie = useCookies();
-  const name = cookie.get("name");
+  // const cookie = useCookies();
+  // const name = cookie.get("name");
   const [file, setFile] = useState<File | null>(null);
 
   useMemo(() => {
-    cookie.set("name", "John Doe");
+    // cookie.set("name", "John Doe");
   }, []);
 
   return (
     <div>
+      {JSON.stringify(userSession)}
+      {userSession && <h4>{userSession.name}</h4>}
+      <Button
+        onClick={async () => {
+          const user = await session.login({ id: "example" });
+        }}
+      >
+        Login
+      </Button>
+      <Button
+        onClick={async () => {
+          await session.logout();
+        }}
+      >
+        Logout
+      </Button>
       <Chunk />
       <Avatar />
       <Button>Nicesss </Button>
@@ -126,7 +146,7 @@ const HomePage = ({ another, category }: any) => {
       </button>
       <button
         onClick={() => {
-          cookie.set("name", "Well");
+          // cookie.set("name", "Well");
         }}
       >
         Set Cookie

@@ -2,6 +2,7 @@ import { useRef } from "react";
 import { navigate } from "../navigate.js";
 import useDocument from "./useDocument.js";
 import { createStore, useStore } from "./useStore.js";
+import useRequest from "./useRequest.js";
 
 type Request = {
   url?: string;
@@ -19,20 +20,24 @@ const buildUrl = (search: string) => {
   );
 };
 
-const Store = createStore();
+const Store = createStore({
+  search: "",
+});
 
 const useSearchParams = () => {
-  const { request }: { request?: Request } = useDocument();
-  const [search, store] = useStore(() => {
-    if (__XANIX_CLIENT__) {
-      return window.location.search.slice(1);
-    }
-    const query = (request as any).url.split("?")[1] || "";
-    return query.split("#")[0];
-  }, Store);
+  const request = useRequest();
+  const store = useStore(Store);
+  let search = "";
+  if (__XANIX_CLIENT__) {
+    search = window.location.search.slice(1);
+  } else {
+    const query = request!.url.split("?")[1] || "";
+    search = search || query.split("#")[0];
+  }
 
   const params = new URLSearchParams(search);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const update = (newParams: URLSearchParams) => {
     if (__XANIX_CLIENT__) {
       const newSearch = newParams.toString();
@@ -47,6 +52,7 @@ const useSearchParams = () => {
         "",
         buildUrl(newSearch),
       );
+
       store.emit();
 
       if (timer.current !== null) {

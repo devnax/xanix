@@ -1,4 +1,4 @@
-import { useStore } from "./useStore.js";
+import { createStore, useStore } from "./useStore.js";
 import useResponse from "./useResponse.js";
 import useHeaders from "./useHeaders.js";
 
@@ -12,7 +12,7 @@ export type CookieOptions = {
   sameSite?: "strict" | "lax" | "none";
 };
 
-const parseCookies = (cookies: string): Record<string, string> => {
+export const cookieParser = (cookies: string): Record<string, string> => {
   if (!cookies) {
     return {};
   }
@@ -79,16 +79,15 @@ const serializeCookie = (
   return cookie;
 };
 
+const Store = createStore({
+  cookies: __XANIX_CLIENT__ ? document.cookie : "",
+});
+
 const useCookies = () => {
   const headers = useHeaders();
   const res = useResponse();
-  const [cookies, store] = useStore(() => {
-    if (__XANIX_SERVER__) {
-      return headers?.cookie ?? "";
-    }
-    return document.cookie;
-  });
-  const parsed = parseCookies(cookies);
+  const store = useStore(Store);
+  const parsed = cookieParser(headers?.cookie ?? store.get("cookies") ?? "");
 
   const set = (name: string, value: string, options: CookieOptions = {}) => {
     const cookie = serializeCookie(name, value, options);
@@ -96,7 +95,7 @@ const useCookies = () => {
       res?.append?.("Set-Cookie", cookie);
     } else {
       document.cookie = cookie;
-      store.emit();
+      store.set("cookies", cookie);
     }
   };
 
@@ -115,7 +114,7 @@ const useCookies = () => {
     }
 
     document.cookie = cookie;
-    store.emit();
+    store.set("cookies", cookie);
   };
 
   return {

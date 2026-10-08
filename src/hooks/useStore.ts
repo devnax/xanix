@@ -1,12 +1,24 @@
-import { useEffect, useRef, useSyncExternalStore } from "react";
+import { useRef, useSyncExternalStore } from "react";
 
-export type Store = {
+type StoreState = Record<string, any>;
+
+export type Store<S extends StoreState = StoreState> = {
   subscribe: (callback: () => void) => () => void;
   emit: () => void;
+  state: () => S;
+  observe: () => number;
+  set: <K extends keyof S, V extends S[K]>(key: K, value: V) => void;
+  get: <K extends keyof S>(key?: K) => S[K] | S;
 };
 
-export const createStore = (): Store => {
+export const createStore = <S extends StoreState>(
+  initialState?: S,
+): Store<S> => {
   const handlers = new Set<() => void>();
+  const state: { data: S; observe: number } = {
+    data: initialState ?? ({} as S),
+    observe: Date.now(),
+  };
 
   const subscribe = (callback: () => void) => {
     handlers.add(callback);
@@ -16,33 +28,32 @@ export const createStore = (): Store => {
   };
 
   const emit = () => {
+    state.observe = Date.now();
     for (const handler of handlers) {
       handler();
     }
   };
 
+  const set = <K extends keyof S, V extends S[K]>(key: K, value: V) => {
+    state.data = { ...state.data, [key]: value };
+    emit();
+  };
+
+  const get = <K extends keyof S>(key?: K) =>
+    key ? state.data[key] : state.data;
+
   return {
     subscribe,
+    state: () => state.data,
+    observe: () => state.observe,
+    set,
+    get,
     emit,
   };
 };
 
-export const createStoreRef = () => {
-  const storeRef = useRef<Store | null>(null);
-  storeRef.current = storeRef.current ?? createStore();
-  return storeRef.current;
-};
-
-type Return<T = any> = [T, Store];
-type State<T = any> = T | (() => T);
-
-export const useStore = <T = any>(
-  state: State<T>,
-  store?: Store,
-): Return<T> => {
-  store = store ?? createStoreRef();
-  const getSnapshot =
-    typeof state === "function" ? (state as () => T) : () => state;
-  const data = useSyncExternalStore(store.subscribe, getSnapshot, getSnapshot);
-  return [data as T, store];
+export const useStore = <T = any>(store: Store): Store => {
+  const getSnapshot = () => store?.observe?.();
+  useSyncExternalStore(store.subscribe, getSnapshot, getSnapshot);
+  return store;
 };

@@ -9,6 +9,7 @@ import expressFunctionReplace from "./transformer/TransformExpressFunction.js";
 import pageReplacer from "./transformer/TransformPage.js";
 import { XanixClientEntry } from "../../../types.js";
 import { framworkDir } from "../../../include/path.js";
+import TransformCreateSession from "./transformer/TransformCreateSession.js";
 console.log(framworkDir);
 
 type Args = {
@@ -43,6 +44,7 @@ const XanixTransformer = ({ onChangeManifest }: Args = {}): Plugin => {
         code = TransformUseServer(code, xanixImports, id);
         code = TransformServerFunction(code, xanixImports, uid, id);
         code = TransformCacheFunction(code, xanixImports, uid, id);
+        code = TransformCreateSession(code, xanixImports, uid, id);
       }
 
       return {

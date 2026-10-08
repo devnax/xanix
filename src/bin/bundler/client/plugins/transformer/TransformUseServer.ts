@@ -25,8 +25,6 @@ const TransformUseServer = (
     code = replacer(code, `useServer`);
   }
 
-  if (!imports.length) return code;
-
   for (let _import of imports) {
     if (_import.namespace) {
       code = replacer(code, `${_import.namespace}.useServer`);
