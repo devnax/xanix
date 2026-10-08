@@ -33,6 +33,8 @@ program
 program
   .command("start")
   .description("Start the production server")
+  // --logs option to view logs after starting the server
+  .option("--wait", "server will wait for logs after starting")
   .action(start);
 
 program.command("stop").description("Stop the production server").action(stop);

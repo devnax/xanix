@@ -17,7 +17,7 @@ const buildClient = async () => {
   const entries = await getManifest();
   const input: InputOption = {};
   for (const entry of entries) {
-    input[entry.name] = entry.resolved;
+    input[entry.id] = entry.resolved;
   }
 
   const runtimeFileName = getClientRuntimeFileName("production");
@@ -70,13 +70,7 @@ const buildClient = async () => {
     format: "esm",
     chunkFileNames: "chunks/[hash].js",
     assetFileNames: "assets/[name][extname]",
-    entryFileNames: (id: any) => {
-      const entry = entries.find((e) => e.name === id.name);
-      if (entry) {
-        return `${entry.id}.js`;
-      }
-      return `[name].js`;
-    },
+    entryFileNames: `[name].js`,
   });
   await build.close();
 };

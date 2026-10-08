@@ -2,29 +2,19 @@ import { type Plugin } from "rolldown";
 import useServerReplacer from "./replacer/useServerReplacer.js";
 import serverFunctionReplacer from "./replacer/serverFunctionReplacer.js";
 import cacheFunctionReplacer from "./replacer/cacheFunctionReplacer.js";
-import { walk } from "oxc-walker";
-import path from "path";
-import TransformPage, { Entry } from "./Transformer/TransformPage.js";
 import { createManifest, getManifest } from "../../../include/manifest.js";
 import crypto from "node:crypto";
 import importFinder from "../../../modifier/importFinder.js";
 import expressFunctionReplace from "./replacer/expressFunctionReplace.js";
 import pageReplacer from "./replacer/pageReplacer.js";
-
-function getParserLanguage(id: string): "js" | "jsx" | "ts" | "tsx" {
-  const cleanId = id.split("?")[0];
-  if (cleanId.endsWith(".tsx")) return "tsx";
-  if (cleanId.endsWith(".ts")) return "ts";
-  if (cleanId.endsWith(".jsx")) return "jsx";
-
-  return "js";
-}
+import { XanixClientEntry } from "../../../types.js";
 
 type Args = {
   onChangeManifest?: () => Promise<void>;
 };
+
 const XanixTransformer = ({ onChangeManifest }: Args = {}): Plugin => {
-  const entries: Map<string, Entry> = new Map();
+  const entries: Map<string, XanixClientEntry> = new Map();
   return {
     name: "xanix-transform",
 
@@ -66,6 +56,7 @@ const XanixTransformer = ({ onChangeManifest }: Args = {}): Plugin => {
       if (JSON.stringify(cids) === JSON.stringify(pids)) {
         return;
       }
+
       await createManifest(Array.from(entries.values()));
       await onChangeManifest?.();
     },

@@ -1,3 +1,4 @@
+import { Button } from "@xanui/ui";
 import { useMemo } from "react";
 import { navigate, useServer } from "xanix";
 
@@ -20,7 +21,7 @@ const AboutPage = () => {
   return (
     <div>
       About Page - Server Data: {JSON.stringify(d.data)}
-      <button onClick={() => navigate("/")}>Home</button>
+      <Button onClick={() => navigate("/")}>Home</Button>
     </div>
   );
 };

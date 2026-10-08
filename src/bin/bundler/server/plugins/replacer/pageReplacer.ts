@@ -2,12 +2,7 @@ import crypto from "node:crypto";
 import { TransformPluginContext } from "rolldown";
 import pageFinder from "../../../../modifier/pageFinder.js";
 import { normalizePath } from "../../../../include/utils.js";
-
-export type Entry = {
-  id: string;
-  source: string;
-  resolved: string;
-};
+import { XanixClientEntry } from "../../../../types.js";
 
 const uid = (source: string) => {
   return crypto.createHash("sha256").update(source).digest("hex").slice(0, 12);
@@ -17,7 +12,7 @@ const pageReplacer = async (
   importer: string,
   code: string,
   context: TransformPluginContext,
-  entries: Map<string, Entry>,
+  entries: Map<string, XanixClientEntry>,
 ) => {
   if (!/\.send\(/.test(code)) {
     return code;

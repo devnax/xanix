@@ -1,13 +1,8 @@
 import pc from "picocolors";
-
 import { access, stat } from "fs/promises";
-
 import { createReadStream, watch, type FSWatcher } from "fs";
-
 import path from "path";
-
 import crypto from "crypto";
-
 import { xanixLogs } from "../include/path.js";
 
 const logs = async () => {
@@ -18,25 +13,17 @@ const logs = async () => {
     .slice(0, 16);
 
   const logDir = path.join(xanixLogs, projectId);
-
   const stdoutFile = path.join(logDir, "stdout.log");
-
   const stderrFile = path.join(logDir, "stderr.log");
-
   console.log("");
-
   console.log(pc.cyan(pc.bold("Xanix logs")));
-
   console.log(pc.gray("Press Ctrl+C to exit."));
-
   console.log("");
 
   let stdoutPosition = 0;
   let stderrPosition = 0;
-
   let stdoutWatcher: FSWatcher | undefined;
   let stderrWatcher: FSWatcher | undefined;
-
   let readingStdout = false;
   let readingStderr = false;
 
@@ -58,7 +45,6 @@ const logs = async () => {
       }
 
       const newPosition = file.size;
-
       const stream = createReadStream(filePath, {
         start: position,
         end: newPosition - 1,
@@ -68,7 +54,6 @@ const logs = async () => {
         stream.on("data", (chunk) => {
           output.write(chunk);
         });
-
         stream.on("end", resolve);
         stream.on("error", reject);
       });
@@ -85,7 +70,6 @@ const logs = async () => {
     }
 
     readingStdout = true;
-
     try {
       stdoutPosition = await readNewData(
         stdoutFile,
@@ -103,7 +87,6 @@ const logs = async () => {
     }
 
     readingStderr = true;
-
     try {
       stderrPosition = await readNewData(
         stderrFile,
@@ -122,12 +105,9 @@ const logs = async () => {
 
     try {
       await access(stdoutFile);
-
       stdoutPosition = 0;
-
       // Print existing logs.
       await updateStdout();
-
       stdoutWatcher = watch(stdoutFile, () => {
         void updateStdout();
       });
@@ -143,12 +123,9 @@ const logs = async () => {
 
     try {
       await access(stderrFile);
-
       stderrPosition = 0;
-
       // Print existing errors.
       await updateStderr();
-
       stderrWatcher = watch(stderrFile, () => {
         void updateStderr();
       });
@@ -175,15 +152,12 @@ const logs = async () => {
 
   const cleanup = () => {
     clearInterval(interval);
-
     stdoutWatcher?.close();
     stderrWatcher?.close();
-
     process.exit(0);
   };
 
   process.once("SIGINT", cleanup);
-
   process.once("SIGTERM", cleanup);
 
   // Keep xanix logs alive.

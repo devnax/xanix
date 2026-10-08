@@ -35,7 +35,7 @@ const WatchClient = async (options: Option): Promise<RolldownWatcher> => {
 
   const input: InputOption = {};
   for (const entry of entries) {
-    input[entry.name] = entry.resolved;
+    input[entry.id] = entry.resolved;
   }
   const runtimeFileName = getClientRuntimeFileName("development");
   input[runtimeFileName] = getClientRuntimeFile();

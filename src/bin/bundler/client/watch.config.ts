@@ -1,14 +1,8 @@
 import { WatchOptions } from "rolldown";
 import loadEnv from "../../include/loadEnv.js";
 import outdirs from "../../../outdirs.js";
-import { getManifest } from "../../include/manifest.js";
 
 const ClientWatchConfig = async (isDev = false): Promise<WatchOptions> => {
-  const entries = await getManifest();
-  const _entries: any = {};
-  for (const entry of entries) {
-    _entries[entry.name] = entry;
-  }
   return {
     output: {
       dir: outdirs.client,
@@ -18,23 +12,7 @@ const ClientWatchConfig = async (isDev = false): Promise<WatchOptions> => {
       preserveModulesRoot: process.cwd(),
       chunkFileNames: "chunks/[hash].js",
       assetFileNames: "assets/[name][extname]",
-      entryFileNames: (id: any) => {
-        const entry = _entries[id.name];
-        if (entry) {
-          return `${entry.id}.js`;
-        }
-
-        return `[name].js`;
-      },
-
-      banner(e) {
-        if (e.name === "xanix-runtime") {
-          return ` window.$RefreshReg$ = (type, id) => {};
-        window.$RefreshSig$ = () => (type) => type;`;
-        }
-
-        return ``;
-      },
+      entryFileNames: `[name].js`,
     },
     treeshake: true,
     tsconfig: true,

@@ -76,7 +76,7 @@ const HomePage = ({ another, category }: any) => {
     },
   );
 
-  console.log(d);
+  // console.log(d);
 
   const params = useSearchParams();
   const cookie = useCookies();
@@ -91,7 +91,7 @@ const HomePage = ({ another, category }: any) => {
     <div>
       <Chunk />
       <Avatar />
-      <Button>Nice </Button>
+      <Button>Nicesss </Button>
       <IconButton />
       <div>Server Data:</div>
       <input

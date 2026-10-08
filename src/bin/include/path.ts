@@ -10,6 +10,7 @@ export const xanixHome = (() => {
       "Xanix",
     );
   }
+
   if (process.platform === "darwin") {
     return path.join(homeDir, "Library", "Application Support", "Xanix");
   }
@@ -22,3 +23,4 @@ export const xanixHome = (() => {
 
 export const xanixProcesses = path.join(xanixHome, "processes");
 export const xanixLogs = path.join(xanixHome, "logs");
+export const xanixSaved = path.join(xanixHome, "saved");
