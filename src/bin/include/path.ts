@@ -1,5 +1,7 @@
 import os from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const homeDir = os.homedir();
 
@@ -24,3 +26,5 @@ export const xanixHome = (() => {
 export const xanixProcesses = path.join(xanixHome, "processes");
 export const xanixLogs = path.join(xanixHome, "logs");
 export const xanixSaved = path.join(xanixHome, "saved");
+
+export const framworkDir = path.resolve(__dirname, "../../../");

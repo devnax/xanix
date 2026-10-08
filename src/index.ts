@@ -21,7 +21,8 @@ import useCookies, { CookieOptions } from "./hooks/useCookies.js";
 import useServer from "./hooks/useServer.js";
 import { useStore, createStore, createStoreRef } from "./hooks/useStore.js";
 import server from "./hooks/server.js";
-import cache, { XanixCache } from "./hooks/cache.js";
+import cache, { cacheFactory } from "./hooks/cache.js";
+import { createSession, useSession } from "./hooks/session.js";
 
 export * from "./utils.js";
 
@@ -74,7 +75,9 @@ export {
   createStoreRef,
   server,
   cache,
-  XanixCache,
+  cacheFactory,
+  createSession,
+  useSession,
 
   // navigation
   navigate,

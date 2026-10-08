@@ -8,7 +8,7 @@ const uid = (source: string) => {
   return crypto.createHash("sha256").update(source).digest("hex").slice(0, 12);
 };
 
-const pageReplacer = async (
+const TransformPage = async (
   importer: string,
   code: string,
   context: TransformPluginContext,
@@ -42,4 +42,4 @@ const pageReplacer = async (
   return code;
 };
 
-export default pageReplacer;
+export default TransformPage;

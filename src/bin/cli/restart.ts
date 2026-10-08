@@ -8,7 +8,7 @@ const restart = async () => {
   console.log("");
 
   await stop();
-  await start();
+  await start({});
 };
 
 export default restart;

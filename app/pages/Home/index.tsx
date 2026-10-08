@@ -7,6 +7,8 @@ import {
   useDocument,
   server,
   cache,
+  createSession,
+  useSession,
 } from "xanix";
 import Chunk from "./Chunk";
 import Button from "@xanui/ui/Button";
@@ -17,27 +19,6 @@ import BaselineAddChartIcon from "@iconify-react/ic/baseline-add-chart";
 import { createTheme, ThemeProvider } from "@xanui/core";
 import fs from "fs";
 import path from "path";
-const cb = async () => {
-  return "cached callback data";
-};
-const data = cache(
-  cb,
-  {
-    validate: ({ entry, args }) => {
-      const entryArgs = entry.args[0];
-      const currentArgs = args[0];
-      try {
-        if (JSON.stringify(entryArgs) !== JSON.stringify(currentArgs)) {
-          return false;
-        }
-      } catch (error) {
-        return false;
-      }
-      return true;
-    },
-  },
-  "welncie",
-);
 
 const getUser = server(
   async ({ file, id }) => {
@@ -59,8 +40,21 @@ const getUser = server(
   },
 );
 
+const session = createSession({
+  secret: "my-secret",
+  verify: async (info) => {
+    // Implement your verification logic here
+    return true;
+  },
+  getUser: async (info) => {
+    // Implement your user retrieval logic here
+    return { id: "user-id", name: "John Doe" };
+  },
+});
+
 const HomePage = ({ another, category }: any) => {
   const [n, setN] = useState("Nax");
+  const userSession = useSession(session);
 
   const d = useServer(
     async ({ name }: any, ctx) => {

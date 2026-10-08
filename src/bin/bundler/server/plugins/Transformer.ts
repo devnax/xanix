@@ -1,13 +1,15 @@
 import { type Plugin } from "rolldown";
-import useServerReplacer from "./replacer/useServerReplacer.js";
-import serverFunctionReplacer from "./replacer/serverFunctionReplacer.js";
-import cacheFunctionReplacer from "./replacer/cacheFunctionReplacer.js";
+import TransformUseServer from "./transformer/TransformUseServer.js";
+import TransformServerFunction from "./transformer/TransformServerFunction.js";
+import TransformCacheFunction from "./transformer/TransformCacheFunction.js";
 import { createManifest, getManifest } from "../../../include/manifest.js";
 import crypto from "node:crypto";
 import importFinder from "../../../modifier/importFinder.js";
-import expressFunctionReplace from "./replacer/expressFunctionReplace.js";
-import pageReplacer from "./replacer/pageReplacer.js";
+import expressFunctionReplace from "./transformer/TransformExpressFunction.js";
+import pageReplacer from "./transformer/TransformPage.js";
 import { XanixClientEntry } from "../../../types.js";
+import { framworkDir } from "../../../include/path.js";
+console.log(framworkDir);
 
 type Args = {
   onChangeManifest?: () => Promise<void>;
@@ -32,15 +34,15 @@ const XanixTransformer = ({ onChangeManifest }: Args = {}): Plugin => {
       code = expressFunctionReplace(code, expressImports);
       code = await pageReplacer(id, code, this, entries);
 
-      if (xanixImports.length) {
+      if (xanixImports.length || id.startsWith(framworkDir)) {
         const uid = crypto
           .createHash("sha256")
           .update(id)
           .digest("hex")
           .slice(0, 12);
-        code = useServerReplacer(code, xanixImports);
-        code = serverFunctionReplacer(code, xanixImports, uid);
-        code = cacheFunctionReplacer(code, xanixImports, uid);
+        code = TransformUseServer(code, xanixImports, id);
+        code = TransformServerFunction(code, xanixImports, uid, id);
+        code = TransformCacheFunction(code, xanixImports, uid, id);
       }
 
       return {

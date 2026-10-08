@@ -1,20 +1,32 @@
-import crypto from "crypto";
+// import crypto from "node:crypto";
 import { createStore, useStore } from "./useStore.js";
-import server from "./server.js";
+import server, { ServerContext } from "./server.js";
 import useServer from "./useServer";
 
-export const createSession = (secret: string) => {
-  const store = createStore();
+export interface SessionOptions {
+  secret: string;
+  verify: (info: any) => Promise<boolean>;
+  getUser: (info: any) => Promise<Record<string, any>>;
+}
 
-  const login = server(async (data) => {
+export const createSession = ({ secret, verify, getUser }: SessionOptions) => {
+  const store = createStore();
+  const readUser = server(getUser);
+
+  const login = server(async (info, ctx?: ServerContext) => {
+    if (__XANIX_SERVER__) {
+      const isValid = await verify(info);
+      if (!isValid) {
+        throw new Error("Invalid login");
+      }
+      const sessionId = crypto.randomUUID();
+      ctx!.response.cookie("session", sessionId, { httpOnly: true });
+      return await readUser(info);
+    }
     return { store };
   });
 
   const logout = server(async () => {
-    return { store };
-  });
-
-  const read = server(async () => {
     return { store };
   });
 
@@ -23,26 +35,24 @@ export const createSession = (secret: string) => {
     store,
     login,
     logout,
-    read,
+    read: readUser,
   };
 };
 
 export const useSession = (session: ReturnType<typeof createSession>) => {
-  const { data } = useServer(session.read);
+  const { data } = useServer(async () => await session.read());
   const store = useStore(session.store);
 
   return {
-    data: {
-      name: "John Doe",
+    data: {},
+    login: async (info: any) => {
+      return await session.login(data);
     },
-    login: (data: any) => {
-      return session.login(data);
+    logout: async () => {
+      return await session.logout();
     },
-    logout: () => {
-      return session.logout();
-    },
-    read: () => {
-      return session.read();
+    read: async () => {
+      return await session.read();
     },
   };
 };

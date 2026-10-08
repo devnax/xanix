@@ -1,7 +1,7 @@
 import callbackReplacer from "../../../../modifier/callbackReplacer.js";
-import { ImportInfo } from "../../../../modifier/importFinder";
+import { ImportInfo } from "../../../../modifier/importFinder.js";
 
-const expressFunctionReplace = (code: string, imports: ImportInfo[]) => {
+const TransformExpressFunction = (code: string, imports: ImportInfo[]) => {
   if (!imports.length) return code;
 
   const importName = `__xanix_express_${Math.random().toString(36).substring(2, 3)}`;
@@ -23,4 +23,4 @@ const expressFunctionReplace = (code: string, imports: ImportInfo[]) => {
   return code;
 };
 
-export default expressFunctionReplace;
+export default TransformExpressFunction;

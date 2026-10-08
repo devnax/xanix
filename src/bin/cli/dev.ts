@@ -38,6 +38,7 @@ function runServer(): Promise<void> {
   return new Promise((resolve, reject) => {
     child?.kill();
     const filePath = path.join(outdirs.server, "index.js");
+
     child = spawn(process.execPath, [filePath], {
       stdio: ["inherit", "inherit", "inherit", "ipc"],
     });
@@ -53,8 +54,6 @@ function runServer(): Promise<void> {
             `  ${pc.blue("➜ Listening on:")} ${pc.yellow(serverInfo.url)}`,
           );
           console.log("");
-          // console.log(pc.green(`Ready`));
-          // console.log("");
         }
         resolve();
       }
@@ -80,7 +79,7 @@ async function startServer() {
 }
 
 const dev = async (rootEntry: string) => {
-  await stop();
+  // await stop();
 
   fs.rmSync(outdirs.root, {
     recursive: true,

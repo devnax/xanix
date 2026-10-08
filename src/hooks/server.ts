@@ -2,13 +2,13 @@ import { encode, decode } from "@msgpack/msgpack";
 import { Request, Response } from "express";
 import cache, { CacheOption } from "./cache.js";
 import xanix from "../server/index.js";
-type ServerCallback = (args: any, context?: Context) => Promise<any>;
-type Args = Record<string, any>;
-
-type Context = {
+export type ServerContext = {
   request: Request;
   response: Response;
 };
+
+type ServerCallback = (args: any, context?: ServerContext) => Promise<any>;
+type Args = Record<string, any>;
 
 export const register = new Map<string, ServerCallback>();
 export const CHUNK_SIZE = 256 * 1024; // 256 KB
@@ -44,7 +44,7 @@ const server = (
   options?: CacheOption,
   id?: string,
 ) => {
-  let cb = async (args: Args = {}, context?: Context) => {
+  let cb = async (args: Args = {}, context?: ServerContext) => {
     if (__XANIX_SERVER__) {
       try {
         xanix.emit("action:start", {

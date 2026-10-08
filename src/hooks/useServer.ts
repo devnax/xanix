@@ -3,6 +3,7 @@ import useRequest from "./useRequest.js";
 import useResponse from "./useResponse.js";
 import type { CacheOption } from "./cache.js";
 import { Request, Response } from "express";
+import server from "./server.js";
 
 type Context = {
   request: Request;
@@ -130,5 +131,5 @@ const useServer = <T = any>(
     };
   }
 };
-
+useServer.server = server;
 export default useServer;

@@ -17,6 +17,10 @@ export type CacheOption = {
   validate?: (arg: ValidateArg) => boolean;
 };
 
+export const cacheFactory = () => {
+  return XanixCache;
+};
+
 const cache = <T>(cb: Function, options?: CacheOption, id?: string) => {
   if (!options || !options.ttl) return cb;
   if (__XANIX_SERVER__) {
