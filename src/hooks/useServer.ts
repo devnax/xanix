@@ -67,9 +67,7 @@ const useServerOnServer = <T = any>(
     if (entry.status === "error") {
       throw entry.error;
     }
-
     return entry.value as T;
-  } else {
   }
 };
 const useServer = <T = any>(
@@ -79,26 +77,22 @@ const useServer = <T = any>(
 ) => {
   const id = (callback as any).id;
   if (__XANIX_SERVER__) {
-    const req = useRequest();
-    const res = useResponse();
     const value = useServerOnServer(callback, args, id!);
     UseServerResult.set(id!, value);
     return {
       data: value,
       loading: false,
-      reload: async () => {
-        const value = await callback(args, {
-          request: req!,
-          response: res!,
-        });
-        UseServerResult.set(id!, value);
-      },
+      reload: async () => {},
     };
   } else {
     const init = useRef(false);
     const first = useRef(true);
     const [loading, setLoading] = useState(false);
-    const [data, setData] = useState(UseServerResult.get(id!));
+    const [data, setData] = useState(() => {
+      const d = UseServerResult.get(id!);
+      UseServerResult.delete(id!);
+      return d;
+    });
 
     const reload = async () => {
       setLoading(true);

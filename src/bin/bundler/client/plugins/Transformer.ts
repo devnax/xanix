@@ -21,7 +21,7 @@ const XanixTransformer = (): Plugin => {
         code = TransformUseServer(code, xanixImports, id);
         code = TransformServerFunction(code, xanixImports, uid, id);
         code = TransformCacheFunction(code, xanixImports, uid, id);
-        // code = TransformCreateSession(code, xanixImports, uid, id);
+        code = TransformCreateSession(code, xanixImports, uid, id);
       }
 
       return {

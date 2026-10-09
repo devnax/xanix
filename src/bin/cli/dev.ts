@@ -35,10 +35,9 @@ const curl = () => {
 };
 
 function runServer(): Promise<void> {
+  child?.kill();
   return new Promise((resolve, reject) => {
-    child?.kill();
     const filePath = path.join(outdirs.server, "index.js");
-
     child = spawn(process.execPath, [filePath], {
       stdio: ["inherit", "inherit", "inherit", "ipc"],
     });
@@ -64,18 +63,11 @@ function runServer(): Promise<void> {
 }
 
 let started = false;
-let timer: NodeJS.Timeout;
 async function startServer() {
   if (!started) {
     await runServer();
     started = true;
-    return;
   }
-  clearTimeout(timer);
-  timer = setTimeout(async () => {
-    await runServer();
-    await curl();
-  }, 1000);
 }
 
 const dev = async (rootEntry: string) => {
@@ -108,53 +100,35 @@ const dev = async (rootEntry: string) => {
     ws.on("close", () => {
       sockets.delete(ws);
     });
+
+    ws.on("message", (message) => {
+      if (message.toString() === "reload") {
+        startServer();
+      }
+    });
   });
 
-  let _clientWatcher: RolldownWatcher | null = null;
+  console.log("");
+  console.log(pc.green(pc.bold(`Xanix`) + ` v${packageJson.version}`));
+
+  let clientWatcher: RolldownWatcher | null = null;
   let clientStarted = false;
   let buildDuration = 0;
-  let serverWatchReady = false;
 
-  const waitUntilReady = () => {
-    return new Promise<void>((resolve) => {
-      if (serverWatchReady) {
-        resolve();
-        return;
-      }
-
-      const timer = setInterval(() => {
-        if (serverWatchReady) {
-          clearInterval(timer);
-          resolve();
-        }
-      }, 10);
-    });
-  };
-
-  const clientWatcher = async () => {
-    const isClientAlreadyReady = !!_clientWatcher;
-    _clientWatcher?.close();
-    _clientWatcher = await watchClient({
+  const startClientWatcher = async () => {
+    clientWatcher?.close();
+    clientWatcher = await watchClient({
       onStart: async () => {
         clientStarted = true;
       },
       onReady: async (duration) => {
-        if (!isClientAlreadyReady) {
-          // spinner.stop(
-          //   `${pc.green("✓")} Client compiled in ${pc.dim(buildDuration + duration + "ms")}`,
-          // );
-        }
-
         await startServer();
         buildDuration = 0;
         clientStarted = false;
-        serverWatchReady = false;
       },
       onChange: async (files, duration, entries) => {
-        await waitUntilReady();
         buildDuration += duration;
         clientStarted = false;
-        serverWatchReady = false;
 
         const _files = [];
         for (let file of files) {
@@ -176,27 +150,18 @@ const dev = async (rootEntry: string) => {
 
         broadcast(JSON.stringify(_files));
         buildDuration = 0;
-        startServer();
       },
     });
   };
 
-  console.log("");
-  console.log(pc.green(pc.bold(`Xanix`) + ` v${packageJson.version}`));
-  // console.log("");
-
-  // spinner.start("Compiling Server...");
-
   const watch = await watchServer({
     rootEntry,
     onChangeManifest: async () => {
-      // Handle manifest change
-      await clientWatcher();
+      await startClientWatcher();
     },
     onReady: async (duration) => {
       buildDuration += duration;
-      serverWatchReady = true;
-      await clientWatcher();
+      await startClientWatcher();
     },
     onChange: async (files, duration) => {
       buildDuration += duration;
@@ -210,22 +175,20 @@ const dev = async (rootEntry: string) => {
         buildDuration = 0;
         startServer();
       }
-
-      serverWatchReady = true;
     },
   });
 
   process.on("SIGINT", () => {
-    child?.kill();
-    _clientWatcher?.close();
+    clientWatcher?.close();
     watch?.close();
+    child?.kill();
     process.exit(0);
   });
 
   process.on("SIGTERM", () => {
-    child?.kill();
-    _clientWatcher?.close();
+    clientWatcher?.close();
     watch?.close();
+    child?.kill();
     process.exit(0);
   });
 };

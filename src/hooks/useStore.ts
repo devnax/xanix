@@ -1,4 +1,4 @@
-import { useRef, useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react";
 
 type StoreState = Record<string, any>;
 
@@ -7,8 +7,13 @@ export type Store<S extends StoreState = StoreState> = {
   emit: () => void;
   state: () => S;
   observe: () => number;
-  set: <K extends keyof S, V extends S[K]>(key: K, value: V) => void;
+  set: <K extends keyof S, V extends S[K]>(
+    key: K,
+    value: V,
+    emit?: boolean,
+  ) => void;
   get: <K extends keyof S>(key?: K) => S[K] | S;
+  delete: <K extends keyof S>(key: K, shouldEmit?: boolean) => void;
 };
 
 export const createStore = <S extends StoreState>(
@@ -17,7 +22,7 @@ export const createStore = <S extends StoreState>(
   const handlers = new Set<() => void>();
   const state: { data: S; observe: number } = {
     data: initialState ?? ({} as S),
-    observe: Date.now(),
+    observe: 0,
   };
 
   const subscribe = (callback: () => void) => {
@@ -28,19 +33,29 @@ export const createStore = <S extends StoreState>(
   };
 
   const emit = () => {
-    state.observe = Date.now();
+    state.observe++;
     for (const handler of handlers) {
       handler();
     }
   };
 
-  const set = <K extends keyof S, V extends S[K]>(key: K, value: V) => {
+  const set = <K extends keyof S, V extends S[K]>(
+    key: K,
+    value: V,
+    shouldEmit = true,
+  ) => {
     state.data = { ...state.data, [key]: value };
-    emit();
+    if (shouldEmit) emit();
   };
 
-  const get = <K extends keyof S>(key?: K) =>
-    key ? state.data[key] : state.data;
+  const get = <K extends keyof S>(key?: K): S[K] | S =>
+    key !== undefined ? state.data[key] : state.data;
+
+  const deleteKey = <K extends keyof S>(key: K, shouldEmit = true) => {
+    const { [key]: _, ...rest } = state.data;
+    state.data = rest as S;
+    if (shouldEmit) emit();
+  };
 
   return {
     subscribe,
@@ -49,11 +64,11 @@ export const createStore = <S extends StoreState>(
     set,
     get,
     emit,
+    delete: deleteKey,
   };
 };
 
 export const useStore = <T = any>(store: Store): Store => {
-  const getSnapshot = () => store?.observe?.();
-  useSyncExternalStore(store.subscribe, getSnapshot, getSnapshot);
+  useSyncExternalStore(store.subscribe, store.observe, store.observe);
   return store;
 };

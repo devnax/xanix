@@ -15,7 +15,7 @@ type DocumentInfo = DocumentContextData & {
   component: any;
 };
 
-export const documents = new Map<string, DocumentInfo>();
+const documents = new Map<string, DocumentInfo>();
 const ROOT_KEY = "__xanix_root__";
 
 const getPath = () => {
@@ -89,7 +89,7 @@ async function mount(
   doc: DocumentInfo,
 ) {
   const root = getRoot();
-  documents.set(path, doc);
+  // documents.set(path, doc);
 
   root.render(
     <DocumentProvider value={doc}>
@@ -100,48 +100,54 @@ async function mount(
   );
 }
 
-export const navigate = async (
+export const navigate = (
   path: string = getPath(),
   options?: { status?: number; pop?: boolean },
 ) => {
   if (__XANIX_SERVER__) {
     throw new XanixRedirect(options?.status ?? 302, path);
-  } else {
-    xanix.emit("navigate:start", { path });
-    const doc: any = await getDocument(path);
+  }
+
+  xanix.emit("navigate:start", { path });
+
+  getDocument(path).then(async (doc: any) => {
     const mod = await import(getImportUrl(doc.page.id));
     mount(path, mod.default, doc);
     if (!options?.pop) {
       history.pushState(null, "", doc.path);
     }
     xanix.emit("navigate:end", doc);
-  }
+  });
 };
 
-export const preload = async (path: string) => {
+export const preload = (path: string) => {
   if (__XANIX_CLIENT__) {
     xanix.emit("preload:start", { path });
-    const doc = await getDocument(path);
-    await import(getImportUrl(doc.page.id));
-    documents.set(path, doc);
-    xanix.emit("preload:end", doc);
+
+    getDocument(path).then(async (doc) => {
+      await import(getImportUrl(doc.page.id));
+      documents.set(path, doc);
+      xanix.emit("preload:end", doc);
+    });
   } else {
     throw new Error("Preload can only be called on the client side");
   }
 };
 
-export const reload = async (hard = false) => {
+export const reload = (hard = false) => {
   if (__XANIX_CLIENT__) {
     if (hard) {
       window.location.reload();
-    } else {
-      const path = getPath();
-      xanix.emit("navigate:start", { path });
-      const doc: any = await getDocument(path);
+      return;
+    }
+    const path = getPath();
+    xanix.emit("navigate:start", { path });
+
+    getDocument(path).then(async (doc: any) => {
       const mod = await import(getImportUrl(doc.page.id) + "?t=" + Date.now());
       mount(path, mod.default, doc);
       xanix.emit("navigate:end", doc);
-    }
+    });
   } else {
     throw new Error("Reload can only be called on the client side");
   }

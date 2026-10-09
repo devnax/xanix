@@ -21,7 +21,7 @@ const RootDocument = ({ children }: XanixDocumentProps) => {
       </Head>
       <Body style={{ margin: 0, padding: 0 }}>
         <ThemeProvider theme={createTheme({ name: "dark", mode: "dark" })}>
-          {children} as React.ReactNodessss
+          {children}
         </ThemeProvider>
       </Body>
     </Document>

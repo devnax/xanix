@@ -44,6 +44,9 @@ const server = (
   options?: CacheOption,
   id?: string,
 ) => {
+  if (!id) {
+    throw new Error("Server ID is required");
+  }
   let cb = async (args: Args = {}, context?: ServerContext) => {
     if (__XANIX_SERVER__) {
       try {

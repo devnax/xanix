@@ -22,6 +22,9 @@ export const cacheFactory = () => {
 };
 
 const cache = <T>(cb: Function, options?: CacheOption, id?: string) => {
+  if (!id) {
+    throw new Error("Cache ID is required");
+  }
   if (!options || !options.ttl) return cb;
   if (__XANIX_SERVER__) {
     if (options?.mode && options?.mode !== "server") {

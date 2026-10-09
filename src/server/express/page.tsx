@@ -11,39 +11,52 @@ import { encode } from "@msgpack/msgpack";
 function renderPage(element: React.ReactElement): Promise<string> {
   return new Promise((resolve, reject) => {
     let html = "";
-
+    let settled = false;
     const stream = new PassThrough();
+    const timeout = setTimeout(() => {
+      abort();
+      fail(new Error("SSR rendering timed out"));
+    }, 10_000);
+
+    const cleanup = () => clearTimeout(timeout);
+
+    const fail = (error: unknown) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      reject(error);
+    };
+
+    const streamResult = () => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      resolve(html);
+    };
+
     stream.on("data", (chunk) => {
       html += chunk.toString();
     });
-    stream.on("end", () => {
-      resolve(html);
-    });
 
-    stream.on("error", reject);
-
-    let didError = false;
+    stream.on("end", streamResult);
+    stream.on("error", fail);
 
     const { pipe, abort } = renderToPipeableStream(element, {
       onAllReady() {
-        pipe(stream);
+        if (!settled) {
+          pipe(stream);
+        }
       },
+
       onError(error) {
-        didError = true;
-        console.error("SSR error:", error);
+        fail(error);
+        abort();
       },
+
       onShellError(error) {
-        reject(error);
+        fail(error);
       },
     });
-
-    if (didError) {
-      reject(new Error("SSR rendering failed"));
-    }
-
-    setTimeout(() => {
-      abort();
-    }, 10_000);
   });
 }
 
@@ -137,15 +150,21 @@ const __xpage = async (
     return `${html}`;
   } catch (error: any) {
     if (error instanceof XanixRedirect) {
-      res.redirect(error.status, error.location);
+      if (!res.headersSent) {
+        res.setHeader("Content-Type", "xanix/redirect");
+        res.redirect(error.status, error.location);
+      }
+
       return;
     }
+
     xanix.emit("navigation:error", {
       error,
       path,
       request: req,
       response: res,
     });
+
     throw error;
   }
 };
