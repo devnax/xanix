@@ -1,7 +1,11 @@
-import "express-serve-static-core";
-
-declare module "express-serve-static-core" {
-  interface Request {}
+declare global {
+  namespace Express {
+    interface Request {
+      session: {
+        [name: string]: any;
+      };
+    }
+  }
 }
 
 export {};

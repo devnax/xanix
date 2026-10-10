@@ -1,4 +1,4 @@
-import { createSession, useSession } from "../../../dist";
+import { createSession, useSession, withSession } from "xanix";
 
 export const session = createSession({
   secret: "my-secret",
@@ -14,4 +14,8 @@ export const session = createSession({
 
 export const useAuth = () => {
   return useSession(session);
+};
+
+export const withAuth = () => {
+  return withSession(session);
 };

@@ -5,14 +5,14 @@ import TransformCreateSession from "./transformer/TransformCreateSession.js";
 import importFinder from "../../../modifier/importFinder.js";
 import TransformUseServer from "./transformer/TransformUseServer.js";
 import TransformServerFunction from "./transformer/TransformServerFunction.js";
-import { framworkDir } from "../../../include/path.js";
+import { frameworkDir } from "../../../include/utils.js";
 
 const XanixTransformer = (): Plugin => {
   return {
     name: "xanix-transform",
     async transform(code, id) {
       const xanixImports = importFinder(code, "xanix");
-      if (xanixImports.length || id.startsWith(framworkDir)) {
+      if (xanixImports.length || id.startsWith(frameworkDir)) {
         const uid = crypto
           .createHash("sha256")
           .update(id)

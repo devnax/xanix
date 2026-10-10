@@ -100,7 +100,7 @@ const HomePage = ({ another, category }: any) => {
           console.log(user);
         }}
       >
-        log user haha
+        log user
       </button>
       Home Page {params.toString()} Name:
       <input

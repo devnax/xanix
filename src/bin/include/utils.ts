@@ -1,8 +1,17 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import crypto from "node:crypto";
+import { readFile } from "fs/promises";
 
-const __dirname = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+export const frameworkDir = path.resolve(__dirname, "../../../");
+
+export const getFrameworkPackageJson = async () => {
+  const packageJsonPath = path.join(frameworkDir, "package.json");
+  const content = await readFile(packageJsonPath, "utf8");
+  const packageJson = JSON.parse(content);
+  return packageJson;
+};
 
 export function uid(value: string, length?: number) {
   const hash = crypto.createHash("sha256").update(value).digest("hex");
@@ -10,7 +19,7 @@ export function uid(value: string, length?: number) {
 }
 
 export const getClientRuntimeFile = () => {
-  return path.join(__dirname, "../../../client-runtime.js");
+  return path.join(frameworkDir, "dist/client-runtime.js");
 };
 
 export const getClientRuntimeFileName = (
@@ -19,10 +28,6 @@ export const getClientRuntimeFileName = (
   let n = "xanix-runtime";
   return mode === "development" ? n : uid(n, 16);
 };
-
-export function getWebSocketPort() {
-  return Math.floor(Math.random() * (65535 - 49152 + 1)) + 49152;
-}
 
 export function normalizePath(file: string) {
   return path.resolve(file).split(path.sep).join("/");

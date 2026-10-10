@@ -22,7 +22,7 @@ import useServer from "./hooks/useServer.js";
 import { useStore, createStore } from "./hooks/useStore.js";
 import server from "./hooks/server.js";
 import cache, { cacheFactory } from "./hooks/cache.js";
-import { createSession, useSession } from "./hooks/session.js";
+import { createSession, useSession, withSession } from "./hooks/session.js";
 
 export * from "./utils.js";
 
@@ -78,6 +78,7 @@ export {
   cacheFactory,
   createSession,
   useSession,
+  withSession,
 
   // navigation
   navigate,

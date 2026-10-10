@@ -1,6 +1,6 @@
 import callbackReplacer from "../../../../modifier/callbackReplacer.js";
 import { ImportInfo } from "../../../../modifier/importFinder.js";
-import { framworkDir } from "../../../../include/path.js";
+import { frameworkDir } from "../../../../include/utils.js";
 
 const TransformCreateSession = (
   code: string,
@@ -18,7 +18,7 @@ const TransformCreateSession = (
     code = replacedCode;
     return code;
   };
-  if (source.startsWith(framworkDir)) {
+  if (source.startsWith(frameworkDir)) {
     code = replacer(code, `createSession`);
   }
   for (let _import of imports) {

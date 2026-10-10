@@ -1,6 +1,6 @@
+import { frameworkDir } from "../../../../include/utils.js";
 import callbackReplacer from "../../../../modifier/callbackReplacer.js";
 import { ImportInfo } from "../../../../modifier/importFinder.js";
-import { framworkDir } from "../../../../include/path.js";
 
 const TransformServerFunction = (
   code: string,
@@ -21,7 +21,7 @@ const TransformServerFunction = (
     return code;
   };
 
-  if (source.startsWith(framworkDir)) {
+  if (source.startsWith(frameworkDir)) {
     code = replacer(code, `server`);
   }
 

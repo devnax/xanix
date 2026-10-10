@@ -1,6 +1,7 @@
 import { Router } from "express";
 import HomePage from "../pages/Home";
 import AboutPage from "../pages/About";
+import { withAuth } from "../pages/Home/auth";
 const router = Router();
 
 router.get("/", (req, res) => {
@@ -9,6 +10,10 @@ router.get("/", (req, res) => {
 
 router.get("/about", (req, res) => {
   res.send(<AboutPage />);
+});
+
+router.get("/api", withAuth(), (req, res) => {
+  res.json({ message: "API endpoint" });
 });
 
 export default router;

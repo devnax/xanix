@@ -8,9 +8,8 @@ import importFinder from "../../../modifier/importFinder.js";
 import expressFunctionReplace from "./transformer/TransformExpressFunction.js";
 import pageReplacer from "./transformer/TransformPage.js";
 import { XanixClientEntry } from "../../../types.js";
-import { framworkDir } from "../../../include/path.js";
+import { frameworkDir } from "../../../include/utils.js";
 import TransformCreateSession from "./transformer/TransformCreateSession.js";
-console.log(framworkDir);
 
 type Args = {
   onChangeManifest?: () => Promise<void>;
@@ -35,7 +34,7 @@ const XanixTransformer = ({ onChangeManifest }: Args = {}): Plugin => {
       code = expressFunctionReplace(code, expressImports);
       code = await pageReplacer(id, code, this, entries);
 
-      if (xanixImports.length || id.startsWith(framworkDir)) {
+      if (xanixImports.length || id.startsWith(frameworkDir)) {
         const uid = crypto
           .createHash("sha256")
           .update(id)

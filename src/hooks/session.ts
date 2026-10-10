@@ -3,6 +3,7 @@ import server, { ServerContext } from "./server.js";
 import useServer from "./useServer";
 import { cookieParser } from "./useCookies.js";
 import { useMemo } from "react";
+import { NextFunction, Request, Response } from "express";
 
 export interface SessionOptions {
   secret: string;
@@ -131,11 +132,11 @@ export const useSession = (session: ReturnType<typeof createSession>) => {
     async ({ id }, ctx?: ServerContext) => {
       const cookie = ctx!.request.headers["cookie"];
       const parsed = cookieParser(cookie ?? "");
-
-      if (!parsed || !parsed[id]) {
+      const token = parsed[id];
+      if (!token) {
         return;
       }
-      return await getUser({ id, token: parsed[id] });
+      return await getUser({ id, token });
     },
     { id: session.id },
   );
@@ -152,4 +153,44 @@ export const useSession = (session: ReturnType<typeof createSession>) => {
   }, [JSON.stringify(data)]);
 
   return store.get("user");
+};
+
+export const withSession = (session: ReturnType<typeof createSession>) => {
+  if (__XANIX_CLIENT__) {
+    throw new Error("withSession can only be used on the server side");
+  }
+
+  return async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const id = session.id;
+      const cookie = req.headers.cookie;
+      const parsed = cookieParser(cookie ?? "");
+      const token = parsed[id];
+
+      if (!token) {
+        return res.status(401).json({
+          code: "SESSION_NOT_FOUND",
+          error: true,
+          message: "Session not found",
+        });
+      }
+
+      const user = await getUser({ id, token });
+      if (!user) {
+        return res.status(401).json({
+          code: "INVALID_SESSION",
+          error: true,
+          message: "Invalid session",
+        });
+      }
+
+      req.session = {
+        [id]: user,
+      };
+
+      next();
+    } catch (error) {
+      next(error);
+    }
+  };
 };

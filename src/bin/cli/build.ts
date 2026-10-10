@@ -2,16 +2,9 @@ import buildServer from "../bundler/server/build.js";
 import buildClient from "../bundler/client/build.js";
 import pc from "picocolors";
 import spinner from "../include/spinner.js";
-import { readFile } from "fs/promises";
-import path from "path";
-import { fileURLToPath } from "url";
+import { getFrameworkPackageJson } from "../include/utils.js";
 import outdirs from "../../outdirs.js";
 import fs from "fs";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const packageJson = JSON.parse(
-  await readFile(path.join(__dirname, "../../../package.json"), "utf8"),
-);
 
 const build = async (rootEntry: string) => {
   fs.rmSync(outdirs.root, {
@@ -22,7 +15,7 @@ const build = async (rootEntry: string) => {
   fs.mkdirSync(outdirs.root, {
     recursive: true,
   });
-
+  const packageJson = await getFrameworkPackageJson();
   console.log("");
   console.log(pc.cyan(pc.bold(`Xanix ${packageJson.version}`)));
   console.log("");
@@ -35,11 +28,13 @@ const build = async (rootEntry: string) => {
         `${pc.green("✓")} Server built in ${pc.dim(Date.now() - st + "ms")}`,
       );
       spinner.start(`Building client...`);
-      const duration = Date.now() - st;
+      const clientStart = Date.now();
       await buildClient();
+      const clientDuration = Date.now() - clientStart;
       spinner.stop(
-        `${pc.green("✓")} Client built in ${pc.dim(duration + "ms")}`,
+        `${pc.green("✓")} Client built in ${pc.dim(clientDuration + "ms")}`,
       );
+      const duration = Date.now() - st;
       console.log("");
       console.log(pc.bold(pc.green(`Build completed in ${duration}ms`)));
       console.log("");

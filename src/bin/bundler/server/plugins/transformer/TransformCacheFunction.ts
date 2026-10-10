@@ -1,7 +1,6 @@
 import callbackReplacer from "../../../../modifier/callbackReplacer.js";
 import { ImportInfo } from "../../../../modifier/importFinder.js";
-import { framworkDir } from "../../../../include/path.js";
-
+import { frameworkDir } from "../../../../include/utils.js";
 const TransformCacheFunction = (
   code: string,
   imports: ImportInfo[],
@@ -21,7 +20,7 @@ const TransformCacheFunction = (
     return code;
   };
 
-  if (source.startsWith(framworkDir)) {
+  if (source.startsWith(frameworkDir)) {
     code = replacer(code, `cache`);
   }
 

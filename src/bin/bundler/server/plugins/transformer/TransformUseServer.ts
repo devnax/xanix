@@ -1,4 +1,4 @@
-import { framworkDir } from "../../../../include/path.js";
+import { frameworkDir } from "../../../../include/utils.js";
 import callbackReplacer from "../../../../modifier/callbackReplacer.js";
 import type { ImportInfo } from "../../../../modifier/importFinder.js";
 
@@ -21,7 +21,7 @@ const TransformUseServer = (
     });
   };
 
-  if (source.startsWith(framworkDir)) {
+  if (source.startsWith(frameworkDir)) {
     code = replacer(code, `useServer`);
   }
 

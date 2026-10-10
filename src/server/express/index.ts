@@ -6,8 +6,7 @@ import __xpage from "./page.js";
 
 const xanixpress = () => {
   const app: Express = (express as any)("xanix");
-  app.use(express.json());
-  app.use("/__xanix__", Router);
+  app.use("/__xanix__", express.json(), Router);
   const originalListener = app.listen.bind(app);
 
   app.use((req, res, next) => {

@@ -2,9 +2,9 @@
 
 import { Command } from "commander";
 
-import dev from "./cli/dev.js";
+import dev from "./cli/dev/index.js";
 import build from "./cli/build.js";
-import start from "./cli/start.js";
+import start from "./cli/start/index.js";
 import stop from "./cli/stop.js";
 import restart from "./cli/restart.js";
 import status from "./cli/status.js";
@@ -33,8 +33,7 @@ program
 program
   .command("start")
   .description("Start the production server")
-  // --logs option to view logs after starting the server
-  .option("--wait", "server will wait for logs after starting")
+  .option("--external", "start the server in external mode")
   .action(start);
 
 program.command("stop").description("Stop the production server").action(stop);

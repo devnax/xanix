@@ -1,38 +1,23 @@
 import pc from "picocolors";
-import { readFile, rm } from "node:fs/promises";
-import path from "node:path";
-import crypto from "node:crypto";
-import { xanixProcesses } from "../include/path.js";
+import { rm } from "node:fs/promises";
+import { getProcess, processProjectDir } from "../include/process.js";
+import spinner from "../include/spinner.js";
 
-const stop = async () => {
-  const projectId = crypto
-    .createHash("sha256")
-    .update(process.cwd())
-    .digest("hex")
-    .slice(0, 16);
-
-  const processDir = path.join(xanixProcesses, projectId);
-
-  const pidFile = path.join(processDir, "pid");
-
-  let pid: number;
-
-  try {
-    pid = Number(await readFile(pidFile, "utf8"));
-  } catch {
+const stop = async (args: { restart?: boolean } = {}) => {
+  const activeProcess = await getProcess();
+  if (!activeProcess) {
     console.log(pc.yellow("Xanix server is not running."));
-
     return;
   }
 
+  const pid = activeProcess.pid;
+
   if (!Number.isInteger(pid) || pid <= 0) {
-    await rm(processDir, {
+    await rm(processProjectDir, {
       recursive: true,
       force: true,
     });
-
     console.log(pc.yellow("Xanix server is not running."));
-
     return;
   }
 
@@ -40,43 +25,41 @@ const stop = async () => {
   try {
     process.kill(pid, 0);
   } catch {
-    await rm(processDir, {
+    await rm(processProjectDir, {
       recursive: true,
       force: true,
     });
 
     console.log(pc.yellow("Xanix server is not running."));
-
     return;
   }
 
-  console.log(`${pc.blue("➜")} Stopping Xanix server ${pc.gray(`(${pid})`)}`);
+  if (!args.restart) {
+    console.log("");
+    console.log(`${pc.gray("●")} Xanix server ${pc.green("stopped")}`);
+  }
 
   try {
     process.kill(pid, "SIGTERM");
   } catch {
     console.log(pc.red("Failed to stop Xanix server."));
-
     return;
   }
-
-  // Wait until the process actually exits.
   const timeout = Date.now() + 5000;
-
   while (Date.now() < timeout) {
     try {
       process.kill(pid, 0);
     } catch {
-      await rm(processDir, {
+      await rm(processProjectDir, {
         recursive: true,
         force: true,
       });
-
-      console.log(`${pc.green("✓")} Xanix server stopped`);
-
+      if (!args.restart) {
+        console.log(`  ${pc.gray("PID:")} ${activeProcess.pid}`);
+        console.log("");
+      }
       return;
     }
-
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
 
