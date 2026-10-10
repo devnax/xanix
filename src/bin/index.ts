@@ -9,6 +9,9 @@ import stop from "./cli/stop.js";
 import restart from "./cli/restart.js";
 import status from "./cli/status.js";
 import logs from "./cli/logs.js";
+import startup from "./cli/startup.js";
+import save from "./cli/save.js";
+import resurrect from "./cli/resurrect.js";
 
 const program = new Command();
 
@@ -51,5 +54,20 @@ program
   .command("logs")
   .description("View the logs of the production server")
   .action(logs);
+
+program
+  .command("startup")
+  .description("Generate a startup script to restore servers on boot")
+  .action(startup);
+
+program
+  .command("save")
+  .description("Save running servers to restore them on boot")
+  .action(save);
+
+program
+  .command("resurrect")
+  .description("Restart the servers stored by save")
+  .action(resurrect);
 
 await program.parseAsync();

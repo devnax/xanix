@@ -54,14 +54,14 @@ const start = async (args: { external?: boolean; restart?: boolean }) => {
     },
   });
 
-  // The parent no longer needs these handles.
-  await stdout.close();
-  await stderr.close();
+  // Keep file handles open for the child process to use.
 
   if (!child.pid) {
     console.error(pc.red("Failed to start Xanix server."));
     return;
   }
+
+  // clear pre logs
 
   await writeFile(
     processFile,
@@ -80,7 +80,12 @@ const start = async (args: { external?: boolean; restart?: boolean }) => {
   child.on("message", (message: { type?: string; url?: string }) => {
     if (message.type === "xanix:ready") {
       if (!args.restart) {
-        console.log(`  ${pc.blue("➜ Local:")} ${pc.yellow(message.url ?? "")}`);
+        console.log(`  ${pc.gray("➜ Local:")} ${pc.yellow(message.url ?? "")}`);
+        console.log(`  ${pc.gray("➜ PID:")} ${child.pid}`);
+        console.log("");
+        console.log(
+          pc.gray(`Run ${pc.cyan("xanix stop")} to stop the server.`),
+        );
         console.log("");
       }
       child.disconnect();

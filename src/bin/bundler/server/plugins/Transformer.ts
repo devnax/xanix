@@ -12,7 +12,10 @@ import { frameworkDir } from "../../../include/utils.js";
 import TransformCreateSession from "./transformer/TransformCreateSession.js";
 
 type Args = {
-  onChangeManifest?: () => Promise<void>;
+  onChangeManifest?: (
+    entries: XanixClientEntry[],
+    type: "add" | "remove",
+  ) => Promise<void>;
 };
 
 const XanixTransformer = ({ onChangeManifest }: Args = {}): Plugin => {
@@ -55,13 +58,30 @@ const XanixTransformer = ({ onChangeManifest }: Args = {}): Plugin => {
     async generateBundle() {
       const prevEntries = await getManifest();
       const pids = prevEntries.map((e: any) => e.resolved);
-      const cids = Array.from(entries.values()).map((entry) => entry.resolved);
-      if (JSON.stringify(cids) === JSON.stringify(pids)) {
+      const currentEntries = Array.from(entries.values());
+      const cids = currentEntries.map((entry) => entry.resolved);
+
+      const removedEntries = prevEntries.filter(
+        (entry: any) => !cids.includes(entry.resolved),
+      );
+
+      const addedEntries = currentEntries.filter(
+        (entry) => !pids.includes(entry.resolved),
+      );
+
+      if (addedEntries.length === 0 && removedEntries.length === 0) {
         return;
       }
 
-      await createManifest(Array.from(entries.values()));
-      await onChangeManifest?.();
+      await createManifest(currentEntries);
+
+      if (removedEntries.length > 0) {
+        await onChangeManifest?.(removedEntries, "remove");
+      }
+
+      if (addedEntries.length > 0) {
+        await onChangeManifest?.(addedEntries, "add");
+      }
     },
   };
 };

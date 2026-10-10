@@ -9,6 +9,7 @@ import logger from "../../include/logger.js";
 import outdirs from "../../../outdirs.js";
 import { getFrameworkPackageJson, normalizePath } from "../../include/utils.js";
 import { startServer } from "./server.js";
+import spinner from "../../include/spinner.js";
 
 const root = normalizePath(process.cwd());
 
@@ -31,6 +32,7 @@ const dev = async (rootEntry: string) => {
   let clientWatcher: RolldownWatcher | null = null;
   let clientStarted = false;
   let buildDuration = 0;
+  let initial = false;
 
   const startClientWatcher = async () => {
     clientWatcher?.close();
@@ -38,8 +40,24 @@ const dev = async (rootEntry: string) => {
       onStart: async () => {
         clientStarted = true;
       },
-      onReady: async (duration) => {
+      onReady: async (duration, entries) => {
+        if (!initial) {
+          if (entries.length > 0) {
+            console.log("");
+            console.log(pc.bold(`Pages (${entries.length})`));
+
+            for (const entry of entries) {
+              const filepath = entry.resolved.replace(
+                normalizePath(process.cwd()) + "/",
+                "",
+              );
+              console.log(` ${pc.dim(filepath)}`);
+            }
+            console.log("");
+          }
+        }
         await startServer();
+        initial = true;
         buildDuration = 0;
         clientStarted = false;
       },
@@ -71,9 +89,20 @@ const dev = async (rootEntry: string) => {
     });
   };
 
+  // spinner.start("Starting development server...");
+
   const watch = await watchServer({
     rootEntry,
-    onChangeManifest: async () => {
+    onChangeManifest: async (newEntries, type) => {
+      if (newEntries.length > 0) {
+        for (const entry of newEntries) {
+          const filepath = entry.resolved.replace(
+            normalizePath(process.cwd()) + "/",
+            "",
+          );
+          logger.info(`${pc.yellow(filepath)}`, `[${type}]`);
+        }
+      }
       await startClientWatcher();
     },
     onReady: async (duration) => {

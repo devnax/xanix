@@ -6,12 +6,16 @@ import xanixDocument from "../../plugins/XanixDocument.js";
 import xanixTsconfigAlias from "../../plugins/XanixTsconfigAlias.js";
 import xanixAssets from "../../plugins/XanixAssets.js";
 import XanixTransformer from "./plugins/Transformer.js";
+import { XanixClientEntry } from "../../types.js";
 
 export type WatcherOptions = {
   rootEntry: string;
   onChange: (files: string[], duration: number) => Promise<void>;
   onReady: (duration: number) => Promise<void>;
-  onChangeManifest: () => Promise<void>;
+  onChangeManifest: (
+    entries: XanixClientEntry[],
+    type: "add" | "remove",
+  ) => Promise<void>;
 };
 const root = process.cwd();
 
@@ -41,13 +45,16 @@ const watchServer = async ({
       }),
       xanixTsconfigAlias(),
       XanixTransformer({
-        onChangeManifest: async () => {
-          isReady && (await onChangeManifest?.());
+        onChangeManifest: async (
+          newEntries: XanixClientEntry[],
+          type: "add" | "remove",
+        ) => {
+          isReady && (await onChangeManifest?.(newEntries, type));
         },
       }),
 
       {
-        name: "noop",
+        name: "xanix-server",
         async watchChange(id) {
           changedFiles.add(normalizePath(id));
         },

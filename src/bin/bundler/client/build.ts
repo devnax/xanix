@@ -73,6 +73,8 @@ const buildClient = async () => {
     entryFileNames: `[name].js`,
   });
   await build.close();
+
+  return entries;
 };
 
 export default buildClient;

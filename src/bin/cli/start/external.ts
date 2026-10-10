@@ -12,6 +12,8 @@ const startExternal = async () => {
     if (message.type === "xanix:ready") {
       console.log(`  ${pc.blue("➜ Local:")} ${pc.yellow(message.url ?? "")}`);
       console.log("");
+      console.log(pc.gray("Press Ctrl+C to stop"));
+      console.log("");
     }
   });
 

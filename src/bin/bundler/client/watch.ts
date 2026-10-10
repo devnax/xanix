@@ -27,7 +27,7 @@ type Option = {
     duration: number,
     entries: XanixClientEntry[],
   ) => Promise<void>;
-  onReady?: (duration: number) => Promise<void>;
+  onReady?: (duration: number, entries: XanixClientEntry[]) => Promise<void>;
 };
 
 const WatchClient = async (options: Option): Promise<RolldownWatcher> => {
@@ -60,7 +60,7 @@ const WatchClient = async (options: Option): Promise<RolldownWatcher> => {
       xanixDocument(),
 
       {
-        name: "noop",
+        name: "xanix-client",
         async watchChange(id) {
           changedFiles.add(normalizePath(id));
         },
@@ -71,7 +71,7 @@ const WatchClient = async (options: Option): Promise<RolldownWatcher> => {
         async generateBundle() {
           const duration = parseInt((performance.now() - start).toFixed(2));
           if (!isReady) {
-            await options.onReady?.(duration);
+            await options.onReady?.(duration, entries);
             isReady = true;
           } else {
             await options.onChange?.(

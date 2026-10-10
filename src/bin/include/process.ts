@@ -19,6 +19,8 @@ export const processDir = (() => {
   return paths[process.platform] || paths.linux;
 })();
 
+export const dumpFile = path.join(processDir, "dump.json");
+
 export const projectId = crypto
   .createHash("sha256")
   .update(process.cwd())
