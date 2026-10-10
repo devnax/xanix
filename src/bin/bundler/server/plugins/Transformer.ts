@@ -1,9 +1,9 @@
 import { type Plugin } from "rolldown";
+import { uuid } from "../../../include/utils.js";
 import TransformUseServer from "./transformer/TransformUseServer.js";
 import TransformServerFunction from "./transformer/TransformServerFunction.js";
 import TransformCacheFunction from "./transformer/TransformCacheFunction.js";
 import { createManifest, getManifest } from "../../../include/manifest.js";
-import crypto from "node:crypto";
 import importFinder from "../../../modifier/importFinder.js";
 import expressFunctionReplace from "./transformer/TransformExpressFunction.js";
 import pageReplacer from "./transformer/TransformPage.js";
@@ -38,11 +38,7 @@ const XanixTransformer = ({ onChangeManifest }: Args = {}): Plugin => {
       code = await pageReplacer(id, code, this, entries);
 
       if (xanixImports.length || id.startsWith(frameworkDir)) {
-        const uid = crypto
-          .createHash("sha256")
-          .update(id)
-          .digest("hex")
-          .slice(0, 12);
+        const uid = uuid(id, 12);
         code = TransformUseServer(code, xanixImports, id);
         code = TransformServerFunction(code, xanixImports, uid, id);
         code = TransformCacheFunction(code, xanixImports, uid, id);

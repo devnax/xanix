@@ -13,6 +13,7 @@ const TransformServerFunction = (
       if (args[2]) return;
       const id = uid + count++;
       const fn = args[0];
+
       const options = args[1] || "undefined";
       return `${cb}(undefined, ${options}, "${id}");`;
     });

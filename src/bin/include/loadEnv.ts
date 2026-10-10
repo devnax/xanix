@@ -1,9 +1,9 @@
 import path from "node:path";
 import fs from "node:fs";
 import dotenv from "dotenv";
-import { getClientRuntimeFileName, uid } from "./utils.js";
+import { getClientRuntimeFileName, uuid } from "./utils.js";
 
-const HEARDER_VALUE = uid(Math.random().toString(36), 32);
+const HEARDER_VALUE = uuid(Math.random().toString(36), 32);
 
 const loadEnv = async ({
   mode,

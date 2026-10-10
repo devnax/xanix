@@ -1,32 +1,31 @@
 import { Button } from "@xanui/ui";
 import { useMemo } from "react";
-import { navigate, useServer } from "xanix";
+import { navigate, server, useServer } from "xanix";
 import { useAuth, session } from "../Home/auth";
 
-const AboutPage = () => {
-  const d = useServer(
-    async () => {
-      return {
-        pageName: "about",
-      };
-    },
-    {
-      name: 1,
-    },
-  );
+const well = server(async () => {
+  return {
+    pageName: "about",
+  };
+});
 
-  const auth = useAuth();
-  if (!auth) {
-    navigate("/");
-    return null;
-  }
+const AboutPage = () => {
+  const d = useServer(well, {
+    name: 1,
+  });
+
+  // const auth = useAuth();
+  // if (!auth) {
+  //   navigate("/");
+  //   return null;
+  // }
 
   return (
     <div>
-      {!!auth && JSON.stringify(auth)}
+      {/* {!!auth && JSON.stringify(auth)} */}
       <Button
         onClick={async () => {
-          const user = await session.login({ id: "example" });
+          // const user = await session.login({ id: "example" });
         }}
       >
         Login

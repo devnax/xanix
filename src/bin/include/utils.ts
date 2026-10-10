@@ -13,7 +13,7 @@ export const getFrameworkPackageJson = async () => {
   return packageJson;
 };
 
-export function uid(value: string, length?: number) {
+export function uuid(value: string, length?: number) {
   const hash = crypto.createHash("sha256").update(value).digest("hex");
   return length ? hash.slice(0, length) : hash;
 }
@@ -26,7 +26,7 @@ export const getClientRuntimeFileName = (
   mode: "development" | "production",
 ) => {
   let n = "xanix-runtime";
-  return mode === "development" ? n : uid(n, 16);
+  return mode === "development" ? n : uuid(n, 16);
 };
 
 export function normalizePath(file: string) {
