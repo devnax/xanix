@@ -1,8 +1,6 @@
 import { navigate } from "./navigate.js";
 import outdirs from "./outdirs.js";
 
-export const getImportUrl = (file: string) => `/${outdirs.client}/${file}.js`;
-
 if (__XANIX_DEV__) {
   const win: any = window;
 
@@ -31,10 +29,8 @@ if (__XANIX_DEV__) {
         }
 
         if (!file.endsWith(".js")) continue;
-        const url = getImportUrl(file.replace(/\.js$/, ""));
-
         try {
-          await import(`${url}?t=${Date.now()}`);
+          await import(`/${outdirs.client}/${file}?t=${Date.now()}`);
           moduleChaned = true;
         } catch (error) {
           console.error("[Xanix HMR] Module update failed:", file, error);
@@ -55,6 +51,32 @@ if (__XANIX_DEV__) {
     };
   });
 }
+
+// async function bootstrap() {
+//   const win = window as any;
+//   const doc = win.__XDOCUMENT;
+
+//   if (doc?.page?.id && pages[doc.page.id]) {
+//     const mod = await pages[doc.page.id]();
+//     let win: any = window;
+//     const windoc = win.__XDOCUMENT;
+//     if (windoc && windoc.page && windoc.page.id) {
+//       const pageData = win.__XPAGEDATA;
+//       windoc.pagedata = pageData;
+//       win.__XDOCUMENT = null;
+//       win.__XPAGEDATA = null;
+//       if (windoc.pagedata) {
+//         for (const [key, value] of Object.entries(windoc.pagedata)) {
+//           UseServerResult.set(key, value);
+//         }
+//       }
+//       const root = createRoot(document.body as HTMLElement);
+//       root.render(<AppRoot Component={mod.default} doc={windoc} />);
+//     }
+//   }
+// }
+
+// bootstrap();
 
 window.addEventListener("load", navigate as any);
 window.addEventListener("popstate", navigate as any);

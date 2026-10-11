@@ -5,7 +5,7 @@ import { withAuth } from "../pages/Home/auth";
 const router = Router();
 
 router.get("/", (req, res) => {
-  res.send(<HomePage title="Yes" />);
+  res.send(<HomePage />);
 });
 
 router.get("/about", (req, res) => {

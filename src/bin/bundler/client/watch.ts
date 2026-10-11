@@ -1,24 +1,15 @@
-import {
-  rolldown,
-  watch,
-  type InputOption,
-  type RolldownWatcher,
-} from "rolldown";
+import { watch, type RolldownWatcher } from "rolldown";
 import ClientWatchConfig from "./watch.config.js";
-import fs from "node:fs";
 import { getManifest } from "../../include/manifest.js";
-import {
-  getClientRuntimeFile,
-  getClientRuntimeFileName,
-  normalizePath,
-} from "../../include/utils.js";
-import outdirs from "../../../outdirs.js";
+import { frameworkDir, normalizePath } from "../../include/utils.js";
 import XanixCache from "../cache/index.js";
 import { XanixClientEntry } from "../../types.js";
 import xanixAssets from "../../plugins/XanixAssets.js";
 import xanixTsconfigAlias from "../../plugins/XanixTsconfigAlias.js";
 import xanixDocument from "../../plugins/XanixDocument.js";
 import XanixTransformer from "./plugins/Transformer.js";
+import XanixPages from "./plugins/XanixPages.js";
+import path from "node:path";
 
 type Option = {
   onStart?: () => Promise<void>;
@@ -26,35 +17,30 @@ type Option = {
     files: string[],
     duration: number,
     entries: XanixClientEntry[],
+    moduleToChunk: Map<string, string>,
   ) => Promise<void>;
   onReady?: (duration: number, entries: XanixClientEntry[]) => Promise<void>;
 };
 
 const WatchClient = async (options: Option): Promise<RolldownWatcher> => {
   const entries = await getManifest();
-
-  const input: InputOption = {};
-  for (const entry of entries) {
-    input[entry.id] = entry.resolved;
-  }
-  const runtimeFileName = getClientRuntimeFileName("development");
-  input[runtimeFileName] = getClientRuntimeFile();
-
   const config = await ClientWatchConfig(true);
   const changedFiles = new Set<string>();
+  const moduleToChunk = new Map<string, string>();
 
   let isReady = false;
   let start = 0;
 
   const watcher = watch({
     ...config,
-    input,
+    input: path.join(frameworkDir, "dist/client-runtime.js"),
     plugins: [
       XanixCache(),
       XanixTransformer(),
       xanixAssets(),
       xanixTsconfigAlias(),
       xanixDocument(),
+      XanixPages(),
 
       {
         name: "xanix-client",
@@ -65,7 +51,14 @@ const WatchClient = async (options: Option): Promise<RolldownWatcher> => {
           await options.onStart?.();
           start = performance.now();
         },
-        async generateBundle() {
+        async generateBundle(_options: any, bundle: any) {
+          moduleToChunk.clear();
+          for (const output of Object.values(bundle) as any[]) {
+            if (output.type !== "chunk") continue;
+            for (const id of Object.keys(output.modules)) {
+              moduleToChunk.set(normalizePath(id), output.fileName);
+            }
+          }
           const duration = parseInt((performance.now() - start).toFixed(2));
           if (!isReady) {
             await options.onReady?.(duration, entries);
@@ -75,6 +68,7 @@ const WatchClient = async (options: Option): Promise<RolldownWatcher> => {
               Array.from(changedFiles),
               duration,
               entries,
+              moduleToChunk,
             );
           }
 

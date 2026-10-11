@@ -6,7 +6,6 @@ import {
 } from "./components/DocumentContext.js";
 import type { ComponentType } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import outdirs from "./outdirs.js";
 import Document from "virtual:xanix-document";
 import { UseServerResult } from "./hooks/useServer.js";
 import { decode } from "@msgpack/msgpack";
@@ -15,24 +14,20 @@ type DocumentInfo = DocumentContextData & {
   component: any;
 };
 
-const documents = new Map<string, DocumentInfo>();
-const ROOT_KEY = "__xanix_root__";
-
 const getPath = () => {
   const { pathname, search } = window.location;
   return search ? `${pathname}${search}` : pathname;
 };
 
-export const getImportUrl = (file: string) => `/${outdirs.client}/${file}.js`;
-
+let _root: Root | null = null;
 function getRoot(): Root {
-  let ele: any = document.body;
-  if (!ele) {
-    throw new Error("Root element not found");
-  }
-  ele[ROOT_KEY] = ele[ROOT_KEY] ?? createRoot(ele);
-  return ele[ROOT_KEY];
+  return (_root = _root ?? createRoot(document.body));
 }
+
+const getPages = async () => {
+  const pages = (await import("virtual:xanix-pages")).default;
+  return pages;
+};
 
 const getDocument = async (path: string) => {
   let win: any = window;
@@ -49,9 +44,6 @@ const getDocument = async (path: string) => {
     }
     return windoc;
   }
-
-  let doc = documents.get(path);
-  if (doc) return doc;
 
   const res = await fetch(path, {
     headers: {
@@ -83,14 +75,8 @@ const getDocument = async (path: string) => {
   throw new Error(`Failed to fetch page for path ${path}`);
 };
 
-async function mount(
-  path: string,
-  Component: ComponentType<any>,
-  doc: DocumentInfo,
-) {
+async function mount(Component: ComponentType<any>, doc: DocumentInfo) {
   const root = getRoot();
-  // documents.set(path, doc);
-
   root.render(
     <DocumentProvider value={doc}>
       <Document>
@@ -110,23 +96,27 @@ export const navigate = (
 
   xanix.emit("navigate:start", { path });
 
-  getDocument(path).then(async (doc: any) => {
-    const mod = await import(getImportUrl(doc.page.id));
-    mount(path, mod.default, doc);
-    if (!options?.pop) {
-      history.pushState(null, "", doc.path);
-    }
-    xanix.emit("navigate:end", doc);
-  });
+  getDocument(path)
+    .then(async (doc: any) => {
+      const pages = await getPages();
+      const mod = await pages[doc.page.id]();
+      mount(mod.default, doc);
+      if (!options?.pop) {
+        history.pushState(null, "", doc.path);
+      }
+      xanix.emit("navigate:end", doc);
+    })
+    .catch((error) => {
+      console.error("[Xanix Navigation] Failed to navigate:", error);
+    });
 };
 
 export const preload = (path: string) => {
   if (__XANIX_CLIENT__) {
     xanix.emit("preload:start", { path });
-
     getDocument(path).then(async (doc) => {
-      await import(getImportUrl(doc.page.id));
-      documents.set(path, doc);
+      const pages = await getPages();
+      await pages[doc.page.id]();
       xanix.emit("preload:end", doc);
     });
   } else {
@@ -144,8 +134,9 @@ export const reload = (hard = false) => {
     xanix.emit("navigate:start", { path });
 
     getDocument(path).then(async (doc: any) => {
-      const mod = await import(getImportUrl(doc.page.id) + "?t=" + Date.now());
-      mount(path, mod.default, doc);
+      const pages = await getPages();
+      const mod = await pages[doc.page.id]();
+      mount(mod.default, doc);
       xanix.emit("navigate:end", doc);
     });
   } else {

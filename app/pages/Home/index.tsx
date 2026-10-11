@@ -21,7 +21,7 @@ import fs from "fs";
 import path from "path";
 import { session, useAuth } from "./auth";
 import "./style.module.css";
-import img from "./img.jpeg";
+// import img from "./img.jpeg";
 
 const getUser = server(
   async ({ file, id }) => {
@@ -43,7 +43,7 @@ const getUser = server(
   },
 );
 
-const HomePage = ({ another, category }: any) => {
+const HomePage = () => {
   const [n, setN] = useState("Nax");
 
   const d = useServer(getUser, {
@@ -61,7 +61,7 @@ const HomePage = ({ another, category }: any) => {
 
   return (
     <div>
-      <img src={img.src} alt="Uploaded" />
+      {/* <img src={img.src} alt="Uploaded" /> */}
       {!!userSession && JSON.stringify(userSession)}
       <Button
         onClick={async () => {

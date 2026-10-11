@@ -55,10 +55,6 @@ const Head = ({ children, ...props }: HeadProps) => {
         `,
           }}
         ></script>
-        <script
-          type="module"
-          src={`/${outdirs.client}/${__XANIX_CLIENT_RUNTIME_FILE_NAME__}.js`}
-        ></script>
       </head>
     );
   }

@@ -18,17 +18,6 @@ export function uuid(value: string, length?: number) {
   return length ? hash.slice(0, length) : hash;
 }
 
-export const getClientRuntimeFile = () => {
-  return path.join(frameworkDir, "dist/client-runtime.js");
-};
-
-export const getClientRuntimeFileName = (
-  mode: "development" | "production",
-) => {
-  let n = "xanix-runtime";
-  return mode === "development" ? n : uuid(n, 16);
-};
-
 export function normalizePath(file: string) {
   return path.resolve(file).split(path.sep).join("/");
 }

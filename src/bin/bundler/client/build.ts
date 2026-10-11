@@ -1,30 +1,20 @@
 import { rolldown, type InputOption } from "rolldown";
-import fs from "node:fs";
-import { XanixClientEntry } from "../../types.js";
-import {
-  getClientRuntimeFile,
-  getClientRuntimeFileName,
-} from "../../include/utils.js";
+import { frameworkDir } from "../../include/utils.js";
 import outdirs from "../../../outdirs.js";
 import XanixTransformer from "./plugins/Transformer.js";
+import XanixPages from "./plugins/XanixPages.js";
 import xanixAssets from "../../plugins/XanixAssets.js";
 import xanixDocument from "../../plugins/XanixDocument.js";
 import xanixTsconfigAlias from "../../plugins/XanixTsconfigAlias.js";
 import loadEnv from "../../include/loadEnv.js";
 import { getManifest } from "../../include/manifest.js";
+import path from "node:path";
 
 const buildClient = async () => {
   const entries = await getManifest();
-  const input: InputOption = {};
-  for (const entry of entries) {
-    input[entry.id] = entry.resolved;
-  }
-
-  const runtimeFileName = getClientRuntimeFileName("production");
-  input[runtimeFileName] = getClientRuntimeFile();
 
   const build = await rolldown({
-    input,
+    input: path.join(frameworkDir, "dist/client-runtime.js"),
     treeshake: true,
     tsconfig: true,
     checks: {
@@ -57,6 +47,7 @@ const buildClient = async () => {
     plugins: [
       xanixAssets(),
       xanixTsconfigAlias(),
+      XanixPages(),
       xanixDocument(),
       XanixTransformer(),
     ],
@@ -68,7 +59,7 @@ const buildClient = async () => {
     format: "esm",
     chunkFileNames: "chunks/[hash].js",
     assetFileNames: "assets/[name][extname]",
-    entryFileNames: `[name].js`,
+    entryFileNames: `runtime.js`,
   });
   await build.close();
 

@@ -100,10 +100,11 @@ const BuildServer = async ({ rootEntry, onBuildEnd }: WatcherOptions) => {
       return true;
     },
   });
+
   await build.write({
     dir: outdirs.server,
     format: "esm",
-    entryFileNames: "[name].js",
+    entryFileNames: "index.js",
     chunkFileNames: "chunks/[hash].js",
     assetFileNames: "assets/[name][extname]",
     minify: true,

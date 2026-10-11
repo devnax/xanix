@@ -1,3 +1,9 @@
+declare module "virtual:xanix-pages" {
+  import type { LazyExoticComponent, ComponentType } from "react";
+  const pages: Record<string, () => Promise<any>>;
+  export default pages;
+}
+
 declare module "virtual:xanix-document" {
   import type { ComponentType, ReactNode } from "react";
   import type { Request, Response } from "express";

@@ -64,27 +64,23 @@ const dev = async (rootEntry: string) => {
         buildDuration = 0;
         clientStarted = false;
       },
-      onChange: async (files, duration, entries) => {
+      onChange: async (files, duration, entries, moduleToChunk) => {
         buildDuration += duration;
         clientStarted = false;
 
         const _files = [];
         for (let file of files) {
-          const entry = entries.find((entry) => entry.resolved === file);
-          if (entry) {
-            _files.push(`${entry.id}.js`);
+          const ext = path.extname(file);
+          const isCss = ext === ".css";
+          if (isCss) {
+            const cssFileId = uuid(path.resolve(process.cwd(), file), 20);
+            _files.push(`/assets/${cssFileId}.css`);
           } else {
-            file = file.replace(root + "/", "");
-            const ext = path.extname(file);
-            const isCss = ext === ".css";
-            if (isCss) {
-              console.log(path.normalize(file));
-              const cssFileId = uuid(path.resolve(process.cwd(), file), 20);
-              _files.push(`/assets/${cssFileId}.css`);
-            } else {
-              file = file.replace(ext, ".js");
-              _files.push(file);
+            const chunk = moduleToChunk.get(file);
+            if (!chunk) {
+              continue;
             }
+            _files.push(chunk);
           }
         }
 

@@ -5,7 +5,7 @@ import { useAuth, session } from "../Home/auth";
 
 const well = server(async () => {
   return {
-    pageName: "about",
+    pageName: "abouts",
   };
 });
 

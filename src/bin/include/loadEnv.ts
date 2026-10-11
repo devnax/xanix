@@ -1,7 +1,7 @@
 import path from "node:path";
 import fs from "node:fs";
 import dotenv from "dotenv";
-import { getClientRuntimeFileName, uuid } from "./utils.js";
+import { uuid } from "./utils.js";
 
 const HEARDER_VALUE = uuid(Math.random().toString(36), 32);
 
@@ -42,9 +42,6 @@ const loadEnv = async ({
   return {
     "process.env.NODE_ENV": JSON.stringify(mode),
     __XANIX_PAGE_NAVIGATION_HEADER_VALUE__: JSON.stringify(HEARDER_VALUE),
-    __XANIX_CLIENT_RUNTIME_FILE_NAME__: JSON.stringify(
-      getClientRuntimeFileName(mode),
-    ),
     __XANIX_CLIENT__: isClient ? "true" : "false",
     __XANIX_SERVER__: isClient ? "false" : "true",
     __XANIX_DEV__: mode === "development" ? "true" : "false",

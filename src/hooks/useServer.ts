@@ -4,6 +4,7 @@ import useResponse from "./useResponse.js";
 import type { CacheOption } from "./cache.js";
 import { Request, Response } from "express";
 import server from "./server.js";
+import useDocument from "./useDocument.js";
 
 type Context = {
   request: Request;
@@ -89,14 +90,11 @@ const useServer = <T = any>(
       reload: async () => {},
     };
   } else {
+    const { pagedata } = useDocument();
     const init = useRef(false);
     const first = useRef(true);
     const [loading, setLoading] = useState(false);
-    const [data, setData] = useState(() => {
-      const d = UseServerResult.get(id);
-      UseServerResult.delete(id);
-      return d;
-    });
+    const [data, setData] = useState(pagedata?.[id]);
 
     const reload = async () => {
       setLoading(true);
