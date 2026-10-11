@@ -3,7 +3,9 @@ import outdirs from "../../outdirs.js";
 import React from "react";
 import Router from "./Router.js";
 import __xpage from "./page.js";
-import { XanixStyleSheets } from "../index.js";
+import path from "node:path";
+import fs from "node:fs";
+import { XanixAssets } from "../index.js";
 
 const xanixpress = () => {
   const app: Express = (express as any)("xanix");
@@ -62,15 +64,14 @@ const xanixpress = () => {
 
   if (__XANIX_DEV__) {
     app.use(`/${outdirs.client}`, express.static(`${outdirs.client}`));
-    app.use(`/assets`, express.static(outdirs.assets));
-    app.use(`/assets/:file`, (req, res) => {
-      const file = req.params.file;
-      const fileName = XanixStyleSheets.get(file);
-      if (!fileName) {
-        res.status(404).send("File not found");
+    app.use(`/assets/:file`, (req, res, next) => {
+      const file = req.params.file.split("?")[0];
+      const asset = XanixAssets.get(file);
+      if (!asset) {
+        res.status(404).send("404 Not Found");
         return;
       }
-      res.sendFile(`${outdirs.assets}/${fileName}`);
+      res.sendFile(asset.path);
     });
     app.use(`/__xmod`, express.static(`${outdirs.module_cache}`));
   } else {
@@ -82,14 +83,20 @@ const xanixpress = () => {
         etag: true,
       }),
     );
-    app.use(
-      `/assets`,
-      express.static(outdirs.assets, {
+    app.use("/assets/:file", (req, res) => {
+      const asset = XanixAssets.get(req.params.file);
+      if (!asset) {
+        res.status(404).send("404 Not Found");
+        return;
+      }
+
+      res.sendFile(asset.path, {
         maxAge: "1y",
         immutable: true,
         etag: true,
-      }),
-    );
+        lastModified: true,
+      });
+    });
   }
 
   return app;

@@ -65,10 +65,8 @@ const BuildServer = async ({ rootEntry, onBuildEnd }: WatcherOptions) => {
       warn(warning);
     },
     plugins: [
+      xanixAssets(),
       xanixDocument(),
-      xanixAssets({
-        emit: true,
-      }),
       xanixTsconfigAlias(),
       XanixTransformer(),
     ],

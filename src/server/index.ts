@@ -1,8 +1,6 @@
 import type { EventMap } from "./types.js";
-
-export const XanixStyleSheets = new Map<string, string>();
-
 type Platform = "express";
+
 const xanix = (platform: Platform) => {
   if (__XANIX_SERVER__) {
     if (platform === "express") {
@@ -12,10 +10,22 @@ const xanix = (platform: Platform) => {
   }
 };
 
-xanix.css = (id: string, fileName: string) => {
+export interface XanixAsset {
+  path: string;
+  name: string;
+  type: "css" | "js" | "image" | "font" | "other";
+}
+
+export const XanixAssets = new Map<string, XanixAsset>();
+xanix.asset = (option: XanixAsset) => {
   if (__XANIX_SERVER__) {
-    XanixStyleSheets.set(id, fileName);
+    XanixAssets.set(option.name, option);
   }
+
+  return {
+    type: option.type,
+    src: `assets/${option.name}`,
+  };
 };
 
 const eventCallbacks: Record<string, Function[]> = {};

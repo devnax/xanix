@@ -7,7 +7,6 @@ import xanixTsconfigAlias from "../../plugins/XanixTsconfigAlias.js";
 import xanixAssets from "../../plugins/XanixAssets.js";
 import XanixTransformer from "./plugins/Transformer.js";
 import { XanixClientEntry } from "../../types.js";
-import xanixCSS from "../../plugins/XanixCss.js";
 
 export type WatcherOptions = {
   rootEntry: string;
@@ -40,13 +39,8 @@ const watchServer = async ({
     ...config,
     input,
     plugins: [
-      xanixCSS({
-        emit: true,
-      }),
+      xanixAssets(),
       xanixDocument(),
-      xanixAssets({
-        emit: true,
-      }),
       xanixTsconfigAlias(),
       XanixTransformer({
         onChangeManifest: async (

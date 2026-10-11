@@ -55,9 +55,7 @@ const buildClient = async () => {
       warn(warning);
     },
     plugins: [
-      xanixAssets({
-        emit: false,
-      }),
+      xanixAssets(),
       xanixTsconfigAlias(),
       xanixDocument(),
       XanixTransformer(),

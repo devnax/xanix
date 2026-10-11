@@ -4,15 +4,9 @@ import type { Plugin } from "rolldown";
 import { uuid } from "../include/utils.js";
 
 const ASSET_RE =
-  /\.(png|jpe?g|gif|svg|webp|avif|ico|bmp|mp4|webm|ogg|mp3|wav|woff2?|ttf|otf)$/i;
+  /\.(css|png|jpe?g|gif|svg|webp|avif|ico|bmp|mp4|webm|ogg|mp3|wav|woff2?|ttf|otf)$/i;
 
-export interface XanixAssetsOptions {
-  emit?: boolean;
-}
-
-export default function xanixAssets(options: XanixAssetsOptions = {}): Plugin {
-  const emit = options.emit ?? true;
-
+export default function xanixAssets(): Plugin {
   return {
     name: "xanix-assets",
 
@@ -33,25 +27,22 @@ export default function xanixAssets(options: XanixAssetsOptions = {}): Plugin {
         return null;
       }
 
-      const source = fs.readFileSync(id);
       const ext = path.extname(id);
       const basename = path.basename(id, ext);
       const hash = uuid(id, 8);
-
       const fileName = `${basename}-${hash}${ext}`;
 
-      if (emit) {
-        this.emitFile({
-          type: "asset",
-          name: fileName,
-          originalFileName: id,
-          source,
-        });
-      }
+      const asset = {
+        type: ext.slice(1),
+        path: id,
+        name: `${fileName}`,
+      };
 
       return {
-        code: `export default ${JSON.stringify(fileName)};`,
+        code: `import {xanix} from "xanix"
+          export default xanix.asset(${JSON.stringify(asset)});`,
         moduleSideEffects: false,
+        moduleType: "js",
       };
     },
   };

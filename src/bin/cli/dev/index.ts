@@ -7,7 +7,11 @@ import watchClient from "../../bundler/client/watch.js";
 import pc from "picocolors";
 import logger from "../../include/logger.js";
 import outdirs from "../../../outdirs.js";
-import { getFrameworkPackageJson, normalizePath } from "../../include/utils.js";
+import {
+  getFrameworkPackageJson,
+  normalizePath,
+  uuid,
+} from "../../include/utils.js";
 import { startServer } from "./server.js";
 
 const root = normalizePath(process.cwd());
@@ -74,7 +78,9 @@ const dev = async (rootEntry: string) => {
             const ext = path.extname(file);
             const isCss = ext === ".css";
             if (isCss) {
-              _files.push(path.basename(file));
+              console.log(path.normalize(file));
+              const cssFileId = uuid(path.resolve(process.cwd(), file), 20);
+              _files.push(`/assets/${cssFileId}.css`);
             } else {
               file = file.replace(ext, ".js");
               _files.push(file);

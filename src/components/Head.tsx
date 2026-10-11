@@ -1,7 +1,7 @@
 import { useEffect, type HTMLProps } from "react";
 import useDocument from "../hooks/useDocument.js";
 import outdirs from "../outdirs.js";
-import { XanixStyleSheets } from "../server/index.js";
+import { XanixAssets } from "../server/index.js";
 
 type HeadProps = HTMLProps<HTMLHeadElement> & {
   children?: React.ReactNode;
@@ -30,9 +30,16 @@ const Head = ({ children, ...props }: HeadProps) => {
     return (
       <head {...props}>
         {children}
-        {Array.from(XanixStyleSheets.values()).map((fileName) => (
-          <link key={fileName} rel="stylesheet" href={`/assets/${fileName}`} />
-        ))}
+        {Array.from(XanixAssets.values())
+          .filter((asset) => asset.type === "css")
+          .map((asset) => (
+            <link
+              key={asset.path}
+              id={asset.name}
+              rel="stylesheet"
+              href={`assets/${asset.name}`}
+            />
+          ))}
         <script
           dangerouslySetInnerHTML={{
             __html: `${devScript}; window.__XDOCUMENT = ${JSON.stringify({
