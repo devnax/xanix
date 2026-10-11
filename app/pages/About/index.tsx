@@ -14,15 +14,15 @@ const AboutPage = () => {
     name: 1,
   });
 
-  // const auth = useAuth();
-  // if (!auth) {
-  //   navigate("/");
-  //   return null;
-  // }
+  const auth = useAuth();
+  if (!auth) {
+    navigate("/");
+    return null;
+  }
 
   return (
     <div>
-      {/* {!!auth && JSON.stringify(auth)} */}
+      {!!auth && JSON.stringify(auth)}
       <Button
         onClick={async () => {
           // const user = await session.login({ id: "example" });

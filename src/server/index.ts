@@ -1,5 +1,7 @@
 import type { EventMap } from "./types.js";
 
+export const XanixStyleSheets = new Map<string, string>();
+
 type Platform = "express";
 const xanix = (platform: Platform) => {
   if (__XANIX_SERVER__) {
@@ -7,6 +9,12 @@ const xanix = (platform: Platform) => {
       const { default: xanix_express } = require("./express");
       return xanix_express();
     }
+  }
+};
+
+xanix.css = (id: string, fileName: string) => {
+  if (__XANIX_SERVER__) {
+    XanixStyleSheets.set(id, fileName);
   }
 };
 

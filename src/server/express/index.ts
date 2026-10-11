@@ -3,6 +3,7 @@ import outdirs from "../../outdirs.js";
 import React from "react";
 import Router from "./Router.js";
 import __xpage from "./page.js";
+import { XanixStyleSheets } from "../index.js";
 
 const xanixpress = () => {
   const app: Express = (express as any)("xanix");
@@ -62,6 +63,15 @@ const xanixpress = () => {
   if (__XANIX_DEV__) {
     app.use(`/${outdirs.client}`, express.static(`${outdirs.client}`));
     app.use(`/assets`, express.static(outdirs.assets));
+    app.use(`/assets/:file`, (req, res) => {
+      const file = req.params.file;
+      const fileName = XanixStyleSheets.get(file);
+      if (!fileName) {
+        res.status(404).send("File not found");
+        return;
+      }
+      res.sendFile(`${outdirs.assets}/${fileName}`);
+    });
     app.use(`/__xmod`, express.static(`${outdirs.module_cache}`));
   } else {
     app.use(

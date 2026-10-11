@@ -19,6 +19,7 @@ import xanixAssets from "../../plugins/XanixAssets.js";
 import xanixTsconfigAlias from "../../plugins/XanixTsconfigAlias.js";
 import xanixDocument from "../../plugins/XanixDocument.js";
 import XanixTransformer from "./plugins/Transformer.js";
+import xanixCSS from "../../plugins/XanixCss.js";
 
 type Option = {
   onStart?: () => Promise<void>;
@@ -52,7 +53,9 @@ const WatchClient = async (options: Option): Promise<RolldownWatcher> => {
     plugins: [
       XanixCache(),
       XanixTransformer(),
-
+      xanixCSS({
+        emit: true,
+      }),
       xanixAssets({
         emit: false,
       }),

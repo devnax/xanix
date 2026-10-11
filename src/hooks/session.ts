@@ -67,35 +67,25 @@ const getUser = server(async ({ id, token }, ctx?: ServerContext) => {
   }
 
   if (ctx) {
-    const cookie = ctx.request.cookies[id];
-    if (!cookie) {
-      return {
-        code: "SESSION_NOT_FOUND",
-        error: true,
-        message: "Session not found",
-      };
+    const cookie = ctx.request.headers.cookie;
+    const parsed = cookieParser(cookie ?? "");
+    if (!parsed[id]) {
+      return null;
     }
-    token = cookie;
+    token = parsed[id];
   }
 
   if (!token) {
-    return {
-      code: "SESSION_NOT_FOUND",
-      error: true,
-      message: "Session not found",
-    };
+    return null;
   }
+
   const encryptModule = await import("./encript.js");
   const data = encryptModule.decrypt(token, session.secret);
   const parsed = JSON.parse(data);
 
   if (!parsed.info || new Date(parsed.expires) < new Date()) {
     ctx!.response.clearCookie(id);
-    return {
-      code: "SESSION_NOT_FOUND",
-      error: true,
-      message: "Session not found",
-    };
+    return null;
   }
   return await session.getUser(parsed.info);
 });
@@ -128,18 +118,7 @@ export const createSession = (option: SessionOptions, id?: string) => {
 };
 
 export const useSession = (session: ReturnType<typeof createSession>) => {
-  const { data } = useServer(
-    async ({ id }, ctx?: ServerContext) => {
-      const cookie = ctx!.request.headers["cookie"];
-      const parsed = cookieParser(cookie ?? "");
-      const token = parsed[id];
-      if (!token) {
-        return;
-      }
-      return await getUser({ id, token });
-    },
-    { id: session.id },
-  );
+  const { data } = useServer(getUser, { id: session.id });
 
   if (__XANIX_SERVER__) {
     return data;

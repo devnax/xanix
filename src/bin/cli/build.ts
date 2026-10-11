@@ -52,9 +52,7 @@ const build = async (rootEntry: string) => {
             normalizePath(process.cwd()) + "/",
             "",
           );
-          console.log(
-            `  ${pc.green("○")} ${pc.cyan(entry.id)} ${pc.dim(filepath)}`,
-          );
+          console.log(`${pc.green("○")} ${pc.dim(filepath)}`);
         }
       }
 

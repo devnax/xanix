@@ -1,9 +1,15 @@
-import path from "path";
-import outdirs from "../../../outdirs.js";
 import { spawn } from "child_process";
 import pc from "picocolors";
+import path from "path";
+import outdirs from "../../outdirs.js";
+import { getFrameworkPackageJson } from "../include/utils.js";
 
-const startExternal = async () => {
+const start = async () => {
+  const packageJson = await getFrameworkPackageJson();
+
+  console.log("");
+  console.log(pc.cyan(pc.bold(`Xanix ${packageJson.version}`)));
+  console.log("");
   const filePath = path.join(outdirs.server, "index.js");
   const child = spawn(process.execPath, [filePath], {
     stdio: ["inherit", "inherit", "inherit", "ipc"],
@@ -22,4 +28,4 @@ const startExternal = async () => {
   });
 };
 
-export default startExternal;
+export default start;

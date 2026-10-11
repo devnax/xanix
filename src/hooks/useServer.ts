@@ -73,12 +73,16 @@ const useServerOnServer = <T = any>(
 const useServer = <T = any>(
   callback: Callback<T>,
   args: Record<string, any> = {},
-  option?: CacheOption,
 ) => {
   const id = (callback as any).id;
+  if (!id) {
+    throw new Error(
+      `Invalid useServer call: callback must be a server function`,
+    );
+  }
   if (__XANIX_SERVER__) {
-    const value = useServerOnServer(callback, args, id!);
-    UseServerResult.set(id!, value);
+    const value = useServerOnServer(callback, args, id);
+    UseServerResult.set(id, value);
     return {
       data: value,
       loading: false,
@@ -89,8 +93,8 @@ const useServer = <T = any>(
     const first = useRef(true);
     const [loading, setLoading] = useState(false);
     const [data, setData] = useState(() => {
-      const d = UseServerResult.get(id!);
-      UseServerResult.delete(id!);
+      const d = UseServerResult.get(id);
+      UseServerResult.delete(id);
       return d;
     });
 

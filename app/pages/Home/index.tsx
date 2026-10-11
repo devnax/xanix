@@ -20,6 +20,7 @@ import { createTheme, ThemeProvider } from "@xanui/core";
 import fs from "fs";
 import path from "path";
 import { session, useAuth } from "./auth";
+import "./style.module.css";
 
 const getUser = server(
   async ({ file, id }) => {
@@ -44,19 +45,10 @@ const getUser = server(
 const HomePage = ({ another, category }: any) => {
   const [n, setN] = useState("Nax");
 
-  const d = useServer(
-    async ({ name }: any, ctx) => {
-      return {
-        name,
-      };
-    },
-    {
-      name: n,
-    },
-    {
-      ttl: 2000, // cache time-to-live in milliseconds
-    },
-  );
+  const d = useServer(getUser, {
+    name: n,
+  });
+
   const userSession = useAuth();
   // console.log(userSession, "aaa");
   // console.log(d);

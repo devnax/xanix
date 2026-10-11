@@ -9,7 +9,6 @@ import logger from "../../include/logger.js";
 import outdirs from "../../../outdirs.js";
 import { getFrameworkPackageJson, normalizePath } from "../../include/utils.js";
 import { startServer } from "./server.js";
-import spinner from "../../include/spinner.js";
 
 const root = normalizePath(process.cwd());
 
@@ -51,7 +50,7 @@ const dev = async (rootEntry: string) => {
                 normalizePath(process.cwd()) + "/",
                 "",
               );
-              console.log(` ${pc.dim(filepath)}`);
+              console.log(`${pc.green("○")} ${pc.dim(filepath)}`);
             }
             console.log("");
           }
@@ -72,8 +71,14 @@ const dev = async (rootEntry: string) => {
             _files.push(`${entry.id}.js`);
           } else {
             file = file.replace(root + "/", "");
-            file = file.replace(path.extname(file), ".js");
-            _files.push(file);
+            const ext = path.extname(file);
+            const isCss = ext === ".css";
+            if (isCss) {
+              _files.push(path.basename(file));
+            } else {
+              file = file.replace(ext, ".js");
+              _files.push(file);
+            }
           }
         }
 
@@ -88,8 +93,6 @@ const dev = async (rootEntry: string) => {
       },
     });
   };
-
-  // spinner.start("Starting development server...");
 
   const watch = await watchServer({
     rootEntry,

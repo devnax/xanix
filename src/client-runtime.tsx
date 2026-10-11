@@ -19,6 +19,14 @@ if (__XANIX_DEV__) {
     ws.onmessage = async (event) => {
       const files: string[] = JSON.parse(event.data);
       for (const file of files) {
+        if (file.endsWith(".css")) {
+          const link = document.createElement("link");
+          link.rel = "stylesheet";
+          link.href = `/assets/${file}`;
+          document.head.appendChild(link);
+          continue;
+        }
+
         if (!file.endsWith(".js")) continue;
         const url = getImportUrl(file.replace(/\.js$/, ""));
 
