@@ -6,7 +6,7 @@ import { DocumentProvider } from "../../components/DocumentContext";
 import { UseServerResource, UseServerResult } from "../../hooks/useServer";
 import XanixRedirect from "../../classes/XanixRedirect";
 import xanix from "..";
-import { encode } from "@msgpack/msgpack";
+import { encode } from "../../libs/encoder.js";
 
 function renderPage(element: React.ReactElement): Promise<string> {
   return new Promise((resolve, reject) => {

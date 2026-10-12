@@ -1,6 +1,6 @@
 import { frameworkDir } from "../../../../include/utils.js";
-import callbackReplacer from "../../../../modifier/callbackReplacer.js";
-import { ImportInfo } from "../../../../modifier/importFinder.js";
+import callbackReplacer from "../../../../finder/callbackReplacer.js";
+import { ImportInfo } from "../../../../finder/findImport.js";
 
 const TransformServerFunction = (
   code: string,

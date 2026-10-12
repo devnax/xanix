@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { TransformPluginContext } from "rolldown";
-import pageFinder from "../../../../modifier/pageFinder.js";
+import pageFinder from "../../../../finder/findPage.js";
 import { normalizePath } from "../../../../include/utils.js";
 import { XanixClientEntry } from "../../../../types.js";
 

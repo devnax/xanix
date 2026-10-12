@@ -1,9 +1,9 @@
-import { decode, encode } from "@msgpack/msgpack";
 import express, { Router } from "express";
 import fs from "fs";
 import path from "path";
 import { register, CHUNK_SIZE } from "../../hooks/server.js";
 import xanix from "../index.js";
+import { decode, encode } from "../../libs/encoder.js";
 
 const router = Router();
 const TMP_DIR = path.resolve(".xanix/tmp");
@@ -23,7 +23,7 @@ const readFile = async (
 
 router.post(
   "/server/:id",
-  express.raw({ type: "application/xanix" }),
+  express.raw({ type: "application/octet-stream" }),
   async (req, res) => {
     const callback = register.get(req.params.id);
 
@@ -47,7 +47,8 @@ router.post(
       request: req,
       response: res,
     });
-    const args: any = req.body?.length ? decode(new Uint8Array(req.body)) : {};
+    const args = req.body?.length ? decode(req.body) : {};
+
     let fileIds = [];
     for (const key in args) {
       const value = args[key];
@@ -88,7 +89,7 @@ router.post(
       request: req,
       response: res,
     });
-    res.set("Content-Type", "application/xanix");
+    res.set("Content-Type", "application/octet-stream");
     res.send(Buffer.from(encode(data)));
   },
 );

@@ -1,8 +1,8 @@
 import { type Plugin } from "rolldown";
-import stripComments from "../../../modifier/sriptCommnet.js";
+import stripComments from "../../../finder/stripComments.js";
 import TransformCacheFunction from "./transformer/TransformCacheFunction.js";
 import TransformCreateSession from "./transformer/TransformCreateSession.js";
-import importFinder from "../../../modifier/importFinder.js";
+import importFinder from "../../../finder/findImport.js";
 import TransformServerFunction from "./transformer/TransformServerFunction.js";
 import { uuid, frameworkDir } from "../../../include/utils.js";
 
@@ -10,6 +10,7 @@ const XanixTransformer = (): Plugin => {
   return {
     name: "xanix-transform",
     async transform(code, id) {
+      if (!/\.[jt]sx?$/.test(id)) return null;
       const xanixImports = importFinder(code, "xanix");
       if (xanixImports.length || id.startsWith(frameworkDir)) {
         const uid = uuid(id, 12);

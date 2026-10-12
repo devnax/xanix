@@ -1,13 +1,17 @@
 import { Plugin } from "rolldown";
 import { createRequire } from "node:module";
-import { isPackageImport, makeFilename } from "./utils.js";
+import {
+  isPackageImport,
+  makeFilename,
+  readManifest,
+  writeManifest,
+} from "./utils.js";
 import buildCache from "./buildCache.js";
-import { walk } from "oxc-walker";
 import { builtinModules } from "node:module";
 import { CachedModule } from "./types.js";
-import { readManifest, writeManifest } from "./manifest.js";
 import logger from "../../include/logger.js";
 import pc from "picocolors";
+import findImports from "../../finder/findImports.js";
 
 const nodeBuiltins = new Set(builtinModules);
 
@@ -18,15 +22,6 @@ function isNodeBuiltin(id: string): boolean {
 
 const require = createRequire(import.meta.url);
 
-function getParserLanguage(id: string): "js" | "jsx" | "ts" | "tsx" {
-  const cleanId = id.split("?")[0];
-  if (cleanId.endsWith(".tsx")) return "tsx";
-  if (cleanId.endsWith(".ts")) return "ts";
-  if (cleanId.endsWith(".jsx")) return "jsx";
-
-  return "js";
-}
-
 function makeImportName(name: string): string {
   return `require_${name.replace(/[^a-zA-Z0-9_$]/g, "_")}`;
 }
@@ -36,14 +31,6 @@ const XanixCache = (): Plugin => {
   let init = false;
   return {
     name: "__xmod",
-
-    buildStart() {
-      cached.clear();
-    },
-
-    watchChange() {
-      cached.clear();
-    },
 
     async resolveId(source) {
       if (source.startsWith("/__xmod")) {
@@ -64,8 +51,6 @@ const XanixCache = (): Plugin => {
         return null;
       }
 
-      const lang = getParserLanguage(id);
-      const ast = this.parse(code, { lang });
       const packages: string[] = [];
       let replacements: {
         source: string;
@@ -74,136 +59,73 @@ const XanixCache = (): Plugin => {
         value: string;
       }[] = [];
 
-      walk(ast, {
-        enter(node) {
-          if (node.type !== "ImportDeclaration" || node.importKind === "type") {
-            return;
-          }
+      let counter = 0;
 
-          const source = node.source.value;
+      for (const imp of findImports(code)) {
+        if (imp.typeOnly) continue;
 
-          if (
-            typeof source !== "string" ||
-            !isPackageImport(source) ||
-            isNodeBuiltin(source)
-          ) {
-            return;
-          }
+        const source = imp.source;
+        if (!isPackageImport(source) || isNodeBuiltin(source)) continue;
 
-          /*
-           * Don't add the same package multiple times
-           * when the file imports it more than once.
-           */
-          if (!packages.includes(source)) {
-            packages.push(source);
-          }
+        /*
+         * Don't add the same package multiple times
+         * when the file imports it more than once.
+         */
+        if (!packages.includes(source)) {
+          packages.push(source);
+        }
 
-          const name = makeFilename(source);
-          const importName = makeImportName(name);
-          const cachePath = `/__xmod/${name}.js`;
-          const lines: string[] = [];
-          const specifiers = (node.specifiers ?? []).filter(
-            (specifier: any) => specifier.importKind !== "type",
-          );
+        const name = makeFilename(source);
+        const cachePath = `/__xmod/${name}.js`;
+        const named = imp.named.filter((s) => !s.typeOnly);
 
-          if (!specifiers.length) {
-            lines.push(`import "${cachePath}";`);
-          } else {
-            const defaultSpecifier = specifiers.find(
-              (specifier: any) => specifier.type === "ImportDefaultSpecifier",
-            );
+        /*
+         * Unique per import statement (require_react, require_react1, ...)
+         * so the same package imported twice never redeclares a binding.
+         */
+        const local = `${makeImportName(name)}${counter++ || ""}`;
+        const mod = `_${local}`; // `import * as` keeps this name in the bundle
+        const ns = `${mod}.__xmod`;
 
-            const namespaceSpecifier = specifiers.find(
-              (specifier: any) => specifier.type === "ImportNamespaceSpecifier",
-            );
+        const bindings: string[] = [];
+        if (imp.default) bindings.push(local);
+        if (imp.namespace || named.length) bindings.push(`* as ${mod}`);
 
-            const namedSpecifiers = specifiers.filter(
-              (specifier: any) => specifier.type === "ImportSpecifier",
-            );
+        const lines = [
+          bindings.length
+            ? `import ${bindings.join(", ")} from "${cachePath}";`
+            : `import "${cachePath}";`,
+        ];
 
-            /*
-             * Only import default when the original import
-             * actually has a default import.
-             */
-            if (defaultSpecifier) {
-              lines.push(`import ${importName} from "${cachePath}";`);
-              lines.push(
-                `const ${defaultSpecifier.local.name} = ${importName};`,
-              );
-            }
+        if (imp.default) lines.push(`const ${imp.default} = ${local};`);
+        if (imp.namespace) lines.push(`const ${imp.namespace} = ${ns};`);
+        if (named.length) {
+          const props = named
+            .map(({ imported, local }) =>
+              imported !== local ? `${imported}: ${local}` : imported,
+            )
+            .join(", ");
 
-            /*
-             * Namespace and named imports use the Xanix
-             * namespace export.
-             */
-            if (namespaceSpecifier || namedSpecifiers.length) {
-              const namespaceName = `${importName}_ns`;
+          lines.push(`const { ${props} } = ${ns};`);
+        }
 
-              lines.push(
-                `import { __xanix_namespace as ${namespaceName} } from "${cachePath}";`,
-              );
-
-              if (namespaceSpecifier) {
-                lines.push(
-                  `const ${namespaceSpecifier.local.name} = ${namespaceName};`,
-                );
-              }
-
-              if (namedSpecifiers.length) {
-                const properties = namedSpecifiers
-                  .map((specifier: any) => {
-                    const imported =
-                      specifier.imported?.type === "Identifier"
-                        ? specifier.imported.name
-                        : specifier.imported?.value;
-
-                    const local = specifier.local?.name;
-
-                    if (!imported || !local) {
-                      return null;
-                    }
-
-                    if (imported !== local) {
-                      if (
-                        typeof imported === "string" &&
-                        !/^[$A-Z_a-z][$\w]*$/.test(imported)
-                      ) {
-                        return `${JSON.stringify(imported)}: ${local}`;
-                      }
-
-                      return `${imported}: ${local}`;
-                    }
-
-                    return imported;
-                  })
-                  .filter(Boolean)
-                  .join(", ");
-
-                if (properties) {
-                  lines.push(`const { ${properties} } = ${namespaceName};`);
-                }
-              }
-            }
-          }
-
-          if (!cached.has(source)) {
-            cached.set(source, {
-              module: source,
-              name,
-              resolved: "",
-              exports: [],
-              default: false,
-            });
-          }
-
-          replacements.push({
-            source,
-            start: node.start,
-            end: node.end,
-            value: lines.join("\n"),
+        if (!cached.has(source)) {
+          cached.set(source, {
+            module: source,
+            name,
+            resolved: "",
+            exports: [],
+            default: false,
           });
-        },
-      });
+        }
+
+        replacements.push({
+          source,
+          start: imp.start,
+          end: imp.end,
+          value: lines.join("\n"),
+        });
+      }
 
       if (!replacements.length) {
         return null;
@@ -220,7 +142,12 @@ const XanixCache = (): Plugin => {
 
         try {
           const resolved: any = await this.resolve(source, id);
-          if (!resolved?.id || !resolved.id.includes("node_modules")) {
+
+          if (!resolved?.id) {
+            continue;
+          }
+
+          if (!resolved.id.includes("node_modules")) {
             throw new Error(
               `Resolved module ${resolved.id} is not in node_modules`,
             );
@@ -263,10 +190,12 @@ const XanixCache = (): Plugin => {
     },
 
     async generateBundle() {
+      const current = new Map(cached);
+      cached.clear();
       // write manifest
       const cachedManifest = await readManifest();
       const pmodules = Array.from(cachedManifest.values()).map((m) => m.module);
-      const cmodule = Array.from(cached.values()).map((m) => m.module);
+      const cmodule = Array.from(current.values()).map((m) => m.module);
       const hasChanges =
         pmodules.some((m) => !cmodule.includes(m)) ||
         cmodule.some((m) => !pmodules.includes(m));
@@ -276,8 +205,8 @@ const XanixCache = (): Plugin => {
           logger.info(`${pc.yellow("Optimizing dependencies")} `, "[optimize]");
         }
         init = true;
-        await buildCache(cached);
-        await writeManifest(cached);
+        await buildCache(current);
+        await writeManifest(current);
       }
     },
   };

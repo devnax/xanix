@@ -62,7 +62,7 @@ const HomePage = () => {
 
   return (
     <div>
-      <img src={img.src} alt="Uploaded" />
+      {/* <img src={img.src} alt="Uploaded" /> */}
       {!!userSession && JSON.stringify(userSession)}
       <Button
         onClick={async () => {

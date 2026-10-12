@@ -57,7 +57,7 @@ const buildClient = async () => {
     dir: outdirs.client,
     minify: true,
     format: "esm",
-    chunkFileNames: "chunks/[hash].js",
+    chunkFileNames: "chunks/[hash]c.js",
     assetFileNames: "assets/[name][extname]",
     entryFileNames: `runtime.js`,
   });

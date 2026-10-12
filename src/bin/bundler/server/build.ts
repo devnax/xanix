@@ -1,8 +1,5 @@
 import { rolldown } from "rolldown";
 import path from "node:path";
-import fs from "node:fs";
-import { XanixClientEntry } from "../../types.js";
-import { getManifest } from "../../include/manifest.js";
 import outdirs from "../../../outdirs.js";
 import XanixTransformer from "./plugins/Transformer.js";
 import xanixTsconfigAlias, {
@@ -105,7 +102,7 @@ const BuildServer = async ({ rootEntry, onBuildEnd }: WatcherOptions) => {
     dir: outdirs.server,
     format: "esm",
     entryFileNames: "index.js",
-    chunkFileNames: "chunks/[hash].js",
+    chunkFileNames: "chunks/[hash]s.js",
     assetFileNames: "assets/[name][extname]",
     minify: true,
   });

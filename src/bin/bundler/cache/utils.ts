@@ -1,17 +1,17 @@
-import fs from "fs";
-import path from "path";
+import fs from "fs/promises";
 import { builtinModules } from "node:module";
+import outdirs from "../../../outdirs.js";
+import type { CachedMap, CachedModule } from "./types.js";
+
+const nodeBuiltins = new Set(builtinModules);
 
 export function isPackageImport(source: string) {
-  // Relative import
   if (source.startsWith("./") || source.startsWith("../")) {
     return false;
   }
-  // Absolute filesystem path
   if (source.startsWith("/") || /^[A-Za-z]:[\\/]/.test(source)) {
     return false;
   }
-  // URL / virtual module
   if (
     source.startsWith("node:") ||
     source.includes(":") ||
@@ -19,7 +19,6 @@ export function isPackageImport(source: string) {
   ) {
     return false;
   }
-  // Everything else is a bare package specifier
   return true;
 }
 
@@ -36,30 +35,34 @@ export const makeFilename = (id: string) => {
   return id;
 };
 
-export const writeCacheManifest = async (cached: Map<string, string>) => {
-  const file = path.resolve("node_modules/xanix-cache/manifest.json");
-  let manifest: any = {};
-
-  for (const [key, value] of cached.entries()) {
-    manifest[key] = value;
-  }
-  await fs.promises.writeFile(file, JSON.stringify(manifest, null, 2));
-};
-
-export const readCacheManifest = async () => {
-  const file = path.resolve("node_modules/xanix-cache/manifest.json");
-  if (!fs.existsSync(file)) {
-    return new Map();
-  }
-  const content = await fs.promises.readFile(file, "utf-8");
-  const parsed = JSON.parse(content);
-  const map = new Map(Object.entries(parsed));
-  return map;
-};
-
-const nodeBuiltins = new Set(builtinModules);
-
 export function isNodeBuiltin(id: string): boolean {
   const normalized = id.startsWith("node:") ? id.slice(5) : id;
   return nodeBuiltins.has(normalized);
 }
+
+const manifestFile = `${outdirs.module_cache}/manifest.json`;
+
+export const writeManifest = async (manifest: CachedMap) => {
+  const data: CachedModule[] = Array.from(manifest.values());
+  for (const item of data) {
+    delete (item as any).exports;
+    delete (item as any).default;
+    delete (item as any).resolved;
+    delete (item as any).name;
+  }
+  await fs.writeFile(manifestFile, JSON.stringify(data, null, 2), "utf-8");
+};
+
+export const readManifest = async (): Promise<CachedMap> => {
+  try {
+    const content = await fs.readFile(manifestFile, "utf-8");
+    const parsed: CachedModule[] = JSON.parse(content);
+    let data: CachedMap = new Map();
+    for (let p of parsed) {
+      data.set(p.module, p);
+    }
+    return data;
+  } catch {
+    return new Map();
+  }
+};

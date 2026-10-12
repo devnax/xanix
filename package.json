@@ -1,6 +1,7 @@
 {
   "name": "xanix",
-  "version": "1.0.20",
+  "version": "1.0.21",
+  "author": "Naxrul Ahmed",
   "description": "",
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -26,13 +27,10 @@
     "build": "tsc && node scripts/build-types.js"
   },
   "keywords": [],
-  "author": "Naxrul Ahmed",
   "license": "ISC",
   "dependencies": {
-    "@msgpack/msgpack": "^3.1.3",
     "commander": "^15.0.0",
     "dotenv": "^17.4.2",
-    "oxc-walker": "^1.1.1",
     "picocolors": "^1.1.1",
     "react-refresh": "^0.18.0",
     "rolldown": "^1.2.9",
@@ -41,10 +39,8 @@
     "ws": "^8.21.3"
   },
   "devDependencies": {
-    "express": "^5.2.1",
     "@iconify-react/ic": "^1.0.2",
     "@types/express": "^5.0.6",
-    "@types/mime-types": "^3.0.1",
     "@types/node": "^26.2.0",
     "@types/prompts": "^2.4.9",
     "@types/react": "^19.2.17",
@@ -54,6 +50,7 @@
     "@xanui/core": "^1.3.38",
     "@xanui/icons": "^1.1.14",
     "@xanui/ui": "^1.2.24",
+    "express": "^5.2.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   }

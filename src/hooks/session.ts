@@ -23,7 +23,7 @@ const login = server(async ({ id, info }, ctx?: ServerContext) => {
   try {
     await session.verify(info);
     const user = await session.getUser(info);
-    const encryptModule = await import("./encript.js");
+    const encryptModule = await import("../libs/encript.js");
     const cookieData = {
       info,
       expires: new Date(Date.now() + 1000 * 60 * 60 * 24), // 1 day expiration
@@ -79,7 +79,7 @@ const getUser = server(async ({ id, token }, ctx?: ServerContext) => {
     return null;
   }
 
-  const encryptModule = await import("./encript.js");
+  const encryptModule = await import("../libs/encript.js");
   const data = encryptModule.decrypt(token, session.secret);
   const parsed = JSON.parse(data);
 

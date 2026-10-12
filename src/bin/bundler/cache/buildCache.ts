@@ -8,7 +8,7 @@ const VIRTUAL_PREFIX = "\0xanix-cache:";
 const buildCache = async (cached: Map<string, CachedModule>) => {
   const input: Record<string, string> = {};
 
-  for (const [source, { name }] of cached) {
+  for (const [, { name }] of cached) {
     input[name] = `${VIRTUAL_PREFIX}${name}`;
   }
 
@@ -61,18 +61,16 @@ const buildCache = async (cached: Map<string, CachedModule>) => {
 
           if (cache.default) {
             return `
-import * as __xanix_namespace from ${JSON.stringify(resolved)};
-
-export default __xanix_namespace.default;
-export { __xanix_namespace };
+import * as __xmod from ${JSON.stringify(resolved)};
+export default __xmod.default;
+export { __xmod };
 `;
           }
 
           return `
-import * as __xanix_namespace from ${JSON.stringify(resolved)};
-
-export default __xanix_namespace;
-export { __xanix_namespace };
+import * as __xmod from ${JSON.stringify(resolved)};
+export default __xmod;
+export { __xmod };
 `;
         },
       },

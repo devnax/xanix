@@ -8,7 +8,7 @@ import type { ComponentType } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import Document from "virtual:xanix-document";
 import { UseServerResult } from "./hooks/useServer.js";
-import { decode } from "@msgpack/msgpack";
+import { decode } from "./libs/encoder.js";
 
 type DocumentInfo = DocumentContextData & {
   component: any;

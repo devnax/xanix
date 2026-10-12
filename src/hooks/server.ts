@@ -1,7 +1,7 @@
-import { encode, decode } from "@msgpack/msgpack";
 import { Request, Response } from "express";
 import cache, { CacheOption } from "./cache.js";
 import xanix from "../server/index.js";
+import { decode, encode } from "../libs/encoder.js";
 export type ServerContext = {
   request: Request;
   response: Response;
@@ -96,17 +96,18 @@ const server = (
           id: id!,
         });
 
-        const binary = encode(args);
+        const binary = encode(args) as any;
         const res = await fetch(`/__xanix__/server/${id}`, {
           method: "POST",
           headers: {
-            "Content-Type": "application/xanix",
+            "Content-Type": "application/octet-stream",
           },
           body: binary,
         });
         if (res.status !== 200) {
           throw new Error(`Request failed with status ${res.status}`);
         }
+
         const buffer = await res.arrayBuffer();
         const result = decode(new Uint8Array(buffer));
         xanix.emit("action:end", {

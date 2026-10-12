@@ -1,10 +1,10 @@
 import { type Plugin } from "rolldown";
-import stripComments from "../../../modifier/sriptCommnet.js";
+import stripComments from "../../../finder/stripComments.js";
 import { uuid } from "../../../include/utils.js";
 import TransformServerFunction from "./transformer/TransformServerFunction.js";
 import TransformCacheFunction from "./transformer/TransformCacheFunction.js";
 import { createManifest, getManifest } from "../../../include/manifest.js";
-import importFinder from "../../../modifier/importFinder.js";
+import importFinder from "../../../finder/findImport.js";
 import expressFunctionReplace from "./transformer/TransformExpressFunction.js";
 import pageReplacer from "./transformer/TransformPage.js";
 import { XanixClientEntry } from "../../../types.js";
@@ -34,6 +34,7 @@ const XanixTransformer = ({ onChangeManifest }: Args = {}): Plugin => {
     async transform(code, id) {
       const xanixImports = importFinder(code, "xanix");
       const expressImports = importFinder(code, "express");
+
       code = stripComments(code);
       code = expressFunctionReplace(code, expressImports);
       code = await pageReplacer(id, code, this, entries);
