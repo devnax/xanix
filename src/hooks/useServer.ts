@@ -1,9 +1,7 @@
 import { useRef, useState, useEffect } from "react";
 import useRequest from "./useRequest.js";
 import useResponse from "./useResponse.js";
-import type { CacheOption } from "./cache.js";
 import { Request, Response } from "express";
-import server from "./server.js";
 import useDocument from "./useDocument.js";
 
 type Context = {
@@ -127,5 +125,4 @@ const useServer = <T = any>(
     };
   }
 };
-useServer.server = server;
 export default useServer;

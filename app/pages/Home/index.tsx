@@ -20,8 +20,9 @@ import { createTheme, ThemeProvider } from "@xanui/core";
 import fs from "fs";
 import path from "path";
 import { session, useAuth } from "./auth";
+
 import "./style.module.css";
-// import img from "./img.jpeg";
+import img from "./img.jpeg";
 
 const getUser = server(
   async ({ file, id }) => {
@@ -61,7 +62,7 @@ const HomePage = () => {
 
   return (
     <div>
-      {/* <img src={img.src} alt="Uploaded" /> */}
+      <img src={img.src} alt="Uploaded" />
       {!!userSession && JSON.stringify(userSession)}
       <Button
         onClick={async () => {
@@ -78,7 +79,7 @@ const HomePage = () => {
         Logout
       </Button>
       <Chunk />
-      <Avatar />
+      {/* <Avatar /> */}
       <Button>Nicesss </Button>
       <IconButton />
       <div>Server Data:</div>

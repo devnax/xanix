@@ -25,10 +25,17 @@ const AboutPage = () => {
       {!!auth && JSON.stringify(auth)}
       <Button
         onClick={async () => {
-          // const user = await session.login({ id: "example" });
+          const user = await session.login({ id: "example" });
         }}
       >
         Login
+      </Button>
+      <Button
+        onClick={async () => {
+          await session.logout();
+        }}
+      >
+        Logout
       </Button>
       About Page - Server Data: {JSON.stringify(d.data)}
       <Button onClick={() => navigate("/")}>Home</Button>

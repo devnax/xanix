@@ -4,13 +4,15 @@ import { isPackageImport, makeFilename } from "./utils.js";
 import buildCache from "./buildCache.js";
 import { walk } from "oxc-walker";
 import { builtinModules } from "node:module";
+import { CachedModule } from "./types.js";
+import { readManifest, writeManifest } from "./manifest.js";
 import logger from "../../include/logger.js";
+import pc from "picocolors";
 
 const nodeBuiltins = new Set(builtinModules);
 
 function isNodeBuiltin(id: string): boolean {
   const normalized = id.startsWith("node:") ? id.slice(5) : id;
-
   return nodeBuiltins.has(normalized);
 }
 
@@ -25,14 +27,6 @@ function getParserLanguage(id: string): "js" | "jsx" | "ts" | "tsx" {
   return "js";
 }
 
-export type CachedModule = {
-  module: string;
-  name: string;
-  resolved: string;
-  exports: string[];
-  default: boolean;
-};
-
 function makeImportName(name: string): string {
   return `require_${name.replace(/[^a-zA-Z0-9_$]/g, "_")}`;
 }
@@ -40,10 +34,16 @@ function makeImportName(name: string): string {
 const XanixCache = (): Plugin => {
   const cached = new Map<string, CachedModule>();
   let init = false;
-  let cacheChanged = false;
-
   return {
     name: "__xmod",
+
+    buildStart() {
+      cached.clear();
+    },
+
+    watchChange() {
+      cached.clear();
+    },
 
     async resolveId(source) {
       if (source.startsWith("/__xmod")) {
@@ -52,7 +52,6 @@ const XanixCache = (): Plugin => {
           external: true,
         };
       }
-
       return null;
     },
 
@@ -61,12 +60,6 @@ const XanixCache = (): Plugin => {
         return null;
       }
 
-      /*
-       * Very important for watch performance.
-       *
-       * Most files will not contain an import that needs
-       * Xanix cache transformation. Don't parse those files.
-       */
       if (!code.includes("import ") && !code.includes("import(")) {
         return null;
       }
@@ -74,7 +67,8 @@ const XanixCache = (): Plugin => {
       const lang = getParserLanguage(id);
       const ast = this.parse(code, { lang });
       const packages: string[] = [];
-      const replacements: {
+      let replacements: {
+        source: string;
         start: number;
         end: number;
         value: string;
@@ -91,7 +85,6 @@ const XanixCache = (): Plugin => {
           if (
             typeof source !== "string" ||
             !isPackageImport(source) ||
-            source === "xanix" ||
             isNodeBuiltin(source)
           ) {
             return;
@@ -193,12 +186,7 @@ const XanixCache = (): Plugin => {
             }
           }
 
-          /*
-           * Add the package only once.
-           */
           if (!cached.has(source)) {
-            cacheChanged = true;
-
             cached.set(source, {
               module: source,
               name,
@@ -209,6 +197,7 @@ const XanixCache = (): Plugin => {
           }
 
           replacements.push({
+            source,
             start: node.start,
             end: node.end,
             value: lines.join("\n"),
@@ -227,14 +216,14 @@ const XanixCache = (): Plugin => {
        */
       for (const source of packages) {
         const cache = cached.get(source);
-        if (!cache || cache.resolved) {
-          continue;
-        }
+        if (!cache || cache.resolved) continue;
 
         try {
           const resolved: any = await this.resolve(source, id);
-          if (!resolved?.id) {
-            continue;
+          if (!resolved?.id || !resolved.id.includes("node_modules")) {
+            throw new Error(
+              `Resolved module ${resolved.id} is not in node_modules`,
+            );
           }
 
           cache.resolved = resolved.id;
@@ -246,10 +235,22 @@ const XanixCache = (): Plugin => {
         }
       }
 
+      for (let rep of replacements) {
+        const cache = cached.get(rep.source);
+        if (
+          !cache ||
+          !cache.resolved ||
+          !cache.resolved.includes("node_modules")
+        ) {
+          replacements = replacements.filter((r) => r.source !== rep.source);
+        }
+      }
+
       /*
        * Apply replacements only when this file actually
        * contained cacheable imports.
        */
+
       const sorted = replacements.sort((a, b) => b.start - a.start);
       for (const { start, end, value } of sorted) {
         code = code.slice(0, start) + value + code.slice(end);
@@ -262,17 +263,22 @@ const XanixCache = (): Plugin => {
     },
 
     async generateBundle() {
-      if (!cacheChanged) {
-        return;
-      }
+      // write manifest
+      const cachedManifest = await readManifest();
+      const pmodules = Array.from(cachedManifest.values()).map((m) => m.module);
+      const cmodule = Array.from(cached.values()).map((m) => m.module);
+      const hasChanges =
+        pmodules.some((m) => !cmodule.includes(m)) ||
+        cmodule.some((m) => !pmodules.includes(m));
 
-      cacheChanged = false;
-
-      if (init) {
-        logger.info("[__xmod] building cache");
+      if (hasChanges) {
+        if (init) {
+          logger.info(`${pc.yellow("Optimizing dependencies")} `, "[optimize]");
+        }
+        init = true;
+        await buildCache(cached);
+        await writeManifest(cached);
       }
-      init = true;
-      await buildCache(cached);
     },
   };
 };

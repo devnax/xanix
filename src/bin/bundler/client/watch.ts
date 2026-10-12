@@ -16,8 +16,8 @@ type Option = {
   onChange?: (
     files: string[],
     duration: number,
-    entries: XanixClientEntry[],
     moduleToChunk: Map<string, string>,
+    assets: Map<string, { type: string; path: string; name: string }>,
   ) => Promise<void>;
   onReady?: (duration: number, entries: XanixClientEntry[]) => Promise<void>;
 };
@@ -27,6 +27,10 @@ const WatchClient = async (options: Option): Promise<RolldownWatcher> => {
   const config = await ClientWatchConfig(true);
   const changedFiles = new Set<string>();
   const moduleToChunk = new Map<string, string>();
+  const assets = new Map<
+    string,
+    { type: string; path: string; name: string }
+  >();
 
   let isReady = false;
   let start = 0;
@@ -37,7 +41,7 @@ const WatchClient = async (options: Option): Promise<RolldownWatcher> => {
     plugins: [
       XanixCache(),
       XanixTransformer(),
-      xanixAssets(),
+      xanixAssets(assets),
       xanixTsconfigAlias(),
       xanixDocument(),
       XanixPages(),
@@ -67,8 +71,8 @@ const WatchClient = async (options: Option): Promise<RolldownWatcher> => {
             await options.onChange?.(
               Array.from(changedFiles),
               duration,
-              entries,
               moduleToChunk,
+              assets,
             );
           }
 

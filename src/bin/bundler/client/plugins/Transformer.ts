@@ -1,5 +1,5 @@
 import { type Plugin } from "rolldown";
-import crypto from "node:crypto";
+import stripComments from "../../../modifier/sriptCommnet.js";
 import TransformCacheFunction from "./transformer/TransformCacheFunction.js";
 import TransformCreateSession from "./transformer/TransformCreateSession.js";
 import importFinder from "../../../modifier/importFinder.js";
@@ -13,7 +13,7 @@ const XanixTransformer = (): Plugin => {
       const xanixImports = importFinder(code, "xanix");
       if (xanixImports.length || id.startsWith(frameworkDir)) {
         const uid = uuid(id, 12);
-
+        code = stripComments(code);
         code = TransformServerFunction(code, xanixImports, uid, id);
         code = TransformCacheFunction(code, xanixImports, uid, id);
         code = TransformCreateSession(code, xanixImports, uid, id);

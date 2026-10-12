@@ -35,7 +35,6 @@ const Head = ({ children, ...props }: HeadProps) => {
           .map((asset) => (
             <link
               key={asset.path}
-              id={asset.name}
               rel="stylesheet"
               href={`assets/${asset.name}`}
             />

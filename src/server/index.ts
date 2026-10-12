@@ -18,10 +18,7 @@ export interface XanixAsset {
 
 export const XanixAssets = new Map<string, XanixAsset>();
 xanix.asset = (option: XanixAsset) => {
-  if (__XANIX_SERVER__) {
-    XanixAssets.set(option.name, option);
-  }
-
+  XanixAssets.set(option.name, option);
   return {
     type: option.type,
     src: `assets/${option.name}`,

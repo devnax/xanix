@@ -64,7 +64,7 @@ const dev = async (rootEntry: string) => {
         buildDuration = 0;
         clientStarted = false;
       },
-      onChange: async (files, duration, entries, moduleToChunk) => {
+      onChange: async (files, duration, moduleToChunk, assets) => {
         buildDuration += duration;
         clientStarted = false;
 
@@ -73,8 +73,10 @@ const dev = async (rootEntry: string) => {
           const ext = path.extname(file);
           const isCss = ext === ".css";
           if (isCss) {
-            const cssFileId = uuid(path.resolve(process.cwd(), file), 20);
-            _files.push(`/assets/${cssFileId}.css`);
+            const asset = Array.from(assets.values()).find(
+              (a) => a.path === file,
+            );
+            _files.push(`/assets/${asset?.name}`);
           } else {
             const chunk = moduleToChunk.get(file);
             if (!chunk) {

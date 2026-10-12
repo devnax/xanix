@@ -20,14 +20,8 @@ const getPath = () => {
 };
 
 let _root: Root | null = null;
-function getRoot(): Root {
-  return (_root = _root ?? createRoot(document.body));
-}
-
-const getPages = async () => {
-  const pages = (await import("virtual:xanix-pages")).default;
-  return pages;
-};
+const getRoot = (): Root => (_root = _root ?? createRoot(document.body));
+const getPages = async () => (await import("virtual:xanix-pages")).default;
 
 const getDocument = async (path: string) => {
   let win: any = window;
