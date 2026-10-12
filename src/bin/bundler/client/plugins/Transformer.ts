@@ -1,8 +1,8 @@
 import { type Plugin } from "rolldown";
-import stripComments from "../../../finder/stripComments.js";
+import stripComments from "../../../libs/stripComments.js";
 import TransformCacheFunction from "./transformer/TransformCacheFunction.js";
 import TransformCreateSession from "./transformer/TransformCreateSession.js";
-import importFinder from "../../../finder/findImport.js";
+import importFinder from "../../../libs/findImport.js";
 import TransformServerFunction from "./transformer/TransformServerFunction.js";
 import { uuid, frameworkDir } from "../../../include/utils.js";
 

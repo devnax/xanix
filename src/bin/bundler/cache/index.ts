@@ -11,7 +11,7 @@ import { builtinModules } from "node:module";
 import { CachedModule } from "./types.js";
 import logger from "../../include/logger.js";
 import pc from "picocolors";
-import findImports from "../../finder/findImports.js";
+import findImports from "../../libs/findImports.js";
 
 const nodeBuiltins = new Set(builtinModules);
 

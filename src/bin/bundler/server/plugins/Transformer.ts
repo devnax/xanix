@@ -1,10 +1,10 @@
 import { type Plugin } from "rolldown";
-import stripComments from "../../../finder/stripComments.js";
+import stripComments from "../../../libs/stripComments.js";
 import { uuid } from "../../../include/utils.js";
 import TransformServerFunction from "./transformer/TransformServerFunction.js";
 import TransformCacheFunction from "./transformer/TransformCacheFunction.js";
 import { createManifest, getManifest } from "../../../include/manifest.js";
-import importFinder from "../../../finder/findImport.js";
+import importFinder from "../../../libs/findImport.js";
 import expressFunctionReplace from "./transformer/TransformExpressFunction.js";
 import pageReplacer from "./transformer/TransformPage.js";
 import { XanixClientEntry } from "../../../types.js";

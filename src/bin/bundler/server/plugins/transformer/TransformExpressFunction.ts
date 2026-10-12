@@ -1,5 +1,5 @@
-import callbackReplacer from "../../../../finder/callbackReplacer.js";
-import { ImportInfo } from "../../../../finder/findImport.js";
+import callbackReplacer from "../../../../libs/callbackReplacer.js";
+import { ImportInfo } from "../../../../libs/findImport.js";
 
 const TransformExpressFunction = (code: string, imports: ImportInfo[]) => {
   if (!imports.length) return code;
