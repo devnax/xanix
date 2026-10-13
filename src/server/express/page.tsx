@@ -7,6 +7,7 @@ import { UseServerResource, UseServerResult } from "../../hooks/useServer";
 import XanixRedirect from "../../classes/XanixRedirect";
 import xanix from "..";
 import { encode } from "../../libs/encoder.js";
+import outdirs from "../../outdirs";
 
 function renderPage(element: React.ReactElement): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -101,9 +102,9 @@ const __xpage = async (
       pagedata: {},
     };
     const App = (
-      <DocumentProvider value={value}>
-        <Document>{component}</Document>
-      </DocumentProvider>
+      <Document>
+        <DocumentProvider value={value}>{component}</DocumentProvider>
+      </Document>
     );
 
     xanix.emit("page:before-render", value);
@@ -145,7 +146,17 @@ const __xpage = async (
     scripts.push(
       `<script>window.__XPAGEDATA = ${JSON.stringify(context.pagedata)}</script>`,
     );
-    html = html.replace("<head>", `<head>${scripts.join("\n")}`);
+
+    scripts.push(
+      `<script type="module" src="/${outdirs.client}/runtime.js"></script>`,
+    );
+
+    if (!html.includes("</head>")) {
+      html = html.replace("<body>", `<head></head><body>`);
+    }
+
+    // html = html.replace("<head>", `<head>${scripts.join("\n")}`);
+    html = html.replace("</head>", `${scripts.join("\n")}</head>`);
 
     return `${html}`;
   } catch (error: any) {

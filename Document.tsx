@@ -1,4 +1,3 @@
-import { Head, Body, Document, type XanixDocumentProps } from "xanix";
 import type { Request } from "express";
 import { ThemeProvider, createTheme } from "@xanui/core";
 
@@ -12,19 +11,19 @@ export const metadata = async (
   };
 };
 
-const RootDocument = ({ children }: XanixDocumentProps) => {
+const RootDocument = ({ children }: any) => {
   return (
-    <Document>
-      <Head>
+    <html>
+      <head>
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      </Head>
-      <Body style={{ margin: 0, padding: 0 }}>
+      </head>
+      <body style={{ margin: 0, padding: 0 }}>
         <ThemeProvider theme={createTheme({ name: "dark", mode: "dark" })}>
           {children}
         </ThemeProvider>
-      </Body>
-    </Document>
+      </body>
+    </html>
   );
 };
 

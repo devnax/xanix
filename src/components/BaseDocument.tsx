@@ -1,14 +1,12 @@
-import { Head, Body, Document, type XanixDocumentProps } from "xanix";
-
-const BaseDocument = ({ children }: XanixDocumentProps) => {
+const BaseDocument = ({ children }: { children?: React.ReactNode }) => {
   return (
-    <Document>
-      <Head>
+    <html>
+      <head>
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      </Head>
-      <Body>{children}</Body>
-    </Document>
+      </head>
+      <body>{children}</body>
+    </html>
   );
 };
 

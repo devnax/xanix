@@ -2,10 +2,6 @@ import type { Request, Response } from "express";
 import xanix from "./server/index.js";
 
 import Link from "./components/Link.js";
-import Document, { DocumentProps } from "./components/Document.js";
-import Head from "./components/Head.js";
-import Body from "./components/Body.js";
-
 // hooks
 import useDocument from "./hooks/useDocument.js";
 import useMetadata from "./hooks/useMetadata.js";
@@ -28,15 +24,6 @@ export * from "./utils.js";
 
 export type { CookieOptions };
 
-export type XanixDocumentProps = DocumentProps & {
-  request?: Request;
-  metadata: Record<string, any>;
-  page: {
-    id: string;
-    props: Record<string, any>;
-  };
-};
-
 export type DocumentMetadata = {
   request: Request;
   response: Response;
@@ -49,13 +36,11 @@ export type DocumentMetadata = {
 
 // navigate
 import { navigate, back, forward, preload, reload } from "./navigate.js";
+import { DocumentContextData } from "./components/DocumentContext.js";
 
 export {
   xanix,
   Link,
-  Document,
-  Head,
-  Body,
 
   // hooks
   useDocument,

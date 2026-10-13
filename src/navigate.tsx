@@ -72,11 +72,11 @@ const getDocument = async (path: string) => {
 async function mount(Component: ComponentType<any>, doc: DocumentInfo) {
   const root = getRoot();
   root.render(
-    <DocumentProvider value={doc}>
-      <Document>
+    <Document>
+      <DocumentProvider value={doc}>
         <Component {...doc.page.props} />
-      </Document>
-    </DocumentProvider>,
+      </DocumentProvider>
+    </Document>,
   );
 }
 
