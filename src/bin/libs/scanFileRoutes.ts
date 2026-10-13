@@ -1,19 +1,18 @@
 import fg from "fast-glob";
 import path from "node:path";
 
-export type FileRoute = {
-  type: "page" | "route";
-  file: string;
-  route: string;
-  fileRoute: string;
-  layouts: string[];
-  loading?: string;
-  error?: string;
-  notFound?: string;
-};
+export type Engine = "react" | "ejs" | "hbs" | "pug" | "html";
 
-const PAGE_REGEX = /(^|\/)page\.(tsx|ts|jsx|js)$/;
-const ROUTE_REGEX = /(^|\/)route\.(ts|js)$/;
+export type FileRoute = {
+  engine: Engine; // from the page file; "react" when the dir has no page
+  dir: string; // absolute directory path (forward slashes)
+  path: string; // Express route path, e.g. "/blog/:id", "/docs/*all", "/shop{/*slug}"
+  page: boolean; // dir has page.<ext>
+  route: boolean; // dir has route.ts / route.js
+  middleware: boolean; // dir has middleware.ts / middleware.js
+  layout: boolean; // dir has its own layout.<ext> for the engine
+  layouts: string[]; // layout files for the engine, outermost -> innermost
+};
 
 type Segment =
   | { type: "static"; value: string }
@@ -21,7 +20,18 @@ type Segment =
   | { type: "catchall"; name: string }
   | { type: "optional"; name: string };
 
-const EXTENSIONS = ["tsx", "ts", "jsx", "js"];
+// page.* picks the engine, layout.* must use the same engine's extension(s)
+const ENGINE_EXTS: Record<Engine, string[]> = {
+  react: ["tsx", "jsx"],
+  ejs: ["ejs"],
+  hbs: ["hbs"],
+  pug: ["pug"],
+  html: ["html"],
+};
+const ENGINES = Object.keys(ENGINE_EXTS) as Engine[];
+const TEMPLATE_EXTS = Object.values(ENGINE_EXTS).flat();
+const HANDLER_EXTS = ["ts", "js"];
+
 const PARAM_NAME = /^[A-Za-z_$][\w$]*$/; // valid path-to-regexp param name
 const RANK = { static: 0, param: 1, catchall: 2, optional: 3 } as const;
 
@@ -121,38 +131,47 @@ function compareRoutes(a: Segment[], b: Segment[]): number {
   return a.length - b.length;
 }
 
+/** Express route path for an entry's `dir`: toRoutePath(appDir, item.dir) */
+export function toRoutePath(appDir: string, dir: string): string {
+  const relative = normalize(path.relative(path.resolve(appDir), dir));
+  return toExpressRoute(parseSegments(relative ? `/${relative}` : "/"));
+}
+
 export async function scanFileRoutes(appDir: string): Promise<FileRoute[]> {
   const root = path.resolve(appDir);
 
-  const files = await fg("**/*.{tsx,ts,jsx,js}", {
-    cwd: root,
-    absolute: true,
-    onlyFiles: true,
-    ignore: ["**/node_modules/**"],
-  });
+  const files = await fg(
+    [
+      `**/{page,layout}.{${TEMPLATE_EXTS.join(",")}}`,
+      `**/{route,middleware}.{${HANDLER_EXTS.join(",")}}`,
+    ],
+    {
+      cwd: root,
+      absolute: true,
+      onlyFiles: true,
+      ignore: ["**/node_modules/**"],
+    },
+  );
 
+  // relative path -> absolute path
   const fileMap = new Map<string, string>();
+  const dirs = new Set<string>();
+
   for (const file of files) {
-    fileMap.set(normalize(path.relative(root, file)), file);
+    const relative = normalize(path.relative(root, file));
+    fileMap.set(relative, file);
+
+    const dir = path.posix.dirname(relative);
+    dirs.add(dir === "." ? "" : dir);
   }
 
-  const findFile = (directory: string, name: string): string | undefined => {
-    for (const extension of EXTENSIONS) {
-      const found = fileMap.get(
-        path.posix.join(directory, `${name}.${extension}`),
-      );
-      if (found) return found;
-    }
-    return undefined;
-  };
-
-  // nearest file of this name in the page's directory or any parent
-  const findNearest = (
-    segments: string[],
+  const find = (
+    dir: string,
     name: string,
+    extensions: string[],
   ): string | undefined => {
-    for (let i = segments.length; i >= 0; i--) {
-      const found = findFile(segments.slice(0, i).join("/"), name);
+    for (const extension of extensions) {
+      const found = fileMap.get(path.posix.join(dir, `${name}.${extension}`));
       if (found) return found;
     }
     return undefined;
@@ -160,42 +179,56 @@ export async function scanFileRoutes(appDir: string): Promise<FileRoute[]> {
 
   const entries: { item: FileRoute; segments: Segment[]; shape: string }[] = [];
 
-  for (const file of files) {
-    const relative = normalize(path.relative(root, file));
-    const type = PAGE_REGEX.test(relative)
-      ? "page"
-      : ROUTE_REGEX.test(relative)
-        ? "route"
-        : null;
-    if (!type) continue;
+  for (const dir of dirs) {
+    const engines = ENGINES.filter((e) => find(dir, "page", ENGINE_EXTS[e]));
+    if (engines.length > 1) {
+      throw new Error(
+        `Multiple pages in /${dir} (${engines.join(", ")}). Use one page file per folder.`,
+      );
+    }
 
-    const directory = path.posix.dirname(relative);
-    const dirSegments = directory === "." ? [] : directory.split("/");
-    const fileRoute = directory === "." ? "/" : `/${directory}`;
-    const segments = parseSegments(fileRoute);
-    const isPage = type === "page";
+    const page = engines.length === 1;
+    const route = !!find(dir, "route", HANDLER_EXTS);
+    const middleware = !!find(dir, "middleware", HANDLER_EXTS);
 
-    // route handlers (route.ts) have no layouts, loading, error or not-found
+    // folders with only layouts are not entries; pages pick them up via `layouts`
+    if (!page && !route && !middleware) continue;
+
+    const engine = engines[0] ?? "react";
+    const dirSegments = dir ? dir.split("/") : [];
+
+    // layouts only apply to pages, and only the ones written for the same engine
     const layouts: string[] = [];
-    if (isPage) {
+    let layout = false;
+
+    if (page) {
       for (let i = 0; i <= dirSegments.length; i++) {
-        const layout = findFile(dirSegments.slice(0, i).join("/"), "layout");
-        if (layout) layouts.push(layout);
+        const found = find(
+          dirSegments.slice(0, i).join("/"),
+          "layout",
+          ENGINE_EXTS[engine],
+        );
+        if (found) {
+          layouts.push(found);
+          if (i === dirSegments.length) layout = true;
+        }
       }
     }
+
+    const segments = parseSegments(dir ? `/${dir}` : "/");
 
     entries.push({
       segments,
       shape: shapeOf(segments),
       item: {
-        type,
-        file,
-        route: toExpressRoute(segments),
-        fileRoute,
+        engine,
+        dir: normalize(path.join(root, dir)),
+        path: toExpressRoute(segments),
+        page,
+        route,
+        middleware,
+        layout,
         layouts,
-        loading: isPage ? findNearest(dirSegments, "loading") : undefined,
-        error: isPage ? findNearest(dirSegments, "error") : undefined,
-        notFound: isPage ? findNearest(dirSegments, "not-found") : undefined,
       },
     });
   }
@@ -203,21 +236,24 @@ export async function scanFileRoutes(appDir: string): Promise<FileRoute[]> {
   entries.sort(
     (a, b) =>
       compareRoutes(a.segments, b.segments) ||
-      a.item.route.localeCompare(b.item.route) ||
-      // same URL: route handler registers before the page
-      (a.item.type === b.item.type ? 0 : a.item.type === "route" ? -1 : 1),
+      a.item.dir.localeCompare(b.item.dir),
   );
 
+  // two pages (or two route handlers) can't own the same URL
   const seen = new Map<string, string>();
   for (const { item, shape } of entries) {
-    const key = `${item.type}:${shape}`;
-    const previous = seen.get(key);
-    if (previous) {
-      throw new Error(
-        `Duplicate ${item.type} ${item.route}:\n  ${previous}\n  ${item.file}`,
-      );
+    for (const kind of ["page", "route"] as const) {
+      if (!item[kind]) continue;
+
+      const key = `${kind}:${shape}`;
+      const previous = seen.get(key);
+      if (previous) {
+        throw new Error(
+          `Duplicate ${kind} ${shape}:\n  ${previous}\n  ${item.dir}`,
+        );
+      }
+      seen.set(key, item.dir);
     }
-    seen.set(key, item.file);
   }
 
   return entries.map((e) => e.item);

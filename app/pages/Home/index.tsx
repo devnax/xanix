@@ -79,8 +79,8 @@ const HomePage = () => {
         Logout
       </Button>
       <Chunk />
-      {/* <Avatar /> */}
-      <Button>Nicesss </Button>
+      <Avatar />
+      <Button onClick={() => navigate(`/about`)}>About</Button>
       <IconButton />
       <div>Server Data:</div>
       <input

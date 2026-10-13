@@ -1,5 +1,6 @@
 import type { Request } from "express";
 import { ThemeProvider, createTheme } from "@xanui/core";
+import { server, useServer } from "./src";
 
 export const metadata = async (
   request: Request,

@@ -5,7 +5,7 @@ import { ReactElement } from "react";
 import { DocumentProvider } from "../../components/DocumentContext";
 import { UseServerResource, UseServerResult } from "../../hooks/useServer";
 import XanixRedirect from "../../classes/XanixRedirect";
-import xanix from "..";
+import xanix, { XanixAssets } from "..";
 import { encode } from "../../libs/encoder.js";
 import outdirs from "../../outdirs";
 
@@ -102,13 +102,14 @@ const __xpage = async (
       pagedata: {},
     };
     const App = (
-      <Document>
-        <DocumentProvider value={value}>{component}</DocumentProvider>
-      </Document>
+      <DocumentProvider value={value}>
+        <Document document={value}>{component}</Document>
+      </DocumentProvider>
     );
 
     xanix.emit("page:before-render", value);
     let html = await renderPage(App);
+
     const context = {
       path,
       request: undefined,
@@ -141,24 +142,36 @@ const __xpage = async (
       return encode(context);
     }
 
-    const scripts: string[] = [];
+    const head: string[] = [];
+    const footer: string[] = [];
 
-    scripts.push(
-      `<script>window.__XPAGEDATA = ${JSON.stringify(context.pagedata)}</script>`,
-    );
+    for (let asset of XanixAssets.values()) {
+      if (asset.type === "css") {
+        head.push(`<link rel="stylesheet" href="assets/${asset.name}" />`);
+      }
+    }
 
-    scripts.push(
+    if (__XANIX_DEV__) {
+      head.push(
+        `<script>
+          window.$RefreshReg$ = (type, id) => {};
+          window.$RefreshSig$ = () => (type) => type;
+        </script>`,
+      );
+    }
+
+    footer.push(
       `<script type="module" src="/${outdirs.client}/runtime.js"></script>`,
     );
 
-    if (!html.includes("</head>")) {
-      html = html.replace("<body>", `<head></head><body>`);
-    }
+    footer.push(`<script>
+        window.__XDOCUMENT = ${JSON.stringify(context)};
+      </script>`);
 
-    // html = html.replace("<head>", `<head>${scripts.join("\n")}`);
-    html = html.replace("</head>", `${scripts.join("\n")}</head>`);
+    html = html.replace("</head>", `${head.join("\n")}</head>`);
+    html = html.replace("</body>", `${footer.join("\n")}</body>`);
 
-    return `${html}`;
+    return html;
   } catch (error: any) {
     if (error instanceof XanixRedirect) {
       if (!res.headersSent) {

@@ -10,7 +10,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default function xanixDocument(): Plugin {
   const root = process.cwd();
-  const userDocument = path.resolve(root, "Document.tsx");
+  const userDocument = path.resolve(root, "document.tsx");
   const baseDocument = path.resolve(
     __dirname,
     "../../components/BaseDocument.js",

@@ -5,9 +5,8 @@ import {
   type DocumentContextData,
 } from "./components/DocumentContext.js";
 import type { ComponentType } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot, type Root, hydrateRoot } from "react-dom/client";
 import Document from "virtual:xanix-document";
-import { UseServerResult } from "./hooks/useServer.js";
 import { decode } from "./libs/encoder.js";
 
 type DocumentInfo = DocumentContextData & {
@@ -20,22 +19,14 @@ const getPath = () => {
 };
 
 let _root: Root | null = null;
-const getRoot = (): Root => (_root = _root ?? createRoot(document.body));
+const getRoot = (): Root => (_root = _root ?? createRoot(document));
 const getPages = async () => (await import("virtual:xanix-pages")).default;
 
 const getDocument = async (path: string) => {
   let win: any = window;
   const windoc = win.__XDOCUMENT;
   if (windoc && windoc.page && windoc.page.id) {
-    const pageData = win.__XPAGEDATA;
-    windoc.pagedata = pageData;
     win.__XDOCUMENT = null;
-    win.__XPAGEDATA = null;
-    if (windoc.pagedata) {
-      for (const [key, value] of Object.entries(windoc.pagedata)) {
-        UseServerResult.set(key, value);
-      }
-    }
     return windoc;
   }
 
@@ -52,11 +43,6 @@ const getDocument = async (path: string) => {
       new Uint8Array(buffer),
     ) as unknown as DocumentInfo;
     if (_doc?.page && _doc?.page?.id && _doc?.params && _doc?.metadata) {
-      if (_doc.pagedata) {
-        for (const [key, value] of Object.entries(_doc.pagedata)) {
-          UseServerResult.set(key, value);
-        }
-      }
       return _doc;
     }
   } catch (error) {}
@@ -69,15 +55,22 @@ const getDocument = async (path: string) => {
   throw new Error(`Failed to fetch page for path ${path}`);
 };
 
+let hydrated = false;
 async function mount(Component: ComponentType<any>, doc: DocumentInfo) {
-  const root = getRoot();
-  root.render(
-    <Document>
-      <DocumentProvider value={doc}>
+  const element = (
+    <DocumentProvider value={doc}>
+      <Document document={doc}>
         <Component {...doc.page.props} />
-      </DocumentProvider>
-    </Document>,
+      </Document>
+    </DocumentProvider>
   );
+  if (!hydrated) {
+    hydrated = true;
+    hydrateRoot(document, element);
+  } else {
+    const root = getRoot();
+    root.render(element);
+  }
 }
 
 export const navigate = (

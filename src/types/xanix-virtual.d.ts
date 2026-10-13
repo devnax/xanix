@@ -10,6 +10,17 @@ declare module "virtual:xanix-document" {
 
   export type XanixDocumentProps = {
     children?: ReactNode;
+    document: {
+      request?: Request;
+      response?: Response;
+      page: {
+        id: string;
+        props: Record<string, any>;
+      };
+      metadata: Record<string, any>;
+      params: Record<string, any>;
+      pagedata: Record<string, any>;
+    };
   };
 
   /**
