@@ -7,11 +7,12 @@ export type FileRoute = {
   engine: Engine; // from the page file; "react" when the dir has no page
   dir: string; // absolute directory path (forward slashes)
   path: string; // Express route path, e.g. "/blog/:id", "/docs/*all", "/shop{/*slug}"
-  page: boolean; // dir has page.<ext>
-  route: boolean; // dir has route.ts / route.js
-  middleware: boolean; // dir has middleware.ts / middleware.js
-  layout: boolean; // dir has its own layout.<ext> for the engine
+  page: string | null; // file name in dir: "page.tsx" | "page.jsx" | "page.ejs" | ...
+  route: string | null; // file name in dir: "route.ts" | "route.js"
+  middleware: string | null; // file name in dir: "middleware.ts" | "middleware.js"
+  layout: string | null; // the dir's own layout file name for the engine, e.g. "layout.tsx"
   layouts: string[]; // layout files for the engine, outermost -> innermost
+  middlewares: string[]; // middleware files from the app root down to this dir, outermost -> innermost
 };
 
 type Segment =
@@ -178,6 +179,7 @@ export async function scanFileRoutes(appDir: string): Promise<FileRoute[]> {
   };
 
   const entries: { item: FileRoute; segments: Segment[]; shape: string }[] = [];
+  const fileName = (file?: string) => (file ? path.posix.basename(file) : null);
 
   for (const dir of dirs) {
     const engines = ENGINES.filter((e) => find(dir, "page", ENGINE_EXTS[e]));
@@ -187,30 +189,34 @@ export async function scanFileRoutes(appDir: string): Promise<FileRoute[]> {
       );
     }
 
-    const page = engines.length === 1;
-    const route = !!find(dir, "route", HANDLER_EXTS);
-    const middleware = !!find(dir, "middleware", HANDLER_EXTS);
+    const engine = engines[0] ?? "react";
+    const page = fileName(find(dir, "page", ENGINE_EXTS[engine]));
+    const route = fileName(find(dir, "route", HANDLER_EXTS));
+    const middleware = fileName(find(dir, "middleware", HANDLER_EXTS));
 
     // folders with only layouts are not entries; pages pick them up via `layouts`
     if (!page && !route && !middleware) continue;
 
-    const engine = engines[0] ?? "react";
     const dirSegments = dir ? dir.split("/") : [];
 
     // layouts only apply to pages, and only the ones written for the same engine
     const layouts: string[] = [];
-    let layout = false;
+    let layout: string | null = null;
 
-    if (page) {
-      for (let i = 0; i <= dirSegments.length; i++) {
-        const found = find(
-          dirSegments.slice(0, i).join("/"),
-          "layout",
-          ENGINE_EXTS[engine],
-        );
+    // middleware applies to everything below it: pages, routes and nested folders
+    const middlewares: string[] = [];
+
+    for (let i = 0; i <= dirSegments.length; i++) {
+      const parent = dirSegments.slice(0, i).join("/");
+
+      const mw = find(parent, "middleware", HANDLER_EXTS);
+      if (mw) middlewares.push(mw);
+
+      if (page) {
+        const found = find(parent, "layout", ENGINE_EXTS[engine]);
         if (found) {
           layouts.push(found);
-          if (i === dirSegments.length) layout = true;
+          if (i === dirSegments.length) layout = fileName(found);
         }
       }
     }
@@ -229,6 +235,7 @@ export async function scanFileRoutes(appDir: string): Promise<FileRoute[]> {
         middleware,
         layout,
         layouts,
+        middlewares,
       },
     });
   }

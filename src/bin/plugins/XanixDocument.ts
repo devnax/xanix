@@ -34,19 +34,16 @@ export default function xanixDocument(): Plugin {
       const documentFile = fs.existsSync(userDocument)
         ? userDocument
         : baseDocument;
-      const source = fs.readFileSync(documentFile, "utf8");
-
-      const hasMetadata =
-        /\bexport\s+(?:const|let|var|function)\s+metadata\b/.test(source) ||
-        /\bexport\s*\{[^}]*\bmetadata\b[^}]*\}/.test(source);
 
       return {
         code: `
-import Document, * as DocumentModule from ${JSON.stringify(documentFile)};
-export default Document;
-export const metadata = ${
-          hasMetadata ? "DocumentModule.metadata" : "async () => ({})"
-        };
+import  * as _xdoc from ${JSON.stringify(documentFile)};
+const mod = Object.assign({}, _xdoc);
+if(!mod.default){
+  throw new Error("The document module must have a default export.");
+}
+export default mod.default
+export const metadata = mod.metadata ?? (() => ({}));
         `,
         map: null,
       };
