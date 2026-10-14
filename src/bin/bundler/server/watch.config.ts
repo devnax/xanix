@@ -1,10 +1,18 @@
 import loadEnv from "../../include/loadEnv.js";
 import path from "node:path";
-import { tsconfigPathsMatcher } from "../../plugins/XanixTsconfigAlias.js";
+import xanixTsconfigAlias, {
+  tsconfigPathsMatcher,
+} from "../../plugins/XanixTsconfigAlias.js";
 import { ResolverFactory } from "rolldown/experimental";
 import { builtinModules } from "node:module";
 import { WatchOptions } from "rolldown";
 import outdirs from "../../../outdirs.js";
+import { XanixClientEntry } from "../../types.js";
+import XanixTransformer from "./plugins/Transformer.js";
+import xanixDocument from "../../plugins/XanixDocument.js";
+import xanixAssets from "../../plugins/XanixAssets.js";
+import ResolveExpress from "./plugins/ResolveExpress.js";
+import RegisterRoute from "./plugins/RegisterRoute.js";
 
 const resolver = new ResolverFactory();
 const nodeBuiltins = new Set(builtinModules);
@@ -14,8 +22,21 @@ function isNodeBuiltin(id: string): boolean {
   return nodeBuiltins.has(normalized);
 }
 
-const ServerConfig = async (isDev = true): Promise<WatchOptions> => {
+const ServerWatchConfig = async (isDev = true): Promise<WatchOptions> => {
+  const root = process.cwd();
+
+  const input = {
+    index: path.resolve(root, "index.tsx"),
+  };
   return {
+    input,
+    plugins: [
+      // xanixAssets(),
+      ResolveExpress(),
+      RegisterRoute(),
+      // xanixTsconfigAlias(),
+      // XanixTransformer({}),
+    ],
     output: {
       dir: outdirs.server,
       format: "esm",
@@ -56,6 +77,7 @@ const ServerConfig = async (isDev = true): Promise<WatchOptions> => {
         path.isAbsolute(id) ||
         id.startsWith("xanix") ||
         id === "virtual:xanix-document" ||
+        id === "virtual:xanix-route" ||
         tsconfigPathsMatcher(id)
       ) {
         return false;
@@ -81,4 +103,4 @@ const ServerConfig = async (isDev = true): Promise<WatchOptions> => {
   };
 };
 
-export default ServerConfig;
+export default ServerWatchConfig;

@@ -55,22 +55,15 @@ const getDocument = async (path: string) => {
   throw new Error(`Failed to fetch page for path ${path}`);
 };
 
-let hydrated = false;
 async function mount(Component: ComponentType<any>, doc: DocumentInfo) {
-  const element = (
+  const root = getRoot();
+  root.render(
     <DocumentProvider value={doc}>
       <Document document={doc}>
         <Component {...doc.page.props} />
       </Document>
-    </DocumentProvider>
+    </DocumentProvider>,
   );
-  if (!hydrated) {
-    hydrated = true;
-    hydrateRoot(document, element);
-  } else {
-    const root = getRoot();
-    root.render(element);
-  }
 }
 
 export const navigate = (

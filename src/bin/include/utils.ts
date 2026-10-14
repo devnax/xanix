@@ -2,6 +2,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import crypto from "node:crypto";
 import { readFile } from "fs/promises";
+import fs from "node:fs/promises";
+import outdirs from "../../outdirs.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const frameworkDir = path.resolve(__dirname, "../../../");
@@ -21,3 +23,14 @@ export function uuid(value: string, length?: number) {
 export function normalizePath(file: string) {
   return path.resolve(file).split(path.sep).join("/");
 }
+
+export const ensureOutdir = async () => {
+  await fs.rm(outdirs.root, {
+    recursive: true,
+    force: true,
+  });
+
+  await fs.mkdir(outdirs.root, {
+    recursive: true,
+  });
+};

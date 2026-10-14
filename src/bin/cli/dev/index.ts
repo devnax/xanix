@@ -10,24 +10,20 @@ import outdirs from "../../../outdirs.js";
 import {
   getFrameworkPackageJson,
   normalizePath,
-  uuid,
+  ensureOutdir,
 } from "../../include/utils.js";
 import { startServer } from "./server.js";
+import { generateAppRouteManifest } from "../../include/routes.js";
+import { watchGroup } from "../../include/WatchGroup.js";
+import ServerWatchConfig from "../../bundler/server/watch.config.js";
 
 const root = normalizePath(process.cwd());
 
 const dev = async (rootEntry: string) => {
-  // await stop();
   const packageJson = await getFrameworkPackageJson();
+  await ensureOutdir();
+  await generateAppRouteManifest();
 
-  fs.rmSync(outdirs.root, {
-    recursive: true,
-    force: true,
-  });
-
-  fs.mkdirSync(outdirs.root, {
-    recursive: true,
-  });
   const broadcast = startWebSocketServer();
   console.log("");
   console.log(pc.green(pc.bold(`Xanix`) + ` v${packageJson.version}`));
@@ -36,6 +32,24 @@ const dev = async (rootEntry: string) => {
   let clientStarted = false;
   let buildDuration = 0;
   let initial = false;
+
+  watchGroup(
+    {
+      server: await ServerWatchConfig(),
+    },
+    {
+      onChange: ({ id, event, watchers, shared }) => {
+        console.log(
+          event,
+          id,
+          shared ? "BOTH" : `only ${watchers[0]}`,
+          watchers,
+        );
+      },
+    },
+  );
+
+  return;
 
   const startClientWatcher = async () => {
     clientWatcher?.close();
@@ -114,7 +128,7 @@ const dev = async (rootEntry: string) => {
     },
     onReady: async (duration) => {
       buildDuration += duration;
-      await startClientWatcher();
+      // await startClientWatcher();
     },
     onChange: async (files, duration) => {
       buildDuration += duration;
