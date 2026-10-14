@@ -2,7 +2,7 @@ import express, { Router } from "express";
 import fs from "fs";
 import path from "path";
 import { register, CHUNK_SIZE } from "../../hooks/server.js";
-import xanix from "../index.js";
+import xanix from "../../xanix/index.js";
 import { decode, encode } from "../../libs/encoder.js";
 
 const router = Router();

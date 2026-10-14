@@ -33,10 +33,10 @@ const XanixTransformer = ({ onChangeManifest }: Args = {}): Plugin => {
 
     async transform(code, id) {
       const xanixImports = importFinder(code, "xanix");
-      const expressImports = importFinder(code, "express");
+      // const expressImports = importFinder(code, "express");
 
       code = stripComments(code);
-      code = expressFunctionReplace(code, expressImports);
+      // code = expressFunctionReplace(code, expressImports);
       code = await pageReplacer(id, code, this, entries);
 
       if (xanixImports.length || id.startsWith(frameworkDir)) {

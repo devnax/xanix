@@ -7,11 +7,9 @@ import { ResolverFactory } from "rolldown/experimental";
 import { builtinModules } from "node:module";
 import { WatchOptions } from "rolldown";
 import outdirs from "../../../outdirs.js";
-import { XanixClientEntry } from "../../types.js";
 import XanixTransformer from "./plugins/Transformer.js";
 import xanixDocument from "../../plugins/XanixDocument.js";
 import xanixAssets from "../../plugins/XanixAssets.js";
-import ResolveExpress from "./plugins/ResolveExpress.js";
 import RegisterRoute from "./plugins/RegisterRoute.js";
 
 const resolver = new ResolverFactory();
@@ -32,17 +30,31 @@ const ServerWatchConfig = async (isDev = true): Promise<WatchOptions> => {
     input,
     plugins: [
       // xanixAssets(),
-      ResolveExpress(),
+      xanixDocument(),
+      // ResolveExpress(),
       RegisterRoute(),
       // xanixTsconfigAlias(),
-      // XanixTransformer({}),
+      XanixTransformer({}),
     ],
     output: {
       dir: outdirs.server,
       format: "esm",
       sourcemap: isDev,
       entryFileNames: "index.js",
-      chunkFileNames: "chunks/[hash]s.js",
+      chunkFileNames: (id) => {
+        if (id.name === "page" || id.name === "layout") {
+          let name = id.facadeModuleId!.replace(
+            process.cwd() + path.sep + "app",
+            "",
+          );
+          const ext = path.extname(name);
+          if (ext) {
+            name = name.slice(0, -ext.length);
+          }
+          return `pages/${name}.js`;
+        }
+        return `vendor/[name].js`;
+      },
       assetFileNames: "assets/[name][extname]",
     },
     treeshake: true,

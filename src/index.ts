@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import xanix from "./server/index.js";
+import xanix from "./xanix/index.js";
 
 import Link from "./components/Link.js";
 // hooks

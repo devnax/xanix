@@ -4,7 +4,11 @@ import { scanFileRoutes } from "../libs/scanFileRoutes.js";
 import outdirs from "../../outdirs.js";
 import fs from "node:fs";
 
-const appRouteManifestFile = path.join(outdirs.root, "app-route-manifest.json");
+export const appRouteManifestFile = path.join(
+  process.cwd(),
+  outdirs.root,
+  "app-route-manifest.json",
+);
 let modifiedTime: number | null = null;
 export const generateAppRouteManifest = async () => {
   const scane = await scanFileRoutes(path.join(process.cwd(), "app"));

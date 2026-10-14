@@ -1,3 +1,9 @@
+declare module "virtual:xanix-route" {
+  import { XanixRoute } from "../servers/type";
+  const pages: XanixRoute[];
+  export default pages;
+}
+
 declare module "virtual:xanix-pages" {
   import type { LazyExoticComponent, ComponentType } from "react";
   const pages: Record<string, () => Promise<any>>;

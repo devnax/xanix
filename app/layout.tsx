@@ -1,3 +1,9 @@
+export const metadata = {
+  title: "Default Layout",
+  description: "This is the default layout for the application",
+  keywords: ["default", "layout", "application"],
+};
+
 const Layout = ({ children }: any) => {
   return (
     <html>

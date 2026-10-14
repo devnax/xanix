@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import cache, { CacheOption } from "./cache.js";
-import xanix from "../server/index.js";
+import xanix from "../xanix/index.js";
 import { decode, encode } from "../libs/encoder.js";
 export type ServerContext = {
   request: Request;

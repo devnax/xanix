@@ -3,9 +3,7 @@ import outdirs from "../../outdirs.js";
 import React from "react";
 import Router from "./Router.js";
 import __xpage from "./page.js";
-import path from "node:path";
-import fs from "node:fs";
-import { XanixAssets } from "../index.js";
+import { XanixAssets } from "../../xanix/index.js";
 
 const xanixpress = () => {
   const app: Express = (express as any)("xanix");

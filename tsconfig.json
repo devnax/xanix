@@ -19,10 +19,15 @@
         "declaration": true,
         "jsx": "react-jsx",
         "outDir": "./dist",
-        "rootDir": "./src",
+        "rootDir": "./src"
     },
     "include": [
-        "src",
+        "src/**/*.ts",
+        "src/**/*.tsx",
+        "src/**/*.js",
+        "src/**/*.jsx",
+        "src/**/*.svelte",
+        "src/**/*.d.ts"
     ],
     "exclude": [
         "node_modules",

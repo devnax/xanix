@@ -1,5 +1,5 @@
 import XanixRedirect from "./classes/XanixRedirect.js";
-import xanix from "./server/index.js";
+import xanix from "./xanix/index.js";
 import {
   DocumentProvider,
   type DocumentContextData,

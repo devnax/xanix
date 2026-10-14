@@ -1,7 +1,14 @@
 import fg from "fast-glob";
 import path from "node:path";
 
-export type Engine = "react" | "ejs" | "hbs" | "pug" | "html";
+export type Engine =
+  | "react"
+  | "ejs"
+  | "hbs"
+  | "pug"
+  | "html"
+  | "vue"
+  | "svelte";
 
 export type FileRoute = {
   engine: Engine; // from the page file; "react" when the dir has no page
@@ -28,6 +35,8 @@ const ENGINE_EXTS: Record<Engine, string[]> = {
   hbs: ["hbs"],
   pug: ["pug"],
   html: ["html"],
+  vue: ["vue"],
+  svelte: ["svelte"],
 };
 const ENGINES = Object.keys(ENGINE_EXTS) as Engine[];
 const TEMPLATE_EXTS = Object.values(ENGINE_EXTS).flat();

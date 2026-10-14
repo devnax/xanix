@@ -5,7 +5,7 @@ import { ReactElement } from "react";
 import { DocumentProvider } from "../../components/DocumentContext";
 import { UseServerResource, UseServerResult } from "../../hooks/useServer";
 import XanixRedirect from "../../classes/XanixRedirect";
-import xanix, { XanixAssets } from "..";
+import xanix, { XanixAssets } from "../../xanix";
 import { encode } from "../../libs/encoder.js";
 import outdirs from "../../outdirs";
 
