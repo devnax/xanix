@@ -1,0 +1,8 @@
+section
+  h1= typeof title !== "undefined" ? title : "Hello"
+  p= typeof message !== "undefined" ? message : "Welcome to Xanix."
+
+  if typeof items !== "undefined" && items.length
+    ul
+      each item in items
+        li= item

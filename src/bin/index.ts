@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
 import { Command } from "commander";
-import dev from "./cli/dev/index.js";
-import build from "./cli/build.js";
-import start from "./cli/start.js";
+import dev from "./dev/index.js";
+import build from "./build.js";
+import start from "./start.js";
 
 const program = new Command();
 

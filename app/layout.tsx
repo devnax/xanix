@@ -9,14 +9,14 @@ export const metadata = () => {
   };
 };
 
-const Layout = ({ children, req }: any) => {
+const Layout = ({ children }: any) => {
   return (
     <html>
       <head>
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </head>
-      <body style={{ margin: 0, padding: 0 }}>
+      <body style={{ margin: 0, padding: 0 }} suppressHydrationWarning>
         <ThemeProvider theme={createTheme({ name: "dark", mode: "dark" })}>
           {children}
         </ThemeProvider>

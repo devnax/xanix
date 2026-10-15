@@ -1,7 +1,5 @@
-const props = async () => {
+export const props = async () => {
   return {
     page: "Home",
   };
 };
-
-export default props;

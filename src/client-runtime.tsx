@@ -1,5 +1,5 @@
-import { navigate } from "./navigate.js";
-import outdirs from "./outdirs.js";
+import { navigate } from "./libs/navigate.js";
+import outdirs from "./include/outdirs.js";
 
 window.addEventListener("load", navigate as any);
 window.addEventListener("popstate", navigate as any);

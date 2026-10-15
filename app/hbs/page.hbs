@@ -1,0 +1,21 @@
+<section>
+    <h1>{{title}}</h1>
+    <p>{{message}}</p>
+
+    {{#if user}}
+    <h2>Welcome, {{user.name}}!</h2>
+    {{/if}}
+
+    <section>
+        <h2>Latest Posts</h2>
+        {{#each posts}}
+        <article>
+            <h3>{{this.title}}</h3>
+            <p>{{this.description}}</p>
+            <a href="/blog/{{this.slug}}">Read more</a>
+        </article>
+        {{else}}
+        <p>No posts available.</p>
+        {{/each}}
+    </section>
+</section>
