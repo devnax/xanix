@@ -56,15 +56,23 @@ const renderHtml = async (route: XanixRoute, req: Request, res: Response) => {
   }
 
   const metahtml = metadataToHtml(metadata);
-  html = html.replace(
-    "<head>",
-    `<head>
-      ${metahtml}
-    `,
-  );
+  const hasHtml = html.includes("</html>");
+  if (hasHtml) {
+    html = html.replace("</head>", `${metahtml}</head>`);
+    return { html, props };
+  }
+  html = `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    ${metahtml}
+  </head>
+  <body>
+    ${html}
+  </body>
+</html>`;
 
   return {
-    html: html,
+    html,
     props,
   };
 };

@@ -1,11 +1,16 @@
 import startWebSocketServer from "./ws.js";
 import pc from "picocolors";
-import { getFrameworkPackageJson, ensureOutdir } from "../../include/utils.js";
+import {
+  getFrameworkPackageJson,
+  ensureOutdir,
+  normalize,
+} from "../../include/utils.js";
 import { startServer } from "./server.js";
 import { watchGroup } from "../../include/WatchGroup.js";
 import ServerWatchConfig from "../../server/watch.config.js";
 import manifestWatch from "./manifest.js";
 import ClientWatchConfig from "../../client/config/watch.js";
+import { createChunkTracker } from "../../client/plugins/ChunkTracker.js";
 
 const dev = async (rootEntry: string) => {
   await ensureOutdir();
@@ -15,24 +20,29 @@ const dev = async (rootEntry: string) => {
   console.log(pc.green(pc.bold(`Xanix`) + ` v${packageJson.version}`));
 
   let manifestWatcher = await manifestWatch();
-
+  const tracker = createChunkTracker();
   const watcher = watchGroup(
     {
       server: await ServerWatchConfig(),
-      client: await ClientWatchConfig(),
+      client: await ClientWatchConfig(tracker),
     },
     {
-      onEnd: async () => {
+      onReady: async () => {
+        console.log("asd");
+
         await startServer();
       },
       onChange: async ({ id, event, watchers, shared }) => {
-        console.log(
-          event,
-          id,
-          shared ? "BOTH" : `only ${watchers[0]}`,
-          watchers,
-        );
-        await startServer();
+        if (watchers.includes("client")) {
+          const chunks = tracker.getChunksByModule(id);
+          const files = chunks.map((chunk) => ({
+            file: chunk.file,
+            id: normalize(id),
+          }));
+          broadcast(JSON.stringify(files));
+        } else {
+          // await startServer();
+        }
       },
     },
   );

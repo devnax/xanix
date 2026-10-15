@@ -28,7 +28,6 @@ const renderPug = async (route: XanixRoute, req: Request, res: Response) => {
   }
 
   const metahtml = metadataToHtml(metadata);
-
   const hasHtml = html.includes("</html>");
   if (hasHtml) {
     html = html.replace("</head>", `${metahtml}</head>`);
@@ -41,12 +40,12 @@ const renderPug = async (route: XanixRoute, req: Request, res: Response) => {
     ${metahtml}
   </head>
   <body>
-    <div id="xanix-root">${html}</div>
+    ${html}
   </body>
 </html>`;
 
   return {
-    html: html,
+    html,
     props,
   };
 };

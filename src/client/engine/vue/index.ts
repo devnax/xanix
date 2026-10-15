@@ -25,12 +25,7 @@ const renderVueClient = async (
   app.provide("req", undefined);
   app.provide("res", undefined);
 
-  const root = document.getElementById("xanix-root") || document.body;
-
-  if (!root) {
-    throw new Error('Xanix: Missing "#xanix-root" hydration element.');
-  }
-
+  const root: any = document.getElementById("xanix-root") ?? document;
   app.mount(root);
 };
 

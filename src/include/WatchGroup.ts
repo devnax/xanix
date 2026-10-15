@@ -23,6 +23,8 @@ export interface GroupEnd {
 }
 
 export interface WatchGroupOptions {
+  /** called once, after ALL watchers finished their FIRST build; never again on changes */
+  onReady?: (info: { watchers: string[] }) => void | Promise<void>;
   /** called once, the first time any watcher starts building */
   onStart?: (info: { watchers: string[] }) => void | Promise<void>;
   /** called once per unique file, after ALL watchers finished building */
@@ -52,6 +54,7 @@ export interface WatchGroup {
 export function watchGroup(
   configs: Record<string, WatchOptions>,
   {
+    onReady,
     onStart,
     onChange,
     onBatch,
@@ -126,7 +129,13 @@ export function watchGroup(
           dirty = false;
           const info: GroupEnd = { changes, errors, initial };
           errors = [];
+          const wasInitial = initial;
           initial = false;
+          if (wasInitial) {
+            await safe("onReady", () =>
+              onReady?.({ watchers: Object.keys(configs) }),
+            );
+          }
           await safe("onEnd", () => onEnd?.(info));
         }
       }

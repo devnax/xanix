@@ -28,7 +28,6 @@ const xpress = () => {
     return server;
   };
 
-  app.use(`/${outdirs.client}`, express.static(`${outdirs.client}`));
   if (__XANIX_DEV__) {
     app.use(`/${outdirs.client}`, express.static(`${outdirs.client}`));
     // app.use(`/assets/:file`, (req, res, next) => {

@@ -1,4 +1,4 @@
-import "virtual:react-refresh";
+import "virtual:xanix-hrm";
 import { XanixRoute } from "../../../types";
 import { createElement } from "react";
 import { hydrateRoot } from "react-dom/client";

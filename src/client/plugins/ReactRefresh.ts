@@ -1,13 +1,12 @@
 import { Plugin } from "rolldown";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { generateAppRouteManifest } from "../../include/manifest/routes.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const module = path.resolve(__dirname, "../modules/ReactRefresh.js");
 
-const VIRTUAL_ID = "virtual:react-refresh";
-const RESOLVED_ID = "\0virtual:react-refresh";
+const VIRTUAL_ID = "virtual:xanix-hrm";
+const RESOLVED_ID = "\0virtual:xanix-hrm";
 
 const ReactRefresh = ({ isDev }: { isDev: boolean }): Plugin => {
   return {
@@ -24,15 +23,7 @@ const ReactRefresh = ({ isDev }: { isDev: boolean }): Plugin => {
         if (!isDev) {
           return "";
         }
-        const routes = await generateAppRouteManifest();
-        let hasReact = false;
-        for (let { engine } of routes) {
-          if (engine === "react") {
-            hasReact = true;
-            break;
-          }
-        }
-        return hasReact ? `import ${JSON.stringify(module)};` : "";
+        return `import ${JSON.stringify(module)};`;
       }
       return null;
     },

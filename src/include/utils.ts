@@ -24,6 +24,10 @@ export function normalizePath(file: string) {
   return path.resolve(file).split(path.sep).join("/");
 }
 
+export function normalize(file: string) {
+  return path.normalize(file).split(path.sep).join("/");
+}
+
 export const ensureOutdir = async () => {
   await fs.rm(outdirs.root, {
     recursive: true,

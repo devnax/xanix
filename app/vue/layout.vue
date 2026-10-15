@@ -19,7 +19,7 @@ const req = inject<Request>("req");
 
     <footer>
       <small>
-        &copy; {{ new Date().getFullYear() }} Xanix · {{ req?.path }}
+        &copy; {{ new Date().getFullYear() }} Xanix
       </small>
     </footer>
   </div>

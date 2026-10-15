@@ -1,4 +1,4 @@
-declare module "virtual:react-refresh" {}
+declare module "virtual:xanix-hrm" {}
 declare module "virtual:xanix-route" {
   import { XanixRoute } from "../bin/types";
   const pages: XanixRoute[];
