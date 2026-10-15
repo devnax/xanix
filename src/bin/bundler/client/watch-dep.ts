@@ -24,7 +24,7 @@ type Option = {
 
 const WatchClient = async (options: Option): Promise<RolldownWatcher> => {
   const entries = await getManifest();
-  const config = await ClientWatchConfig(true);
+  const config = await ClientWatchConfig();
   const changedFiles = new Set<string>();
   const moduleToChunk = new Map<string, string>();
   const assets = new Map<

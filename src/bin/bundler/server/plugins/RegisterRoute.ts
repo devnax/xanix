@@ -4,7 +4,7 @@ import {
   appRouteManifestFile,
   getAppRouteManifest,
 } from "../../../include/routes.js";
-import { frameworkDir, uuid } from "../../../include/utils.js";
+import { uuid } from "../../../include/utils.js";
 import { fileURLToPath } from "node:url";
 import { Engine } from "../../../libs/scanFileRoutes.js";
 
@@ -66,15 +66,21 @@ export default function RegisterRoute(): Plugin {
           const ppath = path.join(route.dir, route.page);
           this.addWatchFile(ppath);
           lines.push(`page: () => import(${JSON.stringify(ppath)})`);
-        }
 
-        if (route.layouts.length) {
-          let layouts = [];
-          for (let j = 0; j < route.layouts.length; j++) {
-            const lpath = route.layouts[j];
-            layouts.push(`() => import(${JSON.stringify(lpath)})`);
+          if (route.props) {
+            const propsPath = path.join(route.dir, route.props);
+            this.addWatchFile(propsPath);
+            lines.push(`props: () => import(${JSON.stringify(propsPath)})`);
           }
-          lines.push(`layouts: [${layouts.join(",\n")}]`);
+
+          if (route.layouts.length) {
+            let layouts = [];
+            for (let j = 0; j < route.layouts.length; j++) {
+              const lpath = route.layouts[j];
+              layouts.push(`() => import(${JSON.stringify(lpath)})`);
+            }
+            lines.push(`layouts: [${layouts.join(",\n")}]`);
+          }
         }
 
         codes.push(`

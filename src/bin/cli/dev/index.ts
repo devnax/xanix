@@ -1,21 +1,15 @@
 import startWebSocketServer from "./ws.js";
 import pc from "picocolors";
-import {
-  getFrameworkPackageJson,
-  normalizePath,
-  ensureOutdir,
-} from "../../include/utils.js";
+import { getFrameworkPackageJson, ensureOutdir } from "../../include/utils.js";
 import { startServer } from "./server.js";
 import { watchGroup } from "../../include/WatchGroup.js";
 import ServerWatchConfig from "../../bundler/server/watch.config.js";
+import ClientWatchConfig from "../../bundler/client/watch.config.js";
 import manifestWatch from "./manifest.js";
 
-const root = normalizePath(process.cwd());
-
 const dev = async (rootEntry: string) => {
-  const packageJson = await getFrameworkPackageJson();
   await ensureOutdir();
-
+  const packageJson = await getFrameworkPackageJson();
   const broadcast = startWebSocketServer();
   console.log("");
   console.log(pc.green(pc.bold(`Xanix`) + ` v${packageJson.version}`));
@@ -25,6 +19,7 @@ const dev = async (rootEntry: string) => {
   const watcher = watchGroup(
     {
       server: await ServerWatchConfig(),
+      client: await ClientWatchConfig(),
     },
     {
       onEnd: async () => {

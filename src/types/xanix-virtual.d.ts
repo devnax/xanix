@@ -1,5 +1,6 @@
+declare module "virtual:react-refresh" {}
 declare module "virtual:xanix-route" {
-  import { XanixRoute } from "../servers/type";
+  import { XanixRoute } from "../bin/types";
   const pages: XanixRoute[];
   export default pages;
 }

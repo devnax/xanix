@@ -1,15 +1,54 @@
 import { WatchOptions } from "rolldown";
+import ReactRefresh from "./plugins/ReactRefresh.js";
 import loadEnv from "../../include/loadEnv.js";
 import outdirs from "../../../outdirs.js";
+import XanixPages from "./plugins/XanixPages.js";
+import xanixDocument from "../../plugins/XanixDocument.js";
+import xanixTsconfigAlias from "../../plugins/XanixTsconfigAlias.js";
+import XanixCache from "../cache/index.js";
+import XanixTransformer from "./plugins/Transformer.js";
+import xanixAssets from "../../plugins/XanixAssets.js";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import RegisterRoute from "./plugins/RegisterRoute.js";
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const ClientWatchConfig = async (isDev = false): Promise<WatchOptions> => {
+const ClientWatchConfig = async (): Promise<WatchOptions> => {
+  const env = await loadEnv({
+    mode: "development",
+    isClient: true,
+  });
   return {
+    input: path.join(__dirname, "entry.js"),
+    plugins: [
+      ReactRefresh({ isDev: true }),
+      RegisterRoute(),
+      XanixTransformer(),
+      xanixAssets(),
+      xanixTsconfigAlias(),
+      xanixDocument(),
+      XanixPages(),
+      XanixCache(),
+    ],
     output: {
       dir: outdirs.client,
       format: "esm",
-      sourcemap: isDev,
+      sourcemap: true,
       preserveModules: false,
-      chunkFileNames: isDev ? "chunks/[name].js" : "chunks/[hash]c.js",
+      chunkFileNames: (id) => {
+        if (id.name === "page" || id.name === "props" || id.name === "layout") {
+          let name = id.facadeModuleId!.replace(
+            process.cwd() + path.sep + "app",
+            "",
+          );
+          const ext = path.extname(name);
+          if (ext) {
+            name = name.slice(0, -ext.length);
+          }
+          return `pages/${name}.js`;
+        }
+        return `vendor/[name].js`;
+      },
       assetFileNames: "assets/[name][extname]",
       entryFileNames: "runtime.js",
     },
@@ -28,10 +67,7 @@ const ClientWatchConfig = async (isDev = false): Promise<WatchOptions> => {
         runtime: "automatic",
         refresh: true,
       },
-      define: await loadEnv({
-        mode: isDev ? "development" : "production",
-        isClient: true,
-      }),
+      define: env,
     },
     watch: {
       clearScreen: false,

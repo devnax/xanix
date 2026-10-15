@@ -15,7 +15,8 @@ const manifestWatcher = async () => {
         path.match(/route\..*$/) ||
         path.match(/page\..*$/) ||
         path.match(/middleware\..*$/) ||
-        path.match(/layout\..*$/)
+        path.match(/layout\..*$/) ||
+        path.match(/props\..*$/)
       ) {
         generateAppRouteManifest();
       }

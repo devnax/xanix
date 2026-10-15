@@ -1,28 +1,39 @@
 import type { Request, Response } from "express";
 import { metadataToHtml } from "../../../../include/metadataToHtml";
+import { Metadata } from "../../../../types/metadata";
 
-const metadata = (page: any, layouts: any[], req: Request, res: Response) => {
-  const metadatas: Record<string, any> = {};
+const formatMetadata = (
+  page: any,
+  props: any,
+  layouts: any[],
+  req: Request,
+  res: Response,
+) => {
+  const metadata: Metadata = {};
 
   for (const layout of layouts) {
     if (typeof layout.metadata === "object") {
-      Object.assign(metadatas, layout.metadata);
+      Object.assign(metadata, layout.metadata);
     } else if (typeof layout.metadata === "function") {
-      Object.assign(metadatas, layout.metadata(req, res));
+      Object.assign(metadata, layout.metadata(req, res));
     }
   }
 
-  if (page.metadata) {
-    if (typeof page.metadata === "object") {
-      Object.assign(metadatas, page.metadata);
-    } else if (typeof page.metadata === "function") {
-      Object.assign(metadatas, page.metadata(req, res));
-    }
+  if (typeof props.metadata === "object") {
+    Object.assign(metadata, props.metadata);
+  } else if (typeof props.metadata === "function") {
+    Object.assign(metadata, props.metadata(req, res));
   }
 
-  const html = metadataToHtml(metadatas);
+  if (typeof page.metadata === "object") {
+    Object.assign(metadata, page.metadata);
+  } else if (typeof page.metadata === "function") {
+    Object.assign(metadata, page.metadata(req, res));
+  }
+
+  const html = metadataToHtml(metadata);
 
   return { metadata, html };
 };
 
-export default metadata;
+export default formatMetadata;

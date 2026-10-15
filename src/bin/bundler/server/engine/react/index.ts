@@ -7,17 +7,25 @@ const reactEngine = async (route: XanixRoute, req: Request, res: Response) => {
   const { createElement } = await import("react");
 
   const page = route.page as () => Promise<any>;
+  const props = route.props || ((async () => ({})) as () => Promise<any>);
   const layouts = route.layouts ?? [];
-  const promises = [page(), ...layouts.map((load) => load())];
+  const promises = [page(), props(), ...layouts.map((load) => load())];
 
-  const [_page, ..._layouts] = await Promise.all(promises);
+  const [_page, _props, ..._layouts] = await Promise.all(promises);
+  const pageProps = {};
+  if (_props?.default) {
+    Object.assign(pageProps, await _props.default());
+  }
+  if (_page.props) {
+    Object.assign(pageProps, await _page.props());
+  }
 
   const element = _layouts.reduceRight(
     (children, Layout) => createElement(Layout.default, { req, res }, children),
-    createElement(_page.default, { req, res }),
+    createElement(_page.default, { req, res, ...pageProps }),
   );
 
-  const metadata = formatMetadata(_page, _layouts, req, res);
+  const metadata = formatMetadata(_page, _props, _layouts, req, res);
 
   let html = await render(element);
   html = html.replace(

@@ -1,8 +1,6 @@
 import loadEnv from "../../include/loadEnv.js";
 import path from "node:path";
-import xanixTsconfigAlias, {
-  tsconfigPathsMatcher,
-} from "../../plugins/XanixTsconfigAlias.js";
+import { tsconfigPathsMatcher } from "../../plugins/XanixTsconfigAlias.js";
 import { ResolverFactory } from "rolldown/experimental";
 import { builtinModules } from "node:module";
 import { WatchOptions } from "rolldown";
@@ -29,7 +27,7 @@ const ServerWatchConfig = async (isDev = true): Promise<WatchOptions> => {
   return {
     input,
     plugins: [
-      // xanixAssets(),
+      xanixAssets(),
       xanixDocument(),
       // ResolveExpress(),
       RegisterRoute(),
@@ -42,7 +40,7 @@ const ServerWatchConfig = async (isDev = true): Promise<WatchOptions> => {
       sourcemap: isDev,
       entryFileNames: "index.js",
       chunkFileNames: (id) => {
-        if (id.name === "page" || id.name === "layout") {
+        if (id.name === "page" || id.name === "props" || id.name === "layout") {
           let name = id.facadeModuleId!.replace(
             process.cwd() + path.sep + "app",
             "",

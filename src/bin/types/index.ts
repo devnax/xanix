@@ -1,42 +1,25 @@
 import type { Router, RequestHandler, Request, Response } from "express";
 import type { ComponentType, ReactNode } from "react";
 import { Engine } from "../../bin/libs/scanFileRoutes";
-
-type LayoutProps = {
-  req?: Request;
-  res?: Response;
-  children: ReactNode;
-};
+import { Metadata } from "./metadata";
 
 type Layout = {
-  default: ComponentType<LayoutProps>;
-};
-
-type PageProps = {
-  req?: Request;
-  res?: Response;
-  children: ReactNode;
+  default: ComponentType<{
+    req?: Request;
+    res?: Response;
+    children: ReactNode;
+  }>;
 };
 
 type Page = {
-  metadata?: {
-    title?: string;
-    description?: string;
-    keywords?: string[];
-    author?: string;
-    robots?: string;
-    charset?: string;
-    viewport?: string;
-    themeColor?: string;
-    favicon?: string;
-  };
-
-  getProps?: (context: {
+  metadata?: Metadata;
+  getProps?: (req: Request, res: Response) => Promise<Record<string, any>>;
+  default: ComponentType<{
     req?: Request;
     res?: Response;
-  }) => Promise<Record<string, any>>;
-
-  default: ComponentType<PageProps>;
+    children: ReactNode;
+    [key: string]: any;
+  }>;
 };
 
 export interface XanixRoute {
@@ -58,5 +41,6 @@ export interface XanixRoute {
   };
 
   page?: () => Promise<Page>;
+  props?: () => Promise<Record<string, any>>;
   layouts?: Array<() => Promise<Layout>>;
 }

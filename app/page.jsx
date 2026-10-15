@@ -5,8 +5,18 @@ export const metadata = {
   description: "This page is rendered on the server",
 };
 
-const page = () => {
-  return <div>server are rendered </div>;
+export const props = async (req, res) => {
+  return {
+    message: "Hello from the server",
+  };
+};
+
+const page = ({ page, message }) => {
+  return (
+    <div>
+      server are rendered: {page} - {message}
+    </div>
+  );
 };
 
 export default page;

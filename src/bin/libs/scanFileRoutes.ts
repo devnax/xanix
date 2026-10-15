@@ -17,6 +17,7 @@ export type FileRoute = {
   page: string | null; // file name in dir: "page.tsx" | "page.jsx" | "page.ejs" | ...
   route: string | null; // file name in dir: "route.ts" | "route.js"
   middleware: string | null; // file name in dir: "middleware.ts" | "middleware.js"
+  props: string | null; // file name in dir: "props.ts" | "props.js" (only set when the dir has a page)
   layout: string | null; // the dir's own layout file name for the engine, e.g. "layout.tsx"
   layouts: string[]; // layout files for the engine, outermost -> innermost
   middlewares: string[]; // middleware files from the app root down to this dir, outermost -> innermost
@@ -154,6 +155,7 @@ export async function scanFileRoutes(appDir: string): Promise<FileRoute[]> {
     [
       `**/{page,layout}.{${TEMPLATE_EXTS.join(",")}}`,
       `**/{route,middleware}.{${HANDLER_EXTS.join(",")}}`,
+      `**/{route,middleware,props}.{${HANDLER_EXTS.join(",")}}`,
     ],
     {
       cwd: root,
@@ -202,6 +204,7 @@ export async function scanFileRoutes(appDir: string): Promise<FileRoute[]> {
     const page = fileName(find(dir, "page", ENGINE_EXTS[engine]));
     const route = fileName(find(dir, "route", HANDLER_EXTS));
     const middleware = fileName(find(dir, "middleware", HANDLER_EXTS));
+    const props = page ? fileName(find(dir, "props", HANDLER_EXTS)) : null;
 
     // folders with only layouts are not entries; pages pick them up via `layouts`
     if (!page && !route && !middleware) continue;
@@ -242,6 +245,7 @@ export async function scanFileRoutes(appDir: string): Promise<FileRoute[]> {
         page,
         route,
         middleware,
+        props,
         layout,
         layouts,
         middlewares,

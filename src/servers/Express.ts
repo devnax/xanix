@@ -39,7 +39,13 @@ const express = () => {
     if (route?.HEAD) app.head(path, route.HEAD);
 
     if (middleware?.default) {
-      app.use(path, middleware.default);
+      app.use(path, async (req, res, next) => {
+        // ignore devTools requests
+        if (req.path.startsWith("/.well-known/")) {
+          return next();
+        }
+        return await middleware.default(req, res, next);
+      });
     }
 
     if (page) {
