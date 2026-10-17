@@ -1,35 +1,46 @@
 import "virtual:react-refresh";
-import { createElement } from "react";
-import { createRoot, type Root } from "react-dom/client";
+
+import { createElement, type ReactNode } from "react";
+import { createRoot, hydrateRoot, type Root } from "react-dom/client";
 import type { RenderContext, XanixRoute } from "virtual:xanix-route";
-import { exit } from "../../../bundler/client/Route.js";
+import { exit } from "../../../bundler/client/Route";
 
 let _root: Root | null = null;
-const getRoot = (): Root => (_root = _root ?? createRoot(document));
 
 const getProps = async (route: XanixRoute) => {
-  const htmlRes = await fetch(route.path);
-  const html = await htmlRes.text();
+  const response = await fetch(route.path);
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch ${route.path}: ${response.status}`);
+  }
+
+  const html = await response.text();
   const doc = new DOMParser().parseFromString(html, "text/html");
   const script = doc.getElementById("__XANIX_DATA__");
 
-  if (script) {
-    window.__XANIX_DATA__ = eval(script.textContent || "");
+  let data = { props: {} as Record<string, any>, path: route.path };
+
+  if (script?.textContent) {
+    data = (0, eval)(script.textContent);
+    window.__XANIX_DATA__ = data;
   }
-  document.documentElement.innerHTML = html;
+
+  return { doc, data };
 };
 
 const renderClient = async (route: XanixRoute, props: Record<string, any>) => {
   const page = route.page as () => Promise<any>;
   const layouts = (route.layouts ?? []) as (() => Promise<any>)[];
-  const [_page, ..._layouts] = await Promise.all([
+
+  const [Page, ...loadedLayouts] = await Promise.all([
     page(),
     ...layouts.map((load) => load()),
   ]);
 
-  return _layouts.reduceRight(
-    (children, Layout) => createElement(Layout.default, {}, children),
-    createElement(_page.default, { ...props }),
+  return loadedLayouts.reduceRight(
+    (children: ReactNode, Layout) =>
+      createElement(Layout.default, {}, children),
+    createElement(Page.default, props),
   );
 };
 
@@ -40,26 +51,32 @@ export const onExit = () => {
 
 export const render = async ({ route, mode }: RenderContext) => {
   try {
-    if (mode === "navigation") {
-      await getProps(route);
-      const data = window.__XANIX_DATA__ ?? { props: {} };
-      const element = await renderClient(route, data.props);
+    let data = window.__XANIX_DATA__ ?? { props: {} };
 
-      if (location.pathname + location.search !== data.path) {
+    if (mode === "navigation") {
+      const { doc, data } = await getProps(route);
+      const element = await renderClient(route, data.props ?? {});
+
+      // document.documentElement.replaceWith(
+      //   document.importNode(doc.documentElement, true),
+      // );
+
+      if (data.path && location.pathname + location.search !== data.path) {
         history.pushState(null, "", data.path);
       }
-      await exit();
 
-      const root = getRoot();
-      root.render(element);
-    } else {
-      const data = window.__XANIX_DATA__ ?? { props: {} };
-      const element = await renderClient(route, data.props);
-      const root = getRoot();
-      root.render(element);
+      await exit();
+      _root?.unmount();
+      _root = createRoot(document);
+      _root.render(element);
+      // _root = hydrateRoot(document, element);
+      return;
     }
+
+    const element = await renderClient(route, data.props ?? {});
+    await exit();
+    _root = hydrateRoot(document, element);
   } catch (err) {
     console.error("[xanix] render failed", err);
-    // if (mode === "navigation") location.assign(route.path); // hard-navigate fallback
   }
 };

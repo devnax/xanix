@@ -47,7 +47,7 @@ export const writeManifest = async (manifest: CachedMap) => {
   for (const item of data) {
     delete (item as any).exports;
     delete (item as any).default;
-    delete (item as any).resolved;
+    // delete (item as any).resolved;
     delete (item as any).name;
   }
   await fs.writeFile(manifestFile, JSON.stringify(data, null, 2), "utf-8");

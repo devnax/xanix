@@ -1,4 +1,3 @@
-import buildServer from "../server/build.js";
 import pc from "picocolors";
 import { getFrameworkPackageJson, normalizePath } from "../include/utils.js";
 import outdirs from "../include/outdirs.js";
@@ -6,6 +5,7 @@ import fs from "node:fs";
 import { ensureOutdir } from "../include/utils.js";
 import spinner from "../include/spinner.js";
 import buildClient from "../bundler/client/build.js";
+import BuildServer from "../bundler/server/build.js";
 
 const build = async (rootEntry: string) => {
   await ensureOutdir();
@@ -20,7 +20,7 @@ const build = async (rootEntry: string) => {
 
   const st = Date.now();
 
-  await buildServer({
+  await BuildServer({
     rootEntry,
     onBuildEnd: async () => {
       spinner.stop(

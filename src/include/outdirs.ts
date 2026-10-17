@@ -3,7 +3,7 @@ const outdirs = {
   root,
   server: root,
   client: `${root}/static`,
-  module_cache: `${root}/modules`,
+  module_cache: `node_modules/.xanix`,
   assets: `${root}/assets`,
 };
 

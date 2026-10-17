@@ -22,8 +22,8 @@
       "require": "./dist/index.js"
     },
     "./*": {
-      "import": "./dist/server/entry/*.js",
-      "require": "./dist/server/entry/*.js"
+      "import": "./dist/bundler/server/entry/*.js",
+      "require": "./dist/bundler/server/entry/*.js"
     }
   },
   "scripts": {
@@ -51,6 +51,7 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@iconify-react/ic": "^1.0.2",
+    "@mui/icons-material": "^9.5.0",
     "@mui/material": "^9.5.0",
     "@types/ejs": "^3.1.5",
     "@types/express": "^5.0.6",
@@ -67,6 +68,7 @@
     "ejs": "^7.0.1",
     "express": "^5.2.1",
     "handlebars": "^4.7.10",
+    "lucide-react": "^1.59.0",
     "pug": "^3.0.4",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"

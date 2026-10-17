@@ -7,18 +7,10 @@ import {
   writeManifest,
 } from "./utils.js";
 import buildCache from "./buildCache.js";
-import { builtinModules } from "node:module";
 import { CachedModule } from "./types.js";
 import logger from "../../../include/logger.js";
 import pc from "picocolors";
 import findImports from "../../../include/code/findImports.js";
-
-const nodeBuiltins = new Set(builtinModules);
-
-function isNodeBuiltin(id: string): boolean {
-  const normalized = id.startsWith("node:") ? id.slice(5) : id;
-  return nodeBuiltins.has(normalized);
-}
 
 const require = createRequire(import.meta.url);
 
@@ -28,9 +20,27 @@ function makeImportName(name: string): string {
 
 const XanixCache = (): Plugin => {
   const cached = new Map<string, CachedModule>();
-  let init = false;
+
+  const isChanged = async () => {
+    const cachedManifest = await readManifest();
+    const pmodules = Array.from(cachedManifest.values()).map((m) => m.module);
+    const cmodule = Array.from(cached.values()).map((m) => m.module);
+    const hasChanges =
+      pmodules.some((m) => !cmodule.includes(m)) ||
+      cmodule.some((m) => !pmodules.includes(m));
+    return hasChanges;
+  };
+
   return {
     name: "__xmod",
+
+    async buildStart() {
+      cached.clear();
+      const cachedManifest = await readManifest();
+      for (const [key, value] of cachedManifest) {
+        cached.set(key, value);
+      }
+    },
 
     async resolveId(source) {
       if (source.startsWith("/__xmod")) {
@@ -65,7 +75,7 @@ const XanixCache = (): Plugin => {
         if (imp.typeOnly) continue;
 
         const source = imp.source;
-        if (!isPackageImport(source) || isNodeBuiltin(source)) continue;
+        if (!isPackageImport(source)) continue;
 
         /*
          * Don't add the same package multiple times
@@ -109,15 +119,14 @@ const XanixCache = (): Plugin => {
           lines.push(`const { ${props} } = ${ns};`);
         }
 
-        if (!cached.has(source)) {
-          cached.set(source, {
-            module: source,
-            name,
-            resolved: "",
-            exports: [],
-            default: false,
-          });
-        }
+        const cache = cached.get(source);
+        cached.set(source, {
+          module: source,
+          name,
+          resolved: cache ? cache.resolved : "",
+          exports: [],
+          default: false,
+        });
 
         replacements.push({
           source,
@@ -139,10 +148,8 @@ const XanixCache = (): Plugin => {
       for (const source of packages) {
         const cache = cached.get(source);
         if (!cache || cache.resolved) continue;
-
         try {
           const resolved: any = await this.resolve(source, id);
-
           if (!resolved?.id) {
             continue;
           }
@@ -190,23 +197,10 @@ const XanixCache = (): Plugin => {
     },
 
     async generateBundle() {
-      const current = new Map(cached);
-      cached.clear();
-      // write manifest
-      const cachedManifest = await readManifest();
-      const pmodules = Array.from(cachedManifest.values()).map((m) => m.module);
-      const cmodule = Array.from(current.values()).map((m) => m.module);
-      const hasChanges =
-        pmodules.some((m) => !cmodule.includes(m)) ||
-        cmodule.some((m) => !pmodules.includes(m));
-
-      if (hasChanges) {
-        if (init) {
-          logger.info(`${pc.yellow("Optimizing dependencies")} `, "[optimize]");
-        }
-        init = true;
-        await buildCache(current);
-        await writeManifest(current);
+      if (await isChanged()) {
+        logger.info(`${pc.yellow("Optimizing dependencies")} `, "[optimize]");
+        await buildCache(cached);
+        await writeManifest(cached);
       }
     },
   };

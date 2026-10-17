@@ -8,12 +8,12 @@ import {
 } from "../../include/utils.js";
 import { startServer } from "./server.js";
 import { watchGroup } from "../../include/WatchGroup.js";
-import ServerWatchConfig from "../../server/watch.config.js";
 import manifestWatch from "./manifest.js";
 import ClientWatchConfig from "../../bundler/client/config/watch.js";
 import { createChunkTracker } from "../../bundler/client/plugins/ChunkTracker.js";
 import { getAppRouteManifest } from "../../include/manifest/routesManifest.js";
 import { getEngineById } from "../../include/routes.js";
+import ServerWatchConfig from "../../bundler/server/watch.config.js";
 
 const dev = async (rootEntry: string) => {
   await ensureOutdir();
@@ -23,6 +23,7 @@ const dev = async (rootEntry: string) => {
   console.log(pc.green(pc.bold(`Xanix`) + ` v${packageJson.version}`));
 
   let manifestWatcher = await manifestWatch();
+  let startTime = Date.now();
   const tracker = createChunkTracker();
   const watcher = watchGroup(
     {
@@ -32,6 +33,7 @@ const dev = async (rootEntry: string) => {
     {
       onReady: async () => {
         await startServer();
+        console.log(`Server started in ${Date.now() - startTime}ms`);
       },
       onChange: async ({ id, event, watchers, shared }) => {
         if (watchers.includes("client")) {

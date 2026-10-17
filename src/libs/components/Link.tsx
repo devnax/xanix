@@ -1,5 +1,5 @@
 import { forwardRef, HTMLProps } from "react";
-import { navigate, preload as _preload } from "../navigate.js";
+import { navigate } from "../navigate.js";
 
 export type LinkProps = Omit<
   HTMLProps<HTMLAnchorElement>,
@@ -28,7 +28,7 @@ const Link = (
         }}
         onMouseEnter={(e) => {
           if (preload && props.target !== "_blank") {
-            _preload(href);
+            // _preload(href);
           }
         }}
       >
