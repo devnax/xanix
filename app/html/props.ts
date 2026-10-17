@@ -5,7 +5,7 @@ export const metadata = {
 
 export const props = () => {
   return {
-    title: "Hello",
+    title: "Hello nice",
     message: "Welcome to Xanix.",
     user: { name: "Naxrul" },
   };

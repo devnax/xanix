@@ -1,6 +1,6 @@
 export const metadata = {
-  title: "HTML Page",
-  description: "This is the HTML page for the Xanix app.",
+  title: "Svelte Page",
+  description: "This is the Svelte page for the Xanix app.",
 };
 
 export const props = () => {

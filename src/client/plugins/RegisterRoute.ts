@@ -6,7 +6,7 @@ import { Engine } from "../../include/code/scanFileRoutes.js";
 import {
   appRouteManifestFile,
   getAppRouteManifest,
-} from "../../include/manifest/routes.js";
+} from "../../include/manifest/routesManifest.js";
 import { normalizePath } from "../../include/utils.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -53,14 +53,16 @@ export default function RegisterRoute(): Plugin {
         const route = routes[i];
         const lines: string[] = [];
         const engine = engines[route.engine];
-        lines.push(`engine: () => import(${JSON.stringify(engine)})`);
+        lines.push(
+          `renderer: async () => Object.assign({}, (await import(${JSON.stringify(engine)})))`,
+        );
 
         if (route.page) {
           const ppath = path.join(route.dir, route.page);
-
           if (isModuleEngine(route.engine)) {
             lines.push(`page: () => import(${JSON.stringify(ppath)})`);
           } else {
+            this.addWatchFile(ppath);
             lines.push(`page: "${normalizePath(ppath)}"`);
           }
 
@@ -78,8 +80,23 @@ export default function RegisterRoute(): Plugin {
           }
         }
 
+        if (route.props) {
+          this.addWatchFile(path.join(route.dir, route.props));
+        }
+        if (route.middleware) {
+          this.addWatchFile(path.join(route.dir, route.middleware));
+        }
+        if (route.route) {
+          this.addWatchFile(path.join(route.dir, route.route));
+        }
+        if (route.layout) {
+          const layoutPath = path.join(route.dir, route.layout);
+          this.addWatchFile(layoutPath);
+        }
+
         codes.push(`
           {
+            engine: "${route.engine}",
             path: "${route.path}",
             ${lines.join(",\n")}
           },

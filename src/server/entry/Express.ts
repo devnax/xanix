@@ -66,7 +66,7 @@ const xpress = () => {
   }
 
   for (let _route of routes) {
-    const { engine, path, page, route, middleware } = _route;
+    const { engine, render, path, page, route, middleware } = _route;
 
     if (route?.ROUTER) app.use(path, route.ROUTER);
     if (route?.GET) app.get(path, route.GET);
@@ -83,52 +83,11 @@ const xpress = () => {
 
     if (page) {
       app.get(path, async (req, res) => {
-        const render = (await engine()).default;
-        let { html, props } = await render(_route, req, res);
-        const data = {
-          props,
-          path,
-        };
-
-        const hasBody = html.includes("</body>");
-        const hasHead = html.includes("</head>");
-
-        let headScripts = [];
-        headScripts.push(
-          `<script>
-          window.$RefreshReg$ = (type, id) => {};
-          window.$RefreshSig$ = () => (type) => type;
-          </script>`,
-        );
-        let bodyScripts = [];
-        bodyScripts.push(
-          `<script>window.__XANIX_DATA__ = ${JSON.stringify(data)}</script>`,
-        );
-        bodyScripts.push(
-          `<script type="module" src="/${outdirs.client}/runtime.js"></script>`,
-        );
-
-        if (hasHead) {
-          html = html.replace(
-            "</head>",
-            `${headScripts.join("\n")}
-          </head>`,
-          );
-        } else {
-          html = headScripts.join("\n") + html;
-        }
-
-        if (hasBody) {
-          html = html.replace(
-            "</body>",
-            `${bodyScripts.join("\n")}
-          </body>`,
-          );
-        } else {
-          html += bodyScripts.join("\n");
-        }
-
-        res.send(html);
+        await render({
+          route: _route,
+          req,
+          res,
+        });
       });
     }
   }

@@ -1,7 +1,7 @@
-import { XanixRoute } from "../../../types";
-import type { Request, Response } from "express";
 import fs from "node:fs/promises";
 import { metadataToHtml } from "../../../include/code/metadataToHtml.js";
+import outdirs from "../../../include/outdirs.js";
+import type { RenderContextServer } from "virtual:xanix-route";
 
 const escapeHtml = (value: unknown) =>
   String(value ?? "")
@@ -29,7 +29,7 @@ const interpolate = (source: string, vars: Record<string, any>) =>
     },
   );
 
-const renderHtml = async (route: XanixRoute, req: Request, res: Response) => {
+const renderHtml = async ({ route, req, res }: RenderContextServer) => {
   const pagePath = route.page as string;
   const layoutPaths: string[] = (route.layouts ?? []) as any;
   const propsModule: any = route.props ? await route.props() : {};
@@ -56,25 +56,23 @@ const renderHtml = async (route: XanixRoute, req: Request, res: Response) => {
   }
 
   const metahtml = metadataToHtml(metadata);
-  const hasHtml = html.includes("</html>");
-  if (hasHtml) {
-    html = html.replace("</head>", `${metahtml}</head>`);
-    return { html, props };
-  }
-  html = `<!DOCTYPE html>
-<html lang="en">
-  <head>
-    ${metahtml}
-  </head>
-  <body>
-    ${html}
-  </body>
-</html>`;
 
-  return {
-    html,
-    props,
-  };
+  if (!html.includes("</html>")) {
+    html = `<!DOCTYPE html><html><head></head><body>${html}</body></html>`;
+  }
+
+  html = html.replace("</head>", `${metahtml}</head>`);
+  html = html.replace(
+    "</body>",
+    `
+      <script>window.__XANIX_DATA__ = ${JSON.stringify({ props, path: route.path })}</script>
+      <script type="module" src="/${outdirs.client}/runtime.js"></script>
+    </body>`,
+  );
+
+  res.setHeader("Content-Type", "text/html; charset=utf-8");
+  res.setHeader("path", route.path);
+  res.send(html);
 };
 
 export default renderHtml;

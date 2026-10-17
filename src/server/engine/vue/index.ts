@@ -1,9 +1,9 @@
-import { Request, Response } from "express";
-import { XanixRoute } from "../../../types/index.js";
 import render from "./render.js";
 import { metadataToHtml } from "../../../include/code/metadataToHtml.js";
+import type { RenderContextServer } from "virtual:xanix-route";
+import outdirs from "../../../include/outdirs.js";
 
-const vueEngine = async (route: XanixRoute, req: Request, res: Response) => {
+const vueEngine = async ({ route, req, res }: RenderContextServer) => {
   const { createSSRApp, h } = await import("vue");
 
   const page = route.page as () => Promise<any>;
@@ -35,26 +35,27 @@ const vueEngine = async (route: XanixRoute, req: Request, res: Response) => {
   const app = createSSRApp({ render: buildTree });
   app.provide("req", req);
   app.provide("res", res);
-
+  const ctx: Record<string, any> = { req, res };
   const metahtml = metadataToHtml(metadata);
-  const body = await render(app, { req, res });
-  const hasHtml = body.includes("</html>");
-  if (hasHtml) {
-    let html = body.replace("</head>", `${metahtml}</head>`);
-    return { html, props: pageProps };
-  }
+  const body = await render(app, ctx);
+  const styles = [...((ctx.__styles as Map<string, string>) ?? [])]
+    .map(([id, css]) => `<style id="${id}">${css}</style>`)
+    .join("");
 
-  const html = `<!DOCTYPE html>
-<html lang="en">
+  const headExtra = metahtml + styles;
+
+  let html = `<!DOCTYPE html>
+<html>
   <head>
-    ${metahtml}
+    ${headExtra}
   </head>
   <body>
     <div id="xanix-root">${body}</div>
+    <script>window.__XANIX_DATA__ = ${JSON.stringify({ props: pageProps, path: route.path })}</script>
+    <script type="module" src="/${outdirs.client}/runtime.js"></script>
   </body>
 </html>`;
-
-  return { html, props: pageProps };
+  res.send(html);
 };
 
 export default vueEngine;

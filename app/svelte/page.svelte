@@ -7,12 +7,14 @@
   function showAlert() {
     alert("Button clicked!");
   }
+  import Header from "./Header.svelte";
 </script>
 
+<Header />
 <section>
   <h1>{title}</h1>
   <p>{message}</p>
-  <button on:click={showAlert}>Click Me</button>
+  <button onclick={showAlert}>Click Me ssssssss</button>
 
   {#if items.length}
     <ul>

@@ -5,8 +5,8 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const module = path.resolve(__dirname, "../modules/ReactRefresh.js");
 
-const VIRTUAL_ID = "virtual:xanix-hrm";
-const RESOLVED_ID = "\0virtual:xanix-hrm";
+const VIRTUAL_ID = "virtual:react-refresh";
+const RESOLVED_ID = "\0virtual:react-refresh";
 
 const ReactRefresh = ({ isDev }: { isDev: boolean }): Plugin => {
   return {
@@ -23,7 +23,17 @@ const ReactRefresh = ({ isDev }: { isDev: boolean }): Plugin => {
         if (!isDev) {
           return "";
         }
-        return `import ${JSON.stringify(module)};`;
+        return `import RefreshRuntime from "react-refresh/runtime";
+        
+        RefreshRuntime.injectIntoGlobalHook(window);
+        window.$RefreshReg$ = (type, id) => {
+          RefreshRuntime.register(type, id);
+        }
+         
+        window.$RefreshSig$ =
+          RefreshRuntime.createSignatureFunctionForTransform;
+        window.RefreshRuntime = RefreshRuntime;
+        `;
       }
       return null;
     },

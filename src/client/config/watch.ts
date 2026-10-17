@@ -1,5 +1,5 @@
 import { WatchOptions } from "rolldown";
-import vuePlugin from "../plugins/VueTransform.js";
+import vuePlugin from "../../include/plugins/VueTransform.js";
 import ReactRefresh from "../plugins/ReactRefresh.js";
 import loadEnv from "../../include/loadEnv.js";
 import XanixPages from "../plugins/XanixPages.js";
@@ -12,7 +12,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import RegisterRoute from "../plugins/RegisterRoute.js";
 import outdirs from "../../include/outdirs.js";
-import SvelteTransform from "../plugins/SveletTransform.js";
+import SvelteTransform from "../../include/plugins/SveletTransform.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 import type { Plugin } from "rolldown";
@@ -53,7 +53,7 @@ const ClientWatchConfig = async (
       tracker.plugin,
       ReactRefresh({ isDev: true }),
       vuePlugin({ ssr: false }),
-      SvelteTransform({ generate: "client" }),
+      SvelteTransform({ ssr: false, dev: true }),
       RegisterRoute(),
       XanixTransformer(),
       xanixAssets(),

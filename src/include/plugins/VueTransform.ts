@@ -7,33 +7,18 @@ import {
   compileTemplate,
   compileStyleAsync,
   rewriteDefault,
-  type SFCDescriptor,
 } from "vue/compiler-sfc";
 
 export type VuePluginOptions = {
-  /** Compile templates for server rendering (ssrRender). Use true for the server build, false for the client build. */
+  /** Compile for server rendering (ssrRender + style collection). false = client build with HMR. */
   ssr?: boolean;
-  /** Production mode: smaller output, no dev-only metadata. */
-  isProduction?: boolean;
-  /** Root used to derive stable scope ids. Defaults to process.cwd(). */
-  root?: string;
-  /** Emit <style> blocks as virtual CSS modules. Defaults to !ssr. */
-  styles?: boolean;
 };
-
-const STYLE_QUERY = "?vue&type=style";
 
 const vuePlugin = (options: VuePluginOptions = {}): Plugin => {
   const ssr = options.ssr ?? false;
-  const isProduction =
-    options.isProduction ?? process.env.NODE_ENV === "production";
-  const root = options.root ?? process.cwd();
-  const emitStyles = options.styles ?? !ssr;
-
-  const cache = new Map<
-    string,
-    { descriptor: SFCDescriptor; scopeId: string }
-  >();
+  const isProduction = process.env.NODE_ENV === "production";
+  const root = process.cwd();
+  const hmr = !ssr;
 
   const getScopeId = (filename: string, source: string) => {
     const key = isProduction
@@ -45,36 +30,6 @@ const vuePlugin = (options: VuePluginOptions = {}): Plugin => {
   return {
     name: "xanix-vue",
 
-    resolveId(id) {
-      if (id.includes(STYLE_QUERY)) return id;
-      return null;
-    },
-
-    async load(id) {
-      if (!id.includes(STYLE_QUERY)) return null;
-
-      const [filename, query] = id.split("?");
-      const entry = cache.get(filename);
-      if (!entry) return null;
-
-      const index = Number(new URLSearchParams(query).get("index") ?? 0);
-      const style = entry.descriptor.styles[index];
-      if (!style) return null;
-
-      const result = await compileStyleAsync({
-        source: style.content,
-        filename,
-        id: `data-v-${entry.scopeId}`,
-        scoped: !!style.scoped,
-        preprocessLang: style.lang as any,
-        isProd: isProduction,
-      });
-
-      if (result.errors.length) this.error(result.errors[0].message);
-
-      return { code: result.code, moduleType: "css" };
-    },
-
     async transform(source, id) {
       const [filename, query] = id.split("?");
       if (!filename.endsWith(".vue") || query) return null;
@@ -85,7 +40,6 @@ const vuePlugin = (options: VuePluginOptions = {}): Plugin => {
       const scopeId = getScopeId(filename, source);
       const hasScoped = descriptor.styles.some((s) => s.scoped);
       const scopeAttr = `data-v-${scopeId}`;
-      cache.set(filename, { descriptor, scopeId });
 
       const lang = descriptor.scriptSetup?.lang ?? descriptor.script?.lang;
       const isTs = lang === "ts" || lang === "tsx";
@@ -138,22 +92,69 @@ const vuePlugin = (options: VuePluginOptions = {}): Plugin => {
       }
 
       // Styles
-      const styleImports = emitStyles
-        ? descriptor.styles
-            .map(
-              (_, i) =>
-                `import ${JSON.stringify(`${filename}${STYLE_QUERY}&index=${i}&lang.css`)};`,
-            )
-            .join("\n")
+      let styleCode = "";
+      let ssrStyleCode = "";
+
+      if (descriptor.styles.length) {
+        const chunks: string[] = [];
+        for (const style of descriptor.styles) {
+          const result = await compileStyleAsync({
+            source: style.content,
+            filename,
+            id: scopeAttr,
+            scoped: !!style.scoped,
+            preprocessLang: style.lang as any,
+            isProd: isProduction,
+          });
+          if (result.errors.length) this.error(result.errors[0].message);
+          chunks.push(result.code);
+        }
+
+        const css = chunks.join("\n");
+        const styleId = `vue-style-${scopeId}`;
+
+        if (css && !ssr) {
+          // Client: inject (or reuse the server-rendered tag) and update on re-eval
+          styleCode = `(function () {
+  if (typeof document === "undefined") return;
+  var id = ${JSON.stringify(styleId)};
+  var el = document.getElementById(id);
+  if (!el) {
+    el = document.createElement("style");
+    el.id = id;
+    document.head.appendChild(el);
+  }
+  el.textContent = ${JSON.stringify(css)};
+})();`;
+        }
+
+        if (css && ssr) {
+          ssrStyleCode = `import { useSSRContext as _xanixUseSSRContext } from "vue";
+const _xanixSetup = _sfc_main.setup;
+_sfc_main.setup = function (props, ctx) {
+  const s = _xanixUseSSRContext();
+  if (s) (s.__styles || (s.__styles = new Map())).set(${JSON.stringify(styleId)}, ${JSON.stringify(css)});
+  return _xanixSetup ? _xanixSetup.call(this, props, ctx) : undefined;
+};`;
+        }
+      }
+
+      // HMR (client only)
+      const hmrCode = hmr
+        ? `_sfc_main.__hmrId = ${JSON.stringify(scopeId)};
+typeof __VUE_HMR_RUNTIME__ !== "undefined" && __VUE_HMR_RUNTIME__.createRecord(_sfc_main.__hmrId, _sfc_main);
+`
         : "";
 
       const code = [
-        styleImports,
+        styleCode,
         scriptCode,
+        ssrStyleCode,
         templateCode,
         renderKey ? `_sfc_main.${renderKey} = ${renderKey};` : "",
         hasScoped ? `_sfc_main.__scopeId = ${JSON.stringify(scopeAttr)};` : "",
         isProduction ? "" : `_sfc_main.__file = ${JSON.stringify(filename)};`,
+        hmrCode,
         "export default _sfc_main;",
       ]
         .filter(Boolean)

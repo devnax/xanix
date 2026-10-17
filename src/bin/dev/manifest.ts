@@ -1,5 +1,5 @@
 import chokidar from "chokidar";
-import { generateAppRouteManifest } from "../../include/manifest/routes.js";
+import { generateAppRouteManifest } from "../../include/manifest/routesManifest.js";
 
 const manifestWatcher = async () => {
   await generateAppRouteManifest();

@@ -1,9 +1,9 @@
-import { Request, Response } from "express";
 import { render } from "svelte/server";
-import { XanixRoute } from "../../../types/index.js";
 import { metadataToHtml } from "../../../include/code/metadataToHtml.js";
+import outdirs from "../../../include/outdirs.js";
+import type { RenderContextServer } from "virtual:xanix-route";
 
-const svelteEngine = async (route: XanixRoute, req: Request, res: Response) => {
+const svelteEngine = async ({ route, req, res }: RenderContextServer) => {
   const page = route.page as () => Promise<any>;
   const props = route.props || ((async () => ({})) as () => Promise<any>);
   const layouts = (route.layouts ?? []) as (() => Promise<any>)[];
@@ -35,24 +35,25 @@ const svelteEngine = async (route: XanixRoute, req: Request, res: Response) => {
 
   let rendered = await render(Root, { props: rootProps });
   const { head, body } = rendered;
-  const hasHtml = body.includes("</html>");
-  if (hasHtml) {
-    let html = body.replace("</head>", `${metadataToHtml(metadata)}</head>`);
-    return { html, props: pageProps };
-  }
-
-  const html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  ${metadataToHtml(metadata)}
+  const metahtml = metadataToHtml(metadata);
+  let html = `<!DOCTYPE html>
+  <html>
+  <head>
+  ${metahtml}
   ${head}
-</head>
-<body>
-  ${body}
-</body>
-</html>`;
+    <script>
+      window.$RefreshReg$ = (type, id) => {};
+      window.$RefreshSig$ = () => (type) => type;
+    </script>
+  </head>
+  <body>
+    ${body}
+    <script>window.__XANIX_DATA__ = ${JSON.stringify({ props: pageProps, path: route.path })}</script>
+    <script type="module" src="/${outdirs.client}/runtime.js"></script>
+  </body>
+  </html>`;
 
-  return { html, props: pageProps };
+  res.send(html);
 };
 
 export default svelteEngine;

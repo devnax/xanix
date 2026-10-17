@@ -33,7 +33,7 @@ const formatMetadata = async (
 
   const html = metadataToHtml(metadata);
 
-  return { metadata, html };
+  return { data: metadata, html };
 };
 
 export default formatMetadata;

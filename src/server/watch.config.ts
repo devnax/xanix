@@ -9,8 +9,8 @@ import xanixDocument from "../include/plugins/XanixDocument.js";
 import xanixAssets from "../include/plugins/XanixAssets.js";
 import RegisterRoute from "./plugins/RegisterRoute.js";
 import loadEnv from "../include/loadEnv.js";
-import vuePlugin from "./plugins/VueTransform.js";
-import SvelteTransform from "./plugins/SveletTransform.js";
+import SvelteTransform from "../include/plugins/SveletTransform.js";
+import VueTransform from "../include/plugins/VueTransform.js";
 
 const resolver = new ResolverFactory();
 const nodeBuiltins = new Set(builtinModules);
@@ -29,11 +29,10 @@ const ServerWatchConfig = async (isDev = true): Promise<WatchOptions> => {
   return {
     input,
     plugins: [
-      vuePlugin({ ssr: true }),
-      SvelteTransform({ generate: "server" }),
+      VueTransform({ ssr: true }),
+      SvelteTransform({ ssr: true, dev: true }),
       xanixAssets(),
       xanixDocument(),
-      // ResolveExpress(),
       RegisterRoute(),
       // xanixTsconfigAlias(),
       XanixTransformer({}),

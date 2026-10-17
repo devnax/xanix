@@ -1,8 +1,57 @@
-declare module "virtual:xanix-hrm" {}
+declare module "virtual:react-refresh" {}
+
 declare module "virtual:xanix-route" {
-  import { XanixRoute } from "../bin/types";
-  const pages: XanixRoute[];
-  export default pages;
+  import type { Request, RequestHandler, Response } from "express";
+  import type { Router } from "express";
+  import type { Engine } from "../engine";
+  import { Metadata } from "../metadata";
+
+  export type RenderContext = {
+    route: XanixRoute;
+    req?: Request;
+    res?: Response;
+
+    // client
+    mode?: "hydration" | "navigation";
+    current?: XanixRoute | null;
+  };
+
+  export type RenderContextServer = {
+    route: XanixRoute;
+    req: Request;
+    res: Response;
+  };
+
+  export type Renderer = {
+    render: (ctx: RenderContext) => Promise<void>;
+    onExit: (route: XanixRoute) => Promise<void>;
+  };
+
+  export interface XanixRoute {
+    engine: Engine;
+    path: string;
+    renderer: () => Promise<Renderer>;
+    route?: {
+      ROUTER?: Router;
+      GET?: RequestHandler;
+      POST?: RequestHandler;
+      PUT?: RequestHandler;
+      DELETE?: RequestHandler;
+      PATCH?: RequestHandler;
+      OPTIONS?: RequestHandler;
+      HEAD?: RequestHandler;
+    };
+
+    middleware?: {
+      default?: RequestHandler;
+    };
+
+    page?: string | (() => Promise<Page>);
+    props?: () => Promise<Record<string, any>>;
+    layouts?: Array<string> | Array<() => Promise<Layout>>;
+  }
+  const routes: XanixRoute[];
+  export default routes;
 }
 
 declare module "virtual:xanix-pages" {
@@ -13,7 +62,7 @@ declare module "virtual:xanix-pages" {
 
 declare module "virtual:xanix-document" {
   import type { ComponentType, ReactNode } from "react";
-  import type { Request, Response } from "express";
+  import type { Request, RequestHandler, Response } from "express";
 
   export type XanixDocumentProps = {
     children?: ReactNode;

@@ -1,9 +1,10 @@
-import { Request, Response } from "express";
 import render from "./render.js";
 import formatMetadata from "./formatMetadata.js";
-import { XanixRoute } from "../../../types/index.js";
+import type { RenderContextServer } from "virtual:xanix-route";
+import outdirs from "../../../include/outdirs.js";
 
-const reactEngine = async (route: XanixRoute, req: Request, res: Response) => {
+const reactEngine = async ({ route, req, res }: RenderContextServer) => {
+  res.setHeader("path", route.path);
   const { createElement } = await import("react");
 
   const page = route.page as () => Promise<any>;
@@ -21,31 +22,38 @@ const reactEngine = async (route: XanixRoute, req: Request, res: Response) => {
   if (_page.props) {
     Object.assign(pageProps, await _page.props(req, res));
   }
+  const metadata = await formatMetadata(_page, _props, _layouts, req, res);
+  const isJSON = req.headers["accept"] === "application/json";
+  if (isJSON) {
+    res.json({ props: pageProps, path: route.path, metadata: metadata.data });
+    return;
+  }
 
   const element = _layouts.reduceRight(
     (children, Layout) => createElement(Layout.default, { req, res }, children),
     createElement(_page.default, { req, res, ...pageProps }),
   );
 
-  const metadata = await formatMetadata(_page, _props, _layouts, req, res);
   let html = await render(element);
+  html = `<!DOCTYPE html><html><head></head><body></body></html>`;
 
-  const hasHtml = html.includes("</html>");
-  if (hasHtml) {
-    html = html.replace("</head>", `${metadata.html}</head>`);
-    return { html, props: pageProps };
+  if (!html.includes("</html>")) {
   }
 
-  html = `<!DOCTYPE html>
-<html lang="en">
-  <head>
-    ${metadata.html}
-  </head>
-  <body>
-    <div id="xanix-root">${html}</div>
-  </body>
-</html>`;
-  return { html, props: pageProps };
+  html = html.replace(
+    "</head>",
+    `${metadata.html}
+      <script>
+      window.$RefreshReg$ = (type, id) => {};
+      window.$RefreshSig$ = () => (type) => type;
+      </script>
+      <script>window.__XANIX_DATA__ = ${JSON.stringify({ props: pageProps, path: route.path })}</script>
+      <script type="module" src="/${outdirs.client}/runtime.js"></script>
+    </head>`,
+  );
+
+  res.setHeader("Content-Type", "text/html");
+  res.send(html);
 };
 
 export default reactEngine;

@@ -1,5 +1,6 @@
 import startWebSocketServer from "./ws.js";
 import pc from "picocolors";
+import path from "node:path";
 import {
   getFrameworkPackageJson,
   ensureOutdir,
@@ -11,6 +12,8 @@ import ServerWatchConfig from "../../server/watch.config.js";
 import manifestWatch from "./manifest.js";
 import ClientWatchConfig from "../../client/config/watch.js";
 import { createChunkTracker } from "../../client/plugins/ChunkTracker.js";
+import { getAppRouteManifest } from "../../include/manifest/routesManifest.js";
+import { getEngineById } from "../../include/routes.js";
 
 const dev = async (rootEntry: string) => {
   await ensureOutdir();
@@ -28,20 +31,45 @@ const dev = async (rootEntry: string) => {
     },
     {
       onReady: async () => {
-        console.log("asd");
-
         await startServer();
       },
       onChange: async ({ id, event, watchers, shared }) => {
         if (watchers.includes("client")) {
-          const chunks = tracker.getChunksByModule(id);
-          const files = chunks.map((chunk) => ({
-            file: chunk.file,
-            id: normalize(id),
-          }));
+          const filename = path.basename(id, path.extname(id));
+
+          let files: { file: string; id: string }[] = [];
+
+          if (["route", "props", "middleware"].includes(filename)) {
+            const dir = path.dirname(id);
+            const routeManifest = await getAppRouteManifest();
+            for (let route of routeManifest) {
+              if (route.dir === dir && route.page) {
+                id = path.resolve(dir, route.page);
+                await startServer();
+                console.log("reloaded");
+
+                break;
+              }
+            }
+          }
+
+          const engine = getEngineById(id);
+
+          if (["hbs", "ejs", "pug", "html"].includes(engine)) {
+            files.push({
+              file: id,
+              id: normalize(id),
+            });
+          } else if (["react", "vue", "svelte"].includes(engine)) {
+            const chunks = tracker.getChunksByModule(id);
+            chunks
+              .map((chunk) => ({
+                file: chunk.file,
+                id: normalize(id),
+              }))
+              .forEach((file) => files.push(file));
+          }
           broadcast(JSON.stringify(files));
-        } else {
-          // await startServer();
         }
       },
     },

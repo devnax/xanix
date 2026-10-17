@@ -11,9 +11,10 @@ withDefaults(
     items: () => [],
   },
 );
-  const showAlert = () => {
-    alert("Hello from Vue!");
-  };
+import Header from "./Header.vue";
+const showAlert = () => {
+  alert("Hello from Vue!");
+};
 </script>
 
 <template>
@@ -25,5 +26,6 @@ withDefaults(
     <ul v-if="items.length">
       <li v-for="item in items" :key="item">{{ item }}</li>
     </ul>
+    <Header />
   </section>
 </template>

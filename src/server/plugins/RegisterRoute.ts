@@ -6,7 +6,7 @@ import { Engine } from "../../include/code/scanFileRoutes.js";
 import {
   appRouteManifestFile,
   getAppRouteManifest,
-} from "../../include/manifest/routes.js";
+} from "../../include/manifest/routesManifest.js";
 import { normalizePath } from "../../include/utils.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -53,7 +53,9 @@ export default function RegisterRoute(): Plugin {
         const route = routes[i];
         const lines: string[] = [];
         const engine = engines[route.engine];
-        lines.push(`engine: () => import(${JSON.stringify(engine)})`);
+        lines.push(
+          `render: (ctx) => import(${JSON.stringify(engine)}).then(m => m.default(ctx))`,
+        );
 
         if (route.route) {
           const rpath = path.join(route.dir, route.route);
@@ -71,7 +73,6 @@ export default function RegisterRoute(): Plugin {
 
           if (route.props) {
             const propsPath = path.join(route.dir, route.props);
-            this.addWatchFile(propsPath);
             lines.push(`props: () => import(${JSON.stringify(propsPath)})`);
           }
 

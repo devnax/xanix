@@ -22,9 +22,12 @@ const startWebSocketServer = () => {
       sockets.delete(ws);
     });
 
-    ws.on("message", (message) => {
-      if (message.toString() === "reload") {
-        startServer();
+    ws.on("message", async (message) => {
+      const msg = JSON.parse(message.toString());
+      if (msg.type === "reload") {
+        if (["react", "vue", "svelte"].includes(msg.engine)) {
+          await startServer();
+        }
       }
     });
   });

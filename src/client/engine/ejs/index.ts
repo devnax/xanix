@@ -1,3 +1,3 @@
-const renderEjsClient = () => {
-  return "he";
-};
+const renderEjsClient = () => {};
+
+export default renderEjsClient;
