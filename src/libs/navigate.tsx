@@ -1,5 +1,5 @@
 import routes from "virtual:xanix-route";
-import { render } from "../client/Route.js";
+import { render } from "../bundler/client/Route.js";
 
 export const navigate = async (path: string) => {
   if (__XANIX_SERVER__) {
@@ -10,8 +10,6 @@ export const navigate = async (path: string) => {
       return;
     }
 
-    if (route.engine) {
-      await render({ route, mode: "navigation" });
-    }
+    await render({ route, mode: "navigation" });
   }
 };

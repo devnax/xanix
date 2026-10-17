@@ -10,8 +10,8 @@ import { startServer } from "./server.js";
 import { watchGroup } from "../../include/WatchGroup.js";
 import ServerWatchConfig from "../../server/watch.config.js";
 import manifestWatch from "./manifest.js";
-import ClientWatchConfig from "../../client/config/watch.js";
-import { createChunkTracker } from "../../client/plugins/ChunkTracker.js";
+import ClientWatchConfig from "../../bundler/client/config/watch.js";
+import { createChunkTracker } from "../../bundler/client/plugins/ChunkTracker.js";
 import { getAppRouteManifest } from "../../include/manifest/routesManifest.js";
 import { getEngineById } from "../../include/routes.js";
 

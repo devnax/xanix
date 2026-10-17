@@ -5,7 +5,7 @@ import outdirs from "../include/outdirs.js";
 import fs from "node:fs";
 import { ensureOutdir } from "../include/utils.js";
 import spinner from "../include/spinner.js";
-import buildClient from "../client/build.js";
+import buildClient from "../bundler/client/build.js";
 
 const build = async (rootEntry: string) => {
   await ensureOutdir();
